@@ -9,6 +9,7 @@ import {
   useState,
 } from "react";
 import type { Product, ProductVariant } from "@/lib/types";
+import { toast } from "@/components/ui/toast";
 
 export interface CartItem {
   productId: string;
@@ -77,7 +78,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       }
       return [...curr, { ...incoming, qty }];
     });
-    setOpen(true);
+    toast({
+      title: `${incoming.productName} agregado`,
+      description: incoming.variantLabel,
+      action: { label: "Ver carrito →", onClick: () => setOpen(true) },
+    });
   }, []);
 
   const removeItem = useCallback<CartContextValue["removeItem"]>((variantId, mode) => {

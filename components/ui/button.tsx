@@ -44,15 +44,37 @@ function Button({
   className,
   variant = "default",
   size = "default",
+  render,
+  nativeButton,
   ...props
 }: ButtonPrimitive.Props & VariantProps<typeof buttonVariants>) {
+  // Base UI defaults to nativeButton=true, which throws when `render` swaps the
+  // host to a non-<button> (e.g. <a> via Next <Link>). When a render prop is
+  // present and the caller hasn't opted in to nativeButton explicitly, drop it
+  // to false so Link/anchor renders preserve their own semantics.
+  const resolvedNative =
+    nativeButton ?? (render ? isNativeButtonElement(render) : true)
+
   return (
     <ButtonPrimitive
       data-slot="button"
       className={cn(buttonVariants({ variant, size, className }))}
+      render={render}
+      nativeButton={resolvedNative}
       {...props}
     />
   )
+}
+
+function isNativeButtonElement(node: unknown): boolean {
+  // Render can be a ReactElement or a render function. Functions could return
+  // anything at runtime, so be conservative: assume non-button.
+  if (typeof node === "function") return false
+  if (node && typeof node === "object" && "type" in node) {
+    const t = (node as { type: unknown }).type
+    return t === "button"
+  }
+  return false
 }
 
 export { Button, buttonVariants }

@@ -158,6 +158,37 @@ export function BuyBlock({
       <p className="text-xs text-muted-foreground text-center">
         Envío gratis en pedidos +$45.000 · Tostado bajo pedido
       </p>
+
+      {/* Mobile sticky buy — visible only on small screens, lifted above the
+          bottom nav. Mirrors the inline button so the user can add from any
+          scroll position. */}
+      <div className="lg:hidden fixed inset-x-0 bottom-[60px] z-30 bg-background border-t border-border px-4 py-3 flex items-center gap-3 shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
+        <div className="flex flex-col">
+          <span className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
+            {isSub ? "Suscripción" : "Compra única"}
+          </span>
+          <span className="font-display text-lg font-semibold tabular-nums leading-tight">
+            {formatCop(total)}
+          </span>
+        </div>
+        <Button
+          size="lg"
+          className="flex-1 justify-center h-11 text-base"
+          onClick={() =>
+            cart.addItem({
+              ...buildCartItem(
+                product,
+                variant,
+                isSub ? "SUBSCRIPTION" : "ONCE",
+                isSub ? freqDays : undefined,
+              ),
+              qty,
+            })
+          }
+        >
+          Agregar
+        </Button>
+      </div>
     </div>
   );
 }
