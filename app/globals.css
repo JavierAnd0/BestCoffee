@@ -1,0 +1,99 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+/* ─────────────────────────────────────────────────────────────
+   Design tokens — warm editorial palette (Style-A direction).
+   Per-tenant branding overrides live on [data-tenant="..."] in
+   the storefront layout so each tenant can tint without touching
+   shadcn token shapes.
+   ───────────────────────────────────────────────────────────── */
+:root {
+  /* base palette */
+  --background: #faf8f3;
+  --foreground: #1c1815;
+  --muted: #f0eee9;
+  --muted-foreground: rgba(28, 24, 21, 0.62);
+  --line: rgba(0, 0, 0, 0.08);
+  --line-strong: rgba(0, 0, 0, 0.14);
+
+  /* brand */
+  --accent: #c96442;
+  --accent-foreground: #ffffff;
+
+  /* shadcn-compatible aliases (so shadcn components inherit our palette) */
+  --card: #ffffff;
+  --card-foreground: var(--foreground);
+  --popover: #ffffff;
+  --popover-foreground: var(--foreground);
+  --primary: #1c1815;
+  --primary-foreground: #faf8f3;
+  --secondary: var(--muted);
+  --secondary-foreground: var(--foreground);
+  --destructive: #b54129;
+  --destructive-foreground: #ffffff;
+  --border: var(--line);
+  --input: var(--line);
+  --ring: rgba(201, 100, 66, 0.4);
+
+  --radius: 6px;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --font-sans: var(--font-sans, ui-sans-serif, system-ui, sans-serif);
+  --font-display: var(--font-display, ui-serif, Georgia, serif);
+
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+}
+
+/* tenant brand overrides — example default */
+[data-tenant="origen"] {
+  --accent: #c96442;
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+
+  body {
+    font-feature-settings: "ss01" on, "cv11" on;
+  }
+
+  /* editorial headings */
+  .font-display {
+    font-family: var(--font-display);
+    font-optical-sizing: auto;
+    font-variation-settings: "SOFT" 50, "WONK" 0;
+    letter-spacing: -0.01em;
+  }
+
+  /* hide scrollbar utility for horizontal rails */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
+}
