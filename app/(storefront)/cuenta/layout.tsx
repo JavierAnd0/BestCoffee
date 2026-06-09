@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { LogOut } from "lucide-react";
-import { MOCK_CUSTOMER } from "@/lib/mocks/account";
+import { getCurrentCustomer } from "@/lib/data/account";
 
 const NAV = [
   { href: "/cuenta", label: "Resumen" },
@@ -10,22 +10,23 @@ const NAV = [
   { href: "/cuenta/datos", label: "Mis datos" },
 ];
 
-export default function AccountLayout({ children }: { children: React.ReactNode }) {
+export default async function AccountLayout({ children }: { children: React.ReactNode }) {
+  const customer = await getCurrentCustomer();
   return (
     <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-12 grid lg:grid-cols-[240px_1fr] gap-12">
       <aside className="space-y-6">
         <div className="flex items-center gap-3 pb-6 border-b border-border">
           <span className="size-11 rounded-full bg-foreground/10 grid place-items-center font-display text-lg font-semibold">
-            {MOCK_CUSTOMER.name
+            {customer.name
               .split(" ")
               .map((n) => n[0])
               .slice(0, 2)
               .join("")}
           </span>
           <div className="min-w-0">
-            <div className="font-medium truncate">{MOCK_CUSTOMER.name}</div>
+            <div className="font-medium truncate">{customer.name}</div>
             <div className="text-xs text-muted-foreground">
-              Miembro desde {MOCK_CUSTOMER.memberSince}
+              Miembro desde {customer.memberSince}
             </div>
           </div>
         </div>

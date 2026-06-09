@@ -6,8 +6,8 @@ import { Roast } from "@/components/ui/roast";
 import { Stars } from "@/components/ui/stars";
 import { BuyBlock } from "@/components/storefront/buy-block";
 import { ProductCard } from "@/components/storefront/product-card";
-import { findProduct, PRODUCTS } from "@/lib/mocks/products";
-import { TENANT_ORIGEN } from "@/lib/mocks/tenant";
+import { getProductBySlug, listRelated } from "@/lib/data/products";
+import { getCurrentTenant } from "@/lib/data/tenant";
 
 const TYPE_LABEL = {
   BLEND: "Mezcla",
@@ -21,7 +21,7 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const product = findProduct(slug);
+  const product = await getProductBySlug(slug);
   if (!product) return { title: "Producto no encontrado" };
   return {
     title: product.name,
@@ -35,12 +35,10 @@ export default async function ProductPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const product = findProduct(slug);
+  const product = await getProductBySlug(slug);
   if (!product) notFound();
 
-  const related = PRODUCTS.filter(
-    (p) => p.slug !== product.slug && p.type === product.type,
-  ).slice(0, 4);
+  const [related, tenant] = await Promise.all([listRelated(product), getCurrentTenant()]);
 
   return (
     <>
@@ -81,7 +79,7 @@ export default async function ProductPage({
             <div className="mt-10 border-t border-border pt-8">
               <BuyBlock
                 product={product}
-                subscriptionDiscountPct={TENANT_ORIGEN.subscriptionDiscountPct}
+                subscriptionDiscountPct={tenant.subscriptionDiscountPct}
               />
             </div>
           </div>

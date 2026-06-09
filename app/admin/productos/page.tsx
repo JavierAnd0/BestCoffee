@@ -4,7 +4,7 @@ import { Plus, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/admin/page-header";
-import { PRODUCTS } from "@/lib/mocks/products";
+import { listProducts } from "@/lib/data/products";
 import { formatCop } from "@/lib/format";
 
 export const metadata: Metadata = { title: "Productos · Admin" };
@@ -23,12 +23,13 @@ const BADGE_LABEL = {
   SEASONAL: "Temporada",
 } as const;
 
-export default function ProductsListPage() {
+export default async function ProductsListPage() {
+  const products = await listProducts();
   return (
     <div className="space-y-6">
       <PageHeader
         title="Productos"
-        description={`${PRODUCTS.length} productos · ${PRODUCTS.filter((p) => p.status === "ACTIVE").length} activos`}
+        description={`${products.length} productos · ${products.filter((p) => p.status === "ACTIVE").length} activos`}
         actions={
           <>
             <div className="relative">
@@ -71,7 +72,7 @@ export default function ProductsListPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
-            {PRODUCTS.map((p) => {
+            {products.map((p) => {
               const cheapest = p.variants.reduce(
                 (a, b) => (a.priceOneTimeCents <= b.priceOneTimeCents ? a : b),
                 p.variants[0],

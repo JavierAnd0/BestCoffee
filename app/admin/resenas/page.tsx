@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/admin/page-header";
 import { Stars } from "@/components/ui/stars";
-import { ADMIN_REVIEWS } from "@/lib/mocks/admin";
+import { listPendingReviews } from "@/lib/data/admin";
 
 export const metadata: Metadata = { title: "Reseñas · Admin" };
 
@@ -20,14 +20,15 @@ const STATUS_LABEL = {
   REJECTED: "Rechazada",
 } as const;
 
-export default function AdminReviewsPage() {
-  const pending = ADMIN_REVIEWS.filter((r) => r.status === "PENDING").length;
+export default async function AdminReviewsPage() {
+  const reviews = await listPendingReviews();
+  const pending = reviews.filter((r) => r.status === "PENDING").length;
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="Reseñas"
-        description={`${pending} pendientes de aprobación · ${ADMIN_REVIEWS.length} totales`}
+        description={`${pending} pendientes de aprobación · ${reviews.length} totales`}
       />
 
       <div className="flex gap-2 text-xs">
@@ -45,7 +46,7 @@ export default function AdminReviewsPage() {
       </div>
 
       <div className="space-y-3">
-        {ADMIN_REVIEWS.map((r) => (
+        {reviews.map((r) => (
           <article key={r.id} className="rounded-lg border border-border bg-background p-5">
             <div className="flex items-start justify-between gap-4">
               <div>

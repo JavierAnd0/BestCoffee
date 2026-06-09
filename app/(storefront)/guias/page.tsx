@@ -2,11 +2,12 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { Badge } from "@/components/ui/badge";
 import { Eyebrow } from "@/components/ui/eyebrow";
-import { BREW_GUIDES } from "@/lib/mocks/static";
+import { listBrewGuides } from "@/lib/data/static";
 
 export const metadata: Metadata = { title: "Guías de preparación" };
 
-export default function GuiasIndex() {
+export default async function GuiasIndex() {
+  const guides = await listBrewGuides();
   return (
     <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-16">
       <header className="text-center max-w-2xl mx-auto mb-12">
@@ -21,7 +22,7 @@ export default function GuiasIndex() {
       </header>
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {BREW_GUIDES.map((g) => (
+        {guides.map((g) => (
           <Link
             key={g.slug}
             href={`/guias/${g.slug}`}

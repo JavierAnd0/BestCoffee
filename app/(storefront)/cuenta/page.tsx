@@ -2,32 +2,37 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { Eyebrow } from "@/components/ui/eyebrow";
 import { Badge } from "@/components/ui/badge";
+import { ORDER_STATUS_LABEL } from "@/lib/mocks/account";
 import {
-  MOCK_CUSTOMER,
-  MOCK_ORDERS,
-  MOCK_SUBSCRIPTIONS,
-  ORDER_STATUS_LABEL,
-} from "@/lib/mocks/account";
+  getCurrentCustomer,
+  getCustomerOrders,
+  getCustomerSubscriptions,
+} from "@/lib/data/account";
 import { formatCop } from "@/lib/format";
 
 export const metadata: Metadata = { title: "Mi cuenta" };
 
-export default function AccountHome() {
-  const activeSubs = MOCK_SUBSCRIPTIONS.filter((s) => s.status === "ACTIVE");
-  const last = MOCK_ORDERS[0];
+export default async function AccountHome() {
+  const [customer, orders, subs] = await Promise.all([
+    getCurrentCustomer(),
+    getCustomerOrders(),
+    getCustomerSubscriptions(),
+  ]);
+  const activeSubs = subs.filter((s) => s.status === "ACTIVE");
+  const last = orders[0];
 
   return (
     <div className="space-y-12">
       <header>
         <Eyebrow>Tu cuenta</Eyebrow>
         <h1 className="mt-3 font-display text-4xl font-semibold tracking-tight">
-          Hola, {MOCK_CUSTOMER.name.split(" ")[0]}
+          Hola, {customer.name.split(" ")[0]}
         </h1>
       </header>
 
       <section className="grid sm:grid-cols-3 gap-4">
         <Stat label="Suscripciones activas" value={String(activeSubs.length)} />
-        <Stat label="Pedidos totales" value={String(MOCK_ORDERS.length)} />
+        <Stat label="Pedidos totales" value={String(orders.length)} />
         <Stat
           label="Próximo envío"
           value={activeSubs[0]?.nextShipAt ?? "—"}

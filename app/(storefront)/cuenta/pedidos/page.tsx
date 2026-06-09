@@ -2,11 +2,8 @@ import type { Metadata } from "next";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Eyebrow } from "@/components/ui/eyebrow";
-import {
-  MOCK_ORDERS,
-  ORDER_STATUS_LABEL,
-  type OrderStatus,
-} from "@/lib/mocks/account";
+import { ORDER_STATUS_LABEL, type OrderStatus } from "@/lib/mocks/account";
+import { getCustomerOrders } from "@/lib/data/account";
 import { formatCop } from "@/lib/format";
 
 export const metadata: Metadata = { title: "Pedidos" };
@@ -18,7 +15,8 @@ const STATUS_TONE: Record<OrderStatus, string> = {
   CANCELLED: "bg-muted text-muted-foreground border-border",
 };
 
-export default function OrdersPage() {
+export default async function OrdersPage() {
+  const orders = await getCustomerOrders();
   return (
     <div className="space-y-8">
       <header>
@@ -29,7 +27,7 @@ export default function OrdersPage() {
       </header>
 
       <div className="space-y-3">
-        {MOCK_ORDERS.map((o) => (
+        {orders.map((o) => (
           <article
             key={o.id}
             className="rounded-lg border border-border bg-background p-5 grid grid-cols-1 lg:grid-cols-[1fr_auto_auto_auto_auto] gap-4 lg:items-center"

@@ -5,11 +5,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { SalesChart } from "@/components/admin/sales-chart";
 import {
-  ADMIN_KPIS,
-  ADMIN_ALERTS,
-  ADMIN_RECENT_ORDERS,
-  SALES_LAST_14D,
-} from "@/lib/mocks/admin";
+  getDashboardKpis,
+  getDashboardAlerts,
+  getRecentOrders,
+  getSalesLast14d,
+} from "@/lib/data/admin";
 import { formatCop } from "@/lib/format";
 
 export const metadata: Metadata = { title: "Dashboard · Admin" };
@@ -32,7 +32,13 @@ const SEVERITY_TONE = {
   info: "text-foreground bg-muted border-border",
 } as const;
 
-export default function AdminDashboard() {
+export default async function AdminDashboard() {
+  const [kpis, alerts, recent, sales] = await Promise.all([
+    getDashboardKpis(),
+    getDashboardAlerts(),
+    getRecentOrders(),
+    getSalesLast14d(),
+  ]);
   return (
     <div className="space-y-8">
       <header className="flex items-end justify-between">
@@ -48,7 +54,7 @@ export default function AdminDashboard() {
       </header>
 
       <section className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {ADMIN_KPIS.map((k) => (
+        {kpis.map((k) => (
           <div key={k.label} className="rounded-lg border border-border bg-background p-5">
             <div className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground">
               {k.label}
@@ -98,13 +104,13 @@ export default function AdminDashboard() {
               ))}
             </div>
           </div>
-          <SalesChart data={SALES_LAST_14D} />
+          <SalesChart data={sales} />
         </div>
 
         <div className="rounded-lg border border-border bg-background p-6">
           <h2 className="font-display text-lg font-semibold mb-4">Alertas</h2>
           <div className="space-y-3">
-            {ADMIN_ALERTS.map((a) => {
+            {alerts.map((a) => {
               const Icon = SEVERITY_ICON[a.severity];
               return (
                 <article
@@ -135,7 +141,7 @@ export default function AdminDashboard() {
           />
         </div>
         <div className="divide-y divide-border">
-          {ADMIN_RECENT_ORDERS.map((o) => (
+          {recent.map((o) => (
             <Link
               key={o.id}
               href={`/admin/pedidos/${o.id}`}

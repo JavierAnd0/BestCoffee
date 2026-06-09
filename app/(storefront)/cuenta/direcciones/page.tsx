@@ -2,11 +2,12 @@ import type { Metadata } from "next";
 import { Eyebrow } from "@/components/ui/eyebrow";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { MOCK_ADDRESSES } from "@/lib/mocks/account";
+import { getCustomerAddresses } from "@/lib/data/account";
 
 export const metadata: Metadata = { title: "Direcciones" };
 
-export default function AddressesPage() {
+export default async function AddressesPage() {
+  const addresses = await getCustomerAddresses();
   return (
     <div className="space-y-8">
       <header>
@@ -16,7 +17,7 @@ export default function AddressesPage() {
         </h1>
       </header>
       <div className="space-y-3">
-        {MOCK_ADDRESSES.map((a) => (
+        {addresses.map((a) => (
           <div
             key={a.id}
             className="rounded-lg border border-border bg-background p-5 flex items-start gap-4"

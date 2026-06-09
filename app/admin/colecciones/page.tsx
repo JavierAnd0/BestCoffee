@@ -3,7 +3,7 @@ import { Plus, Coffee, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/admin/page-header";
-import { PRODUCTS } from "@/lib/mocks/products";
+import { listProducts } from "@/lib/data/products";
 
 export const metadata: Metadata = { title: "Colecciones · Admin" };
 
@@ -16,14 +16,15 @@ interface AdminCollection {
   productCount: number;
 }
 
-const COLLECTIONS: AdminCollection[] = [
+function buildCollections(products: Awaited<ReturnType<typeof listProducts>>): AdminCollection[] {
+  return [
   {
     slug: "bestsellers",
     name: "Más vendidos",
     type: "SMART",
     description: "Los cafés que más se llevan los clientes.",
     rule: "Badge: BESTSELLER",
-    productCount: PRODUCTS.filter((p) => p.collectionSlugs.includes("bestsellers")).length,
+    productCount: products.filter((p) => p.collectionSlugs.includes("bestsellers")).length,
   },
   {
     slug: "mezclas",
@@ -31,7 +32,7 @@ const COLLECTIONS: AdminCollection[] = [
     type: "SMART",
     description: "Todas las mezclas insignia.",
     rule: "Tipo = MEZCLA",
-    productCount: PRODUCTS.filter((p) => p.collectionSlugs.includes("mezclas")).length,
+    productCount: products.filter((p) => p.collectionSlugs.includes("mezclas")).length,
   },
   {
     slug: "origenes",
@@ -39,7 +40,7 @@ const COLLECTIONS: AdminCollection[] = [
     type: "SMART",
     description: "Lotes con trazabilidad y notas únicas por temporada.",
     rule: "Tipo = ORIGEN_UNICO",
-    productCount: PRODUCTS.filter((p) => p.collectionSlugs.includes("origenes")).length,
+    productCount: products.filter((p) => p.collectionSlugs.includes("origenes")).length,
   },
   {
     slug: "tostados-oscuros",
@@ -47,14 +48,14 @@ const COLLECTIONS: AdminCollection[] = [
     type: "SMART",
     description: "Para quien busca cuerpo intenso y notas a chocolate negro.",
     rule: "Nivel de tueste ≥ 7",
-    productCount: PRODUCTS.filter((p) => p.roastLevel >= 7).length,
+    productCount: products.filter((p) => p.roastLevel >= 7).length,
   },
   {
     slug: "limitados",
     name: "Ediciones limitadas",
     type: "MANUAL",
     description: "Microlotes y cosechas exclusivas mientras dure el stock.",
-    productCount: PRODUCTS.filter((p) => p.collectionSlugs.includes("limitados")).length,
+    productCount: products.filter((p) => p.collectionSlugs.includes("limitados")).length,
   },
   {
     slug: "descafeinados",
@@ -62,11 +63,14 @@ const COLLECTIONS: AdminCollection[] = [
     type: "SMART",
     description: "Sin cafeína, todo el sabor.",
     rule: "Tipo = DESCAF",
-    productCount: PRODUCTS.filter((p) => p.collectionSlugs.includes("descafeinados")).length,
+    productCount: products.filter((p) => p.collectionSlugs.includes("descafeinados")).length,
   },
 ];
+}
 
-export default function CollectionsPage() {
+export default async function CollectionsPage() {
+  const products = await listProducts();
+  const collections = buildCollections(products);
   return (
     <div className="space-y-6">
       <PageHeader
@@ -81,7 +85,7 @@ export default function CollectionsPage() {
       />
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {COLLECTIONS.map((c) => (
+        {collections.map((c) => (
           <article
             key={c.slug}
             className="rounded-lg border border-border bg-background p-5 hover:border-foreground/30 transition-colors"

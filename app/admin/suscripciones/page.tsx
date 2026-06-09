@@ -3,11 +3,8 @@ import { Pause, SkipForward, Coffee, MoreHorizontal, Search } from "lucide-react
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/admin/page-header";
-import {
-  MOCK_SUBSCRIPTIONS,
-  SUB_STATUS_LABEL,
-  type SubStatus,
-} from "@/lib/mocks/account";
+import { SUB_STATUS_LABEL, type SubStatus } from "@/lib/mocks/account";
+import { getCustomerSubscriptions } from "@/lib/data/account";
 import { formatCop } from "@/lib/format";
 
 export const metadata: Metadata = { title: "Suscripciones · Admin" };
@@ -19,21 +16,21 @@ const STATUS_TONE: Record<SubStatus, string> = {
   CANCELLED: "bg-muted text-muted-foreground border-border",
 };
 
-// Spread mock subs across "customers" so the admin list feels populated.
-const ALL_SUBS = [
-  ...MOCK_SUBSCRIPTIONS.map((s) => ({ ...s, customer: "María Restrepo" })),
-  ...MOCK_SUBSCRIPTIONS.map((s, i) => ({ ...s, id: s.id + "_b", customer: ["Andrés P.", "Clara T.", "Jorge C."][i % 3] })),
-];
-
-export default function AdminSubscriptionsPage() {
-  const active = ALL_SUBS.filter((s) => s.status === "ACTIVE").length;
-  const paused = ALL_SUBS.filter((s) => s.status === "PAUSED").length;
+export default async function AdminSubscriptionsPage() {
+  const baseSubs = await getCustomerSubscriptions();
+  // Spread mock subs across "customers" so the admin list feels populated.
+  const allSubs = [
+    ...baseSubs.map((s) => ({ ...s, customer: "María Restrepo" })),
+    ...baseSubs.map((s, i) => ({ ...s, id: s.id + "_b", customer: ["Andrés P.", "Clara T.", "Jorge C."][i % 3] })),
+  ];
+  const active = allSubs.filter((s) => s.status === "ACTIVE").length;
+  const paused = allSubs.filter((s) => s.status === "PAUSED").length;
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="Suscripciones"
-        description={`${active} activas · ${paused} pausadas · ${ALL_SUBS.length} totales`}
+        description={`${active} activas · ${paused} pausadas · ${allSubs.length} totales`}
         actions={
           <div className="relative">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
@@ -66,7 +63,7 @@ export default function AdminSubscriptionsPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
-            {ALL_SUBS.map((s) => (
+            {allSubs.map((s) => (
               <tr key={s.id} className="hover:bg-muted/30 transition-colors">
                 <td className="px-4 py-3 font-medium">{s.customer}</td>
                 <td className="px-4 py-3">

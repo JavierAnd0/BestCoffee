@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { Badge } from "@/components/ui/badge";
-import { BLOG_POSTS, findPost } from "@/lib/mocks/blog";
+import { getBlogPost, listRelatedPosts } from "@/lib/data/blog";
 
 export async function generateMetadata({
   params,
@@ -10,7 +10,7 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const post = findPost(slug);
+  const post = await getBlogPost(slug);
   if (!post) return { title: "Artículo no encontrado" };
   return { title: post.title, description: post.excerpt };
 }
@@ -21,10 +21,10 @@ export default async function BlogArticle({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const post = findPost(slug);
+  const post = await getBlogPost(slug);
   if (!post) notFound();
 
-  const related = BLOG_POSTS.filter((p) => p.slug !== post.slug).slice(0, 3);
+  const related = await listRelatedPosts(post.slug);
 
   return (
     <>

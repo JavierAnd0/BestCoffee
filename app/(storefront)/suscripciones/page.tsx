@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { Eyebrow } from "@/components/ui/eyebrow";
 import { Button } from "@/components/ui/button";
 import { ProductCard } from "@/components/storefront/product-card";
-import { PRODUCTS } from "@/lib/mocks/products";
+import { listProducts } from "@/lib/data/products";
 
 export const metadata: Metadata = { title: "Suscripciones" };
 
@@ -32,8 +32,9 @@ const PERKS = [
   "Cancela en un click",
 ];
 
-export default function SuscripcionesPage() {
-  const subProducts = PRODUCTS.filter((p) => p.subscriptionAvailability !== "NO").slice(0, 4);
+export default async function SuscripcionesPage() {
+  const products = await listProducts();
+  const subProducts = products.filter((p) => p.subscriptionAvailability !== "NO").slice(0, 4);
 
   return (
     <>

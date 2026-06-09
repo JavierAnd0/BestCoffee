@@ -5,27 +5,29 @@ import { QuizBand } from "@/components/storefront/quiz-band";
 import { Spotlight } from "@/components/storefront/spotlight";
 import { ProductCard } from "@/components/storefront/product-card";
 import { Eyebrow } from "@/components/ui/eyebrow";
-import {
-  HERO_HOME,
-  FEATURED_PACK_HOME,
-  SPOTLIGHT_HOME,
-} from "@/lib/mocks/site-content";
-import { bestsellers } from "@/lib/mocks/products";
+import { getHomeHero, getHomeSpotlight, getFeaturedPack } from "@/lib/data/content";
+import { listBestsellers } from "@/lib/data/products";
 
 const TABS = ["Todos", "Mezclas", "Origen único", "Descafeinado", "Cold brew"];
 
-export default function StorefrontHome() {
-  const featured = bestsellers().slice(0, 4);
+export default async function StorefrontHome() {
+  const [hero, spotlight, featuredPack, bestsellers] = await Promise.all([
+    getHomeHero(),
+    getHomeSpotlight(),
+    getFeaturedPack(),
+    listBestsellers(),
+  ]);
+  const featured = bestsellers.slice(0, 4);
 
   return (
     <>
-      <Hero content={HERO_HOME} />
+      <Hero content={hero} />
 
-      <FeaturedPack content={FEATURED_PACK_HOME} />
+      <FeaturedPack content={featuredPack} />
 
       <QuizBand />
 
-      <Spotlight content={SPOTLIGHT_HOME} />
+      <Spotlight content={spotlight} />
 
       <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-24">
         <div className="text-center space-y-3 mb-12">

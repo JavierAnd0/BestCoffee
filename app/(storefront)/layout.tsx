@@ -5,8 +5,8 @@ import { CartProvider } from "@/components/storefront/cart-context";
 import { CartDrawer } from "@/components/storefront/cart-drawer";
 import { MobileNav } from "@/components/storefront/mobile-nav";
 import { Toaster } from "@/components/ui/toast";
-import { ANNOUNCE_MESSAGES } from "@/lib/mocks/site-content";
-import { TENANT_ORIGEN } from "@/lib/mocks/tenant";
+import { getAnnounceMessages } from "@/lib/data/content";
+import { getCurrentTenant } from "@/lib/data/tenant";
 import { getTenantSlug } from "@/lib/tenant";
 
 export default async function StorefrontLayout({
@@ -15,7 +15,7 @@ export default async function StorefrontLayout({
   children: React.ReactNode;
 }) {
   const slug = (await getTenantSlug()) ?? "origen";
-  const tenant = TENANT_ORIGEN;
+  const [tenant, announce] = await Promise.all([getCurrentTenant(), getAnnounceMessages()]);
 
   return (
     <div data-tenant={slug} className="flex flex-col min-h-screen">
@@ -26,7 +26,7 @@ export default async function StorefrontLayout({
         >
           Saltar al contenido
         </a>
-        <AnnounceBar messages={ANNOUNCE_MESSAGES} />
+        <AnnounceBar messages={announce} />
         <Header brand={tenant.brand} />
         <main id="main" className="flex-1 pb-24 lg:pb-0">
           {children}

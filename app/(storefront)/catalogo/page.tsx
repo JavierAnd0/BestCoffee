@@ -1,13 +1,13 @@
 import { ProductCard } from "@/components/storefront/product-card";
 import { CatalogFilters } from "@/components/storefront/catalog-filters";
 import { Eyebrow } from "@/components/ui/eyebrow";
-import { PRODUCTS } from "@/lib/mocks/products";
+import { listProducts } from "@/lib/data/products";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = { title: "Catálogo" };
 
-export default function CatalogoPage() {
-  const products = PRODUCTS;
+export default async function CatalogoPage() {
+  const products = await listProducts();
   const allNotes = Array.from(
     new Set(products.flatMap((p) => p.flavorNotes)),
   ).sort();

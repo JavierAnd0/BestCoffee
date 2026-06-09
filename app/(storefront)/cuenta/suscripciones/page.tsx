@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 import { Eyebrow } from "@/components/ui/eyebrow";
 import { SubscriptionCard } from "@/components/storefront/subscription-card";
-import { MOCK_SUBSCRIPTIONS } from "@/lib/mocks/account";
+import { getCustomerSubscriptions } from "@/lib/data/account";
 
 export const metadata: Metadata = { title: "Mis suscripciones" };
 
-export default function SubscriptionsPage() {
+export default async function SubscriptionsPage() {
+  const subs = await getCustomerSubscriptions();
   return (
     <div className="space-y-8">
       <header>
@@ -15,7 +16,7 @@ export default function SubscriptionsPage() {
         </h1>
       </header>
       <div className="space-y-4">
-        {MOCK_SUBSCRIPTIONS.map((s) => (
+        {subs.map((s) => (
           <SubscriptionCard key={s.id} sub={s} />
         ))}
       </div>

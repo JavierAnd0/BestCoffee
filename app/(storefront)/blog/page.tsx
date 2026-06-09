@@ -3,13 +3,14 @@ import type { Metadata } from "next";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Eyebrow } from "@/components/ui/eyebrow";
-import { BLOG_CATEGORIES, BLOG_POSTS, featuredPost } from "@/lib/mocks/blog";
+import { BLOG_CATEGORIES } from "@/lib/mocks/blog";
+import { listBlogPosts, getFeaturedPost } from "@/lib/data/blog";
 
 export const metadata: Metadata = { title: "Blog · Café y comunidad" };
 
-export default function BlogIndex() {
-  const featured = featuredPost();
-  const rest = BLOG_POSTS.filter((p) => p.slug !== featured.slug);
+export default async function BlogIndex() {
+  const [featured, all] = await Promise.all([getFeaturedPost(), listBlogPosts()]);
+  const rest = all.filter((p) => p.slug !== featured.slug);
 
   return (
     <>
@@ -108,7 +109,7 @@ export default function BlogIndex() {
   );
 }
 
-function ArticleCard({ post }: { post: (typeof BLOG_POSTS)[number] }) {
+function ArticleCard({ post }: { post: Awaited<ReturnType<typeof listBlogPosts>>[number] }) {
   return (
     <article>
       <Link

@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 import { Eyebrow } from "@/components/ui/eyebrow";
 import { Button } from "@/components/ui/button";
-import { MOCK_CUSTOMER } from "@/lib/mocks/account";
+import { getCurrentCustomer } from "@/lib/data/account";
 
 export const metadata: Metadata = { title: "Mis datos" };
 
-export default function ProfilePage() {
+export default async function ProfilePage() {
+  const customer = await getCurrentCustomer();
   return (
     <div className="space-y-8 max-w-xl">
       <header>
@@ -15,9 +16,9 @@ export default function ProfilePage() {
         </h1>
       </header>
       <form className="space-y-4">
-        <Field label="Nombre completo" value={MOCK_CUSTOMER.name} />
-        <Field label="Email" value={MOCK_CUSTOMER.email} type="email" />
-        <Field label="Teléfono" value={MOCK_CUSTOMER.phone} />
+        <Field label="Nombre completo" value={customer.name} />
+        <Field label="Email" value={customer.email} type="email" />
+        <Field label="Teléfono" value={customer.phone} />
         <div className="pt-2">
           <Button>Guardar cambios</Button>
         </div>

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { ProductForm } from "@/components/admin/product-form";
-import { PRODUCTS } from "@/lib/mocks/products";
+import { listProducts } from "@/lib/data/products";
 
 export async function generateMetadata({
   params,
@@ -10,7 +10,8 @@ export async function generateMetadata({
   params: Promise<{ id: string }>;
 }): Promise<Metadata> {
   const { id } = await params;
-  const p = PRODUCTS.find((x) => x.id === id);
+  const all = await listProducts();
+  const p = all.find((x) => x.id === id);
   return { title: p ? `${p.name} · Admin` : "Producto · Admin" };
 }
 
@@ -20,7 +21,8 @@ export default async function EditProductPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const product = PRODUCTS.find((p) => p.id === id);
+  const all = await listProducts();
+  const product = all.find((p) => p.id === id);
   if (!product) notFound();
 
   return (

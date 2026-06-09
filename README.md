@@ -1,36 +1,95 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# BestCoffee · Front
 
-## Getting Started
+Next.js 16 + TypeScript + Tailwind 4 + shadcn/ui. Multi-tenant via subdomain.
 
-First, run the development server:
+Backend (NestJS) vive en otro repo: `BestCoffee-api`.
+
+## Setup
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
+pnpm install
+cp .env.example .env.local   # ajustar NEXT_PUBLIC_API_URL si el backend ya está arriba
 pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+URLs locales:
+- Platform landing: `http://localhost:3000`
+- Storefront ORÍGEN: `http://origen.localhost:3000`
+- Admin: `http://origen.localhost:3000/admin`
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Los subdominios `*.localhost` resuelven a 127.0.0.1 sin tocar `/etc/hosts`.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Arquitectura
 
-## Learn More
+```
+proxy.ts            → resuelve subdomain → x-tenant-slug header
+app/(storefront)/   → tienda cliente
+app/admin/          → panel admin
+app/platform/       → landing SaaS multi-tenant
 
-To learn more about Next.js, take a look at the following resources:
+lib/api/            → cliente HTTP tipado (openapi-fetch + openapi-typescript)
+lib/data/           → adaptadores: hoy → mocks, mañana → API. Un solo punto de swap.
+lib/mocks/          → fixtures de desarrollo
+lib/types.ts        → tipos de dominio compartidos
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Conexión con el backend
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+El front consume el API via `lib/api/client.ts` (`apiServer()` en RSC, `apiClient()` en client components). Headers que se atacan automáticamente: `X-Tenant-Slug` y `Authorization: Bearer ...`.
 
-## Deploy on Vercel
+### Flujo: conectar un endpoint nuevo
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+1. **Backend** publica `/v1/X` y lo expone en `/v1/docs-json` (Swagger).
+2. **Front** regenera los tipos:
+   ```bash
+   API_URL=https://bestcoffee-api-production.up.railway.app pnpm api:types
+   ```
+3. Edita `lib/data/<domain>.ts` y reemplaza el cuerpo de la función:
+   ```ts
+   // antes
+   export async function listProducts() {
+     if (env.useMocks) return PRODUCTS;
+     throw new Error("...");
+   }
+   // después
+   export async function listProducts() {
+     const api = await apiServer();
+     const { data, error } = await api.GET("/v1/products");
+     if (error) throw new Error("API products list failed");
+     return data.items;
+   }
+   ```
+4. Las páginas no cambian — ya consumen `lib/data/*`.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Flag global de mocks
+
+`USE_MOCKS=true` (default en dev) hace que las funciones de `lib/data/*` devuelvan los fixtures de `lib/mocks/`. Una vez todos los endpoints estén wireados, cambia a `USE_MOCKS=false` y quita los branches `env.useMocks` de cada adapter.
+
+## Variables de entorno
+
+Ver `.env.example`. En producción, configurar en Vercel project settings.
+
+| Var | Server | Client | Notas |
+|---|---|---|---|
+| `NEXT_PUBLIC_API_URL` | ✓ | ✓ | URL pública del backend |
+| `API_URL_INTERNAL` | ✓ | — | Opcional, para VPC |
+| `USE_MOCKS` | ✓ | — | true mientras no haya backend |
+| `REVALIDATE_SECRET` | ✓ | — | Compartido con backend para `/api/revalidate` |
+| `AUTH_SECRET` | ✓ | — | Compartido con backend para verificar JWT |
+
+## Scripts
+
+```bash
+pnpm dev           # next dev (Turbopack)
+pnpm build         # next build
+pnpm api:types     # regenera lib/api/types.ts desde el OpenAPI del backend
+pnpm lint          # eslint
+```
+
+## Despliegue
+
+Vercel. Conectar el repo, definir env vars, deploy automático en cada push a `main`. Preview deployments para PRs.
+
+## Plan del proyecto
+
+Plan completo en `/Users/javier/.claude/plans/sequential-shimmying-floyd.md`.

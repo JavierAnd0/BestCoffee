@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { Badge } from "@/components/ui/badge";
 import { Eyebrow } from "@/components/ui/eyebrow";
-import { findGuide } from "@/lib/mocks/static";
+import { getBrewGuide } from "@/lib/data/static";
 
 export async function generateMetadata({
   params,
@@ -11,7 +11,7 @@ export async function generateMetadata({
   params: Promise<{ metodo: string }>;
 }): Promise<Metadata> {
   const { metodo } = await params;
-  const g = findGuide(metodo);
+  const g = await getBrewGuide(metodo);
   if (!g) return { title: "Guía no encontrada" };
   return { title: `Guía · ${g.method}`, description: g.summary };
 }
@@ -22,7 +22,7 @@ export default async function GuiaPage({
   params: Promise<{ metodo: string }>;
 }) {
   const { metodo } = await params;
-  const guide = findGuide(metodo);
+  const guide = await getBrewGuide(metodo);
   if (!guide) notFound();
 
   return (

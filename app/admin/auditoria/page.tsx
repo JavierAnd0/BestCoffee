@@ -3,11 +3,12 @@ import { Search, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/admin/page-header";
-import { ADMIN_AUDIT } from "@/lib/mocks/admin";
+import { listAuditEntries } from "@/lib/data/admin";
 
 export const metadata: Metadata = { title: "Auditoría · Admin" };
 
-export default function AdminAuditPage() {
+export default async function AdminAuditPage() {
+  const entries = await listAuditEntries();
   return (
     <div className="space-y-6">
       <PageHeader
@@ -56,7 +57,7 @@ export default function AdminAuditPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
-            {ADMIN_AUDIT.map((e) => (
+            {entries.map((e) => (
               <tr key={e.id} className="hover:bg-muted/30 transition-colors">
                 <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">
                   {e.at}

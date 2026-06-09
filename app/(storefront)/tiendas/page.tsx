@@ -2,11 +2,12 @@ import type { Metadata } from "next";
 import { MapPin, Clock, Phone } from "lucide-react";
 import { Eyebrow } from "@/components/ui/eyebrow";
 import { Button } from "@/components/ui/button";
-import { STORE_LOCATIONS } from "@/lib/mocks/static";
+import { listStoreLocations } from "@/lib/data/static";
 
 export const metadata: Metadata = { title: "Nuestras tiendas" };
 
-export default function TiendasPage() {
+export default async function TiendasPage() {
+  const stores = await listStoreLocations();
   return (
     <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-16">
       <header className="mb-12 text-center max-w-2xl mx-auto">
@@ -22,7 +23,7 @@ export default function TiendasPage() {
 
       <div className="grid lg:grid-cols-[1fr_1fr] gap-10">
         <div className="space-y-4">
-          {STORE_LOCATIONS.map((s) => (
+          {stores.map((s) => (
             <article
               key={s.slug}
               className="rounded-lg border border-border bg-background p-6 space-y-3"

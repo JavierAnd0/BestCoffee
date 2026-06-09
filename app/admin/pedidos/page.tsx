@@ -3,8 +3,9 @@ import type { Metadata } from "next";
 import { Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/admin/page-header";
-import { ADMIN_RECENT_ORDERS } from "@/lib/mocks/admin";
-import { MOCK_ORDERS, ORDER_STATUS_LABEL, type OrderStatus } from "@/lib/mocks/account";
+import { getRecentOrders } from "@/lib/data/admin";
+import { getCustomerOrders } from "@/lib/data/account";
+import { ORDER_STATUS_LABEL, type OrderStatus } from "@/lib/mocks/account";
 import { formatCop } from "@/lib/format";
 
 export const metadata: Metadata = { title: "Pedidos · Admin" };
@@ -16,32 +17,32 @@ const STATUS_TONE: Record<OrderStatus, string> = {
   CANCELLED: "bg-muted text-muted-foreground border-border",
 };
 
-// Compose a richer mock list by merging admin recent orders with customer orders.
-const ROWS = [
-  ...ADMIN_RECENT_ORDERS.map((o) => ({
-    id: o.id,
-    customer: o.customer,
-    totalCents: o.totalCents,
-    status: o.status as OrderStatus,
-    createdAt: o.createdAt,
-    fromSub: false,
-  })),
-  ...MOCK_ORDERS.map((o) => ({
-    id: o.id,
-    customer: "María Restrepo",
-    totalCents: o.totalCents,
-    status: o.status,
-    createdAt: o.createdAt,
-    fromSub: o.fromSubscription,
-  })),
-];
-
-export default function AdminOrdersPage() {
+export default async function AdminOrdersPage() {
+  const [recent, customerOrders] = await Promise.all([getRecentOrders(), getCustomerOrders()]);
+  // Compose a richer mock list by merging admin recent orders with customer orders.
+  const rows = [
+    ...recent.map((o) => ({
+      id: o.id,
+      customer: o.customer,
+      totalCents: o.totalCents,
+      status: o.status as OrderStatus,
+      createdAt: o.createdAt,
+      fromSub: false,
+    })),
+    ...customerOrders.map((o) => ({
+      id: o.id,
+      customer: "María Restrepo",
+      totalCents: o.totalCents,
+      status: o.status,
+      createdAt: o.createdAt,
+      fromSub: o.fromSubscription,
+    })),
+  ];
   return (
     <div className="space-y-6">
       <PageHeader
         title="Pedidos"
-        description={`${ROWS.length} pedidos en los últimos 30 días`}
+        description={`${rows.length} pedidos en los últimos 30 días`}
         actions={
           <div className="relative">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
@@ -80,7 +81,7 @@ export default function AdminOrdersPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
-            {ROWS.map((o) => (
+            {rows.map((o) => (
               <tr key={o.id} className="hover:bg-muted/30 transition-colors">
                 <td className="px-4 py-3">
                   <Link

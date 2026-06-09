@@ -3,7 +3,7 @@ import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/admin/page-header";
-import { ADMIN_DISCOUNTS } from "@/lib/mocks/admin";
+import { listDiscountCodes } from "@/lib/data/admin";
 
 export const metadata: Metadata = { title: "Promociones · Admin" };
 
@@ -13,12 +13,13 @@ const TYPE_LABEL = {
   FREE_SHIPPING: "Envío gratis",
 } as const;
 
-export default function AdminPromosPage() {
+export default async function AdminPromosPage() {
+  const discounts = await listDiscountCodes();
   return (
     <div className="space-y-6">
       <PageHeader
         title="Promociones"
-        description={`${ADMIN_DISCOUNTS.filter((d) => d.active).length} activas · ${ADMIN_DISCOUNTS.length} totales`}
+        description={`${discounts.filter((d) => d.active).length} activas · ${discounts.length} totales`}
         actions={
           <Button>
             <Plus className="size-4" />
@@ -41,7 +42,7 @@ export default function AdminPromosPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
-            {ADMIN_DISCOUNTS.map((d) => (
+            {discounts.map((d) => (
               <tr key={d.id} className="hover:bg-muted/30 transition-colors">
                 <td className="px-4 py-3">
                   <span className="font-mono text-sm font-medium bg-muted px-2 py-0.5 rounded">

@@ -2,17 +2,18 @@ import type { Metadata } from "next";
 import { Search, Mail } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/admin/page-header";
-import { ADMIN_CUSTOMERS } from "@/lib/mocks/admin";
+import { listAdminCustomers } from "@/lib/data/admin";
 import { formatCop } from "@/lib/format";
 
 export const metadata: Metadata = { title: "Clientes · Admin" };
 
-export default function AdminCustomersPage() {
+export default async function AdminCustomersPage() {
+  const customers = await listAdminCustomers();
   return (
     <div className="space-y-6">
       <PageHeader
         title="Clientes"
-        description={`${ADMIN_CUSTOMERS.length} clientes registrados`}
+        description={`${customers.length} clientes registrados`}
         actions={
           <div className="relative">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
@@ -37,7 +38,7 @@ export default function AdminCustomersPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
-            {ADMIN_CUSTOMERS.map((c) => (
+            {customers.map((c) => (
               <tr key={c.id} className="hover:bg-muted/30 transition-colors">
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-3">
