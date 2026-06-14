@@ -18,6 +18,18 @@ export const config = {
 
 export default function middleware(req: NextRequest) {
   const url = req.nextUrl;
+
+  // ── Auth route guard (/admin + /cuenta require a session) ─────────────────
+  if (url.pathname.startsWith("/admin") || url.pathname.startsWith("/cuenta")) {
+    const session = req.cookies.get("bestcoffee-session")?.value;
+    if (!session) {
+      const loginUrl = url.clone();
+      loginUrl.pathname = "/login";
+      loginUrl.searchParams.set("next", url.pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+  }
+
   const hostHeader = req.headers.get("host") ?? "";
   const host = hostHeader.split(":")[0].toLowerCase();
 
@@ -51,7 +63,15 @@ export default function middleware(req: NextRequest) {
 }
 
 function resolveTenantSlug(host: string): string | null {
-  if (PLATFORM_HOSTS.has(host)) return null;
+  if (PLATFORM_HOSTS.has(host)) {
+    // In local dev, plain `localhost` (no subdomain) falls back to the default
+    // tenant so the storefront works at http://localhost:3000 without needing
+    // <slug>.localhost. This only applies outside production.
+    if (process.env.NODE_ENV !== "production" && host === "localhost") {
+      return process.env.DEFAULT_TENANT_SLUG ?? "origen";
+    }
+    return null;
+  }
   const parts = host.split(".");
   // `<slug>.localhost` in dev, or `<slug>.bestcoffee.io` in prod.
   if (parts.length < 2) return null;

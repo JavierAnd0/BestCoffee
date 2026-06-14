@@ -44,7 +44,9 @@ export interface Product {
   longDescription?: string;
   roastLevel: number; // 1..9
   flavorNotes: FlavorNote[];
-  badges: Badge[];
+  // Free-form strings from the API (e.g. "Comercio justo", "Nuevo"). Known
+  // enum values get nicer labels in the UI; unknown ones render verbatim.
+  badges: string[];
   status: ProductStatus;
   subscriptionAvailability: SubAvail;
   images: ProductImage[];

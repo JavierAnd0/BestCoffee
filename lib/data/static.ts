@@ -1,4 +1,3 @@
-import { env } from "../env";
 import {
   STORE_LOCATIONS,
   BREW_GUIDES,
@@ -7,17 +6,16 @@ import {
   type BrewGuide,
 } from "../mocks/static";
 
+// Store locations + brew guides have no backend endpoint yet, so these always
+// serve curated mock content. Wire to the API once those routes ship.
 export async function listStoreLocations(): Promise<StoreLocation[]> {
-  if (env.useMocks) return STORE_LOCATIONS;
-  throw new Error("listStoreLocations: live API not wired yet");
+  return STORE_LOCATIONS;
 }
 
 export async function listBrewGuides(): Promise<BrewGuide[]> {
-  if (env.useMocks) return BREW_GUIDES;
-  throw new Error("listBrewGuides: live API not wired yet");
+  return BREW_GUIDES;
 }
 
 export async function getBrewGuide(slug: string): Promise<BrewGuide | undefined> {
-  if (env.useMocks) return findGuideMock(slug);
-  throw new Error("getBrewGuide: live API not wired yet");
+  return findGuideMock(slug);
 }

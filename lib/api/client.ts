@@ -19,7 +19,7 @@ import createClient, { type Middleware } from "openapi-fetch";
 import type { paths } from "./types";
 import { env } from "../env";
 
-// Build a middleware that attaches the two headers every call needs.
+// Build a middleware that attaches the headers every call needs.
 function attachHeaders(getTenant: () => string | null, getToken: () => string | null): Middleware {
   return {
     async onRequest({ request }) {
@@ -28,8 +28,15 @@ function attachHeaders(getTenant: () => string | null, getToken: () => string | 
         request.headers.set("x-tenant-slug", tenant);
       }
       const token = getToken();
-      if (token && !request.headers.has("authorization")) {
-        request.headers.set("authorization", `Bearer ${token}`);
+      if (token) {
+        if (!request.headers.has("authorization")) {
+          request.headers.set("authorization", `Bearer ${token}`);
+        }
+        // Also forward as the backend's cookie name; covers guards that read
+        // customer_token directly instead of the Authorization header.
+        if (!request.headers.has("cookie")) {
+          request.headers.set("cookie", `customer_token=${token}`);
+        }
       }
       return request;
     },

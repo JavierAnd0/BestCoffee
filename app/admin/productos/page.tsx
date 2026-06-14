@@ -15,13 +15,13 @@ const TYPE_LABEL = {
   DECAF: "Descafeinado",
 } as const;
 
-const BADGE_LABEL = {
+const BADGE_LABEL: Record<string, string> = {
   BESTSELLER: "Más vendido",
   NEW: "Nuevo",
   LIMITED: "Limitado",
   SUBSCRIBER_ONLY: "Suscriptores",
   SEASONAL: "Temporada",
-} as const;
+};
 
 export default async function ProductsListPage() {
   const products = await listProducts();
@@ -104,7 +104,7 @@ export default async function ProductsListPage() {
                     <div className="flex flex-wrap gap-1">
                       {p.badges.map((b) => (
                         <Badge key={b} variant="secondary" className="font-normal text-[10px]">
-                          {BADGE_LABEL[b]}
+                          {BADGE_LABEL[b] ?? b}
                         </Badge>
                       ))}
                     </div>
