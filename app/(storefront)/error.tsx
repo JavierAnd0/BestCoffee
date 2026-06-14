@@ -23,7 +23,7 @@ function CoffeeZero() {
   );
 }
 
-export default function GlobalError({
+export default function StorefrontError({
   error,
   reset,
 }: {
@@ -31,11 +31,11 @@ export default function GlobalError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error("App error:", error);
+    console.error("Storefront error:", error);
   }, [error]);
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-6 py-24 text-center bg-background text-foreground">
+    <section className="flex flex-col items-center justify-center px-6 py-24 text-center">
       {/* 500 hero */}
       <div
         className="font-display font-semibold text-accent leading-none flex items-end gap-2"
@@ -66,12 +66,6 @@ export default function GlobalError({
         </p>
       </div>
 
-      {error.digest && (
-        <p className="text-[10px] text-muted-foreground font-mono mb-6">
-          ref: {error.digest}
-        </p>
-      )}
-
       <div className="flex flex-wrap justify-center gap-3">
         <Button size="lg" onClick={reset} className="gap-2">
           <Check className="size-3.5" />
@@ -79,6 +73,6 @@ export default function GlobalError({
         </Button>
         <Button size="lg" variant="outline" render={<a href="/">Volver al inicio</a>} />
       </div>
-    </div>
+    </section>
   );
 }

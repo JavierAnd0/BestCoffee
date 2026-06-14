@@ -10,22 +10,76 @@ import {
   type MockSubscription,
 } from "../mocks/account";
 
-export async function getCurrentCustomer(): Promise<MockCustomer> {
-  if (env.useMocks) return MOCK_CUSTOMER;
-  throw new Error("getCurrentCustomer: live API not wired yet — GET /v1/customers/me");
+// ── API shape for GET /v1/customers/me ───────────────────────────────────────
+
+interface ApiCustomer {
+  id?: string;
+  firstName?: string | null;
+  lastName?: string | null;
+  name?: string | null;
+  email: string;
+  phone?: string | null;
+  createdAt?: string | null;
 }
 
+function mapCustomer(c: ApiCustomer): MockCustomer {
+  const fullName =
+    [c.firstName, c.lastName].filter(Boolean).join(" ").trim() ||
+    c.name?.trim() ||
+    c.email;
+  return {
+    name: fullName,
+    email: c.email,
+    phone: c.phone ?? "",
+    memberSince: c.createdAt
+      ? new Date(c.createdAt).getFullYear().toString()
+      : "—",
+  };
+}
+
+async function fetchMe(): Promise<MockCustomer | null> {
+  const { cookies, headers } = await import("next/headers");
+  const c = await cookies();
+  const h = await headers();
+
+  const token =
+    c.get("bestcoffee-session")?.value ?? c.get("customer_token")?.value;
+  if (!token) return null;
+
+  const res = await fetch(`${env.apiUrlInternal}/v1/customers/me`, {
+    headers: {
+      "X-Tenant-Slug": h.get("x-tenant-slug") ?? "origen",
+      Authorization: `Bearer ${token}`,
+      Cookie: `customer_token=${token}`,
+    },
+    cache: "no-store",
+  });
+
+  if (!res.ok) return null;
+  return mapCustomer((await res.json()) as ApiCustomer);
+}
+
+// ── Public API ────────────────────────────────────────────────────────────────
+
+export async function getCurrentCustomer(): Promise<MockCustomer> {
+  if (env.useMocks) return MOCK_CUSTOMER;
+  try {
+    return (await fetchMe()) ?? MOCK_CUSTOMER;
+  } catch {
+    return MOCK_CUSTOMER;
+  }
+}
+
+// Orders, subscriptions and addresses have no backend endpoint yet → mock.
+
 export async function getCustomerAddresses(): Promise<MockAddress[]> {
-  if (env.useMocks) return MOCK_ADDRESSES;
-  throw new Error("getCustomerAddresses: live API not wired yet");
+  return MOCK_ADDRESSES;
 }
 
 export async function getCustomerOrders(): Promise<MockOrder[]> {
-  if (env.useMocks) return MOCK_ORDERS;
-  throw new Error("getCustomerOrders: live API not wired yet");
+  return MOCK_ORDERS;
 }
 
 export async function getCustomerSubscriptions(): Promise<MockSubscription[]> {
-  if (env.useMocks) return MOCK_SUBSCRIPTIONS;
-  throw new Error("getCustomerSubscriptions: live API not wired yet");
+  return MOCK_SUBSCRIPTIONS;
 }

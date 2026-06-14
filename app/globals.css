@@ -2,40 +2,40 @@
 @import "tw-animate-css";
 
 /* ─────────────────────────────────────────────────────────────
-   Design tokens — warm editorial palette (Style-A direction).
-   Per-tenant branding overrides live on [data-tenant="..."] in
-   the storefront layout so each tenant can tint without touching
-   shadcn token shapes.
+   Design tokens — Editorial Warm / Kinfolk direction
    ───────────────────────────────────────────────────────────── */
 :root {
-  /* base palette */
-  --background: #faf8f3;
-  --foreground: #1c1815;
-  --muted: #f0eee9;
-  --muted-foreground: rgba(28, 24, 21, 0.62);
-  --line: rgba(0, 0, 0, 0.08);
-  --line-strong: rgba(0, 0, 0, 0.14);
+  /* warm cream palette */
+  --background: #faf7f1;
+  --foreground: #170d04;
+  --muted: #ede5d8;
+  --muted-foreground: rgba(23, 13, 4, 0.52);
+  --line: rgba(23, 13, 4, 0.08);
+  --line-strong: rgba(23, 13, 4, 0.18);
 
-  /* brand */
-  --accent: #c96442;
-  --accent-foreground: #ffffff;
+  /* section fills */
+  --cream-mid: #f0e4d0;
+  --cream-dark: #e5d5be;
 
-  /* shadcn-compatible aliases (so shadcn components inherit our palette) */
-  --card: #ffffff;
+  /* brand accent — deep terracotta */
+  --accent: #b85c32;
+  --accent-foreground: #faf7f1;
+
+  /* shadcn-compatible aliases */
+  --card: #fdf9f4;
   --card-foreground: var(--foreground);
-  --popover: #ffffff;
+  --popover: #fdf9f4;
   --popover-foreground: var(--foreground);
-  --primary: #1c1815;
-  --primary-foreground: #faf8f3;
+  --primary: #170d04;
+  --primary-foreground: #faf7f1;
   --secondary: var(--muted);
   --secondary-foreground: var(--foreground);
   --destructive: #b54129;
   --destructive-foreground: #ffffff;
   --border: var(--line);
   --input: var(--line);
-  --ring: rgba(201, 100, 66, 0.4);
-
-  --radius: 6px;
+  --ring: rgba(184, 92, 50, 0.38);
+  --radius: 3px;
 }
 
 @theme inline {
@@ -58,18 +58,23 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  --color-cream-mid: var(--cream-mid);
+  --color-cream-dark: var(--cream-dark);
 
   --font-sans: var(--font-sans, ui-sans-serif, system-ui, sans-serif);
   --font-display: var(--font-display, ui-serif, Georgia, serif);
 
-  --radius-sm: 4px;
-  --radius-md: 6px;
-  --radius-lg: 10px;
+  --radius-sm: 2px;
+  --radius-md: 3px;
+  --radius-lg: 6px;
 }
 
-/* tenant brand overrides — example default */
 [data-tenant="origen"] {
-  --accent: #c96442;
+  --accent: #b85c32;
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 @layer base {
@@ -79,42 +84,55 @@
 
   body {
     font-feature-settings: "ss01" on, "cv11" on;
+    -webkit-font-smoothing: antialiased;
+    letter-spacing: 0.005em;
   }
 
-  /* Visible focus ring for any interactive element that doesn't ship its
-     own — keyboard users always get a clear target. shadcn-styled components
-     opt out via their own focus-visible:* utilities. */
+  /* Cormorant Garamond display — optical sizing + tight tracking */
+  .font-display {
+    font-family: var(--font-display);
+    font-optical-sizing: auto;
+    letter-spacing: -0.025em;
+    font-feature-settings: "liga" on, "calt" on, "kern" on;
+  }
+
+  /* Eyebrow style — reusable across the site */
+  .eyebrow {
+    font-family: var(--font-sans);
+    font-size: 0.6875rem;
+    font-weight: 500;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--muted-foreground);
+  }
+
+  /* Editorial thin rule */
+  .rule {
+    border: none;
+    border-top: 1px solid var(--line);
+    width: 100%;
+  }
+
   :where(button, a, [role="button"], [tabindex]):focus-visible {
     outline: 2px solid var(--accent);
     outline-offset: 2px;
-    border-radius: 4px;
+    border-radius: 2px;
   }
 
-  /* Honor user's reduced-motion preference. */
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { scrollbar-width: none; }
+
   @media (prefers-reduced-motion: reduce) {
-    *,
-    *::before,
-    *::after {
+    *, *::before, *::after {
       animation-duration: 0.01ms !important;
       animation-iteration-count: 1 !important;
       transition-duration: 0.01ms !important;
       scroll-behavior: auto !important;
     }
   }
+}
 
-  /* editorial headings */
-  .font-display {
-    font-family: var(--font-display);
-    font-optical-sizing: auto;
-    font-variation-settings: "SOFT" 50, "WONK" 0;
-    letter-spacing: -0.01em;
-  }
-
-  /* hide scrollbar utility for horizontal rails */
-  .no-scrollbar::-webkit-scrollbar {
-    display: none;
-  }
-  .no-scrollbar {
-    scrollbar-width: none;
-  }
+/* ─── Film grain SVG data URI (used as CSS var for consistency) ──── */
+:root {
+  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.72' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E");
 }

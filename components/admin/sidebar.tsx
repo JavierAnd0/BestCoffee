@@ -14,6 +14,7 @@ import {
   Star,
   Settings,
   ShieldCheck,
+  Truck,
   LogOut,
 } from "lucide-react";
 import { Logo } from "@/components/storefront/logo";
@@ -25,6 +26,7 @@ const NAV = [
   { href: "/admin/pedidos", label: "Pedidos", icon: ClipboardList },
   { href: "/admin/suscripciones", label: "Suscripciones", icon: RefreshCw },
   { href: "/admin/clientes", label: "Clientes", icon: Users },
+  { href: "/admin/logistica", label: "Logística", icon: Truck },
   { href: "/admin/contenido", label: "Contenido", icon: FileText },
   { href: "/admin/promociones", label: "Promociones", icon: TicketPercent },
   { href: "/admin/resenas", label: "Reseñas", icon: Star },

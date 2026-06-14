@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Eyebrow } from "@/components/ui/eyebrow";
@@ -56,9 +57,7 @@ export default async function OrdersPage() {
               {formatCop(o.totalCents)}
             </span>
             <div className="flex gap-2">
-              <Button variant="outline" size="sm">
-                Ver
-              </Button>
+              <Button variant="outline" size="sm" render={<Link href={`/cuenta/pedidos/${o.id}`}>Ver</Link>} />
               <Button variant="outline" size="sm">
                 Reordenar
               </Button>

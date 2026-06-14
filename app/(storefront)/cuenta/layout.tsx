@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { LogOut } from "lucide-react";
 import { getCurrentCustomer } from "@/lib/data/account";
+import { logoutAction } from "@/lib/actions/auth";
 
 const NAV = [
   { href: "/cuenta", label: "Resumen" },
@@ -40,10 +41,15 @@ export default async function AccountLayout({ children }: { children: React.Reac
               {n.label}
             </Link>
           ))}
-          <button className="mt-2 inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-foreground transition-colors text-left">
-            <LogOut className="size-4" />
-            Cerrar sesión
-          </button>
+          <form action={logoutAction}>
+            <button
+              type="submit"
+              className="mt-2 w-full inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-foreground transition-colors text-left"
+            >
+              <LogOut className="size-4" />
+              Cerrar sesión
+            </button>
+          </form>
         </nav>
       </aside>
       <div>{children}</div>
