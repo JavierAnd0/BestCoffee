@@ -50,6 +50,8 @@ export interface ApiTenant {
   tier?: string;
   features?: Record<string, unknown>;
   branding?: { accent?: string; primary?: string; font?: string };
+  paymentProvider?: string | null;
+  mpPublicKey?: string | null;
 }
 
 interface ApiCta {
@@ -118,6 +120,8 @@ export function mapTenant(t: ApiTenant): Tenant {
     freeShippingThresholdCents: num("freeShippingThresholdCents", 150_000_00),
     subscriptionDiscountPct: num("subscriptionDiscountPct", 10),
     currency: "COP",
+    paymentProvider: (t.paymentProvider as Tenant["paymentProvider"]) ?? null,
+    mpPublicKey: t.mpPublicKey ?? null,
   };
 }
 

@@ -1,14 +1,27 @@
 import type { Metadata } from "next";
-import { Building2, Mail, Truck, Share2, FileText } from "lucide-react";
+import { Building2, Mail, Truck, Share2, FileText, CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/admin/page-header";
+import { MercadoPagoConnectButton } from "@/components/admin/mercadopago-connect-button";
+import { getCurrentTenant } from "@/lib/data/tenant";
 
 export const metadata: Metadata = { title: "Configuración · Admin" };
 
-export default function AdminSettingsPage() {
+export default async function AdminSettingsPage() {
+  const tenant = await getCurrentTenant();
+  const mpConnected = tenant.paymentProvider === "mercadopago" && !!tenant.mpPublicKey;
+
   return (
     <div className="space-y-6">
       <PageHeader title="Configuración" description="Ajustes globales de la tienda." />
+
+      <SettingsCard
+        icon={<CreditCard className="size-4" />}
+        title="Pasarela de pago"
+        body="Conecta MercadoPago para recibir pagos con tarjeta directamente en el checkout."
+      >
+        <MercadoPagoConnectButton connected={mpConnected} />
+      </SettingsCard>
 
       <SettingsCard
         icon={<Truck className="size-4" />}

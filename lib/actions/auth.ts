@@ -18,15 +18,11 @@ export async function loginAction(
 
   if (!email) return { error: "El correo es requerido." };
 
-  // Admin routes use the operator endpoint; everything else uses customer auth
-  const isAdmin = next.startsWith("/admin");
-  const loginUrl = isAdmin
-    ? `${env.apiUrlInternal}/v1/auth/login`
-    : `${env.apiUrlInternal}/v1/auth/customer/login`;
-
+  // Login de cliente (storefront). Los operadores acceden por magic link en
+  // /acceso; este flujo es solo para clientes finales.
   let res: Response;
   try {
-    res = await fetch(loginUrl, {
+    res = await fetch(`${env.apiUrlInternal}/v1/auth/customer/login`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
