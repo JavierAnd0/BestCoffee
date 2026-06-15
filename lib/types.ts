@@ -68,6 +68,8 @@ export interface Tenant {
   freeShippingThresholdCents: number;
   subscriptionDiscountPct: number;
   currency: "COP";
+  paymentProvider?: "mercadopago" | null;
+  mpPublicKey?: string | null;
 }
 
 export interface AnnounceMessage {

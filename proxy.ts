@@ -23,10 +23,16 @@ export default function middleware(req: NextRequest) {
   if (url.pathname.startsWith("/admin") || url.pathname.startsWith("/cuenta")) {
     const session = req.cookies.get("bestcoffee-session")?.value;
     if (!session) {
-      const loginUrl = url.clone();
-      loginUrl.pathname = "/login";
-      loginUrl.searchParams.set("next", url.pathname);
-      return NextResponse.redirect(loginUrl);
+      const redirectUrl = url.clone();
+      // Operadores acceden por magic link en /acceso; clientes por /login.
+      if (url.pathname.startsWith("/admin")) {
+        redirectUrl.pathname = "/acceso";
+        redirectUrl.search = "";
+      } else {
+        redirectUrl.pathname = "/login";
+        redirectUrl.searchParams.set("next", url.pathname);
+      }
+      return NextResponse.redirect(redirectUrl);
     }
   }
 
