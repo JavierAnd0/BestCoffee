@@ -4,6 +4,25 @@ import { ArrowLeft } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { platformFetch } from "@/lib/api/platform";
 import { ImpersonateButton } from "@/components/platform/impersonate-button";
+import {
+  TenantSettingsForm,
+  type TierFeatures,
+} from "@/components/platform/tenant-settings-form";
+
+type Tier = "STARTER" | "PRO" | "BUSINESS";
+
+async function getTierCatalog(): Promise<Record<Tier, TierFeatures>> {
+  const rows = await platformFetch<{ tier: Tier; features: TierFeatures }[]>(
+    "/v1/platform/tiers",
+  );
+  return rows.reduce(
+    (acc, r) => {
+      acc[r.tier] = r.features;
+      return acc;
+    },
+    {} as Record<Tier, TierFeatures>,
+  );
+}
 
 interface TenantDetail {
   id: string;
@@ -33,7 +52,10 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 
 export default async function TenantDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const tenant = await platformFetch<TenantDetail>(`/v1/platform/tenants/${id}`);
+  const [tenant, tierCatalog] = await Promise.all([
+    platformFetch<TenantDetail>(`/v1/platform/tenants/${id}`),
+    getTierCatalog(),
+  ]);
 
   return (
     <div className="space-y-8">
@@ -68,24 +90,23 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
         ))}
       </div>
 
-      <div className="grid md:grid-cols-2 gap-6">
-        {/* Info general */}
-        <Section title="Configuración">
-          <Row label="Tier">
-            <Badge>{tenant.tier}</Badge>
-          </Row>
-          <Row label="Creado">
-            {new Date(tenant.createdAt).toLocaleDateString("es-CO", {
-              year: "numeric", month: "long", day: "numeric",
-            })}
-          </Row>
-          <Row label="Features">
-            <pre className="text-xs bg-muted rounded p-2 max-h-32 overflow-auto">
-              {JSON.stringify(tenant.features, null, 2)}
-            </pre>
-          </Row>
-        </Section>
+      {/* Plan y capacidades — editable */}
+      <Section title="Plan y capacidades">
+        <p className="text-xs text-muted-foreground -mt-2">
+          Creado el{" "}
+          {new Date(tenant.createdAt).toLocaleDateString("es-CO", {
+            year: "numeric", month: "long", day: "numeric",
+          })}
+        </p>
+        <TenantSettingsForm
+          tenantId={tenant.id}
+          currentTier={tenant.tier as Tier}
+          currentFeatures={tenant.features}
+          tierCatalog={tierCatalog}
+        />
+      </Section>
 
+      <div className="grid md:grid-cols-1 gap-6">
         {/* Dominios */}
         <Section title="Dominios">
           {tenant.domains.length === 0 ? (

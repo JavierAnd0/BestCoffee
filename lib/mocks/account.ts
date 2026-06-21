@@ -2,6 +2,13 @@
 export type OrderStatus = "PROCESSING" | "SHIPPED" | "DELIVERED" | "CANCELLED";
 export type SubStatus = "ACTIVE" | "PAUSED" | "PAYMENT_FAILED" | "CANCELLED";
 
+export interface MockOrderItem {
+  name: string;
+  variant: string;
+  qty: number;
+  priceCents: number;
+}
+
 export interface MockOrder {
   id: string;
   createdAt: string; // already formatted "04 jun 2026"
@@ -9,6 +16,8 @@ export interface MockOrder {
   totalCents: number;
   status: OrderStatus;
   fromSubscription: boolean;
+  items?: MockOrderItem[];
+  shippingAddress?: string;
 }
 
 export interface MockSubscription {

@@ -1,5 +1,6 @@
 import { env } from "../env";
 import { apiServer } from "../api/client";
+import { formatCop } from "../format";
 import {
   ADMIN_KPIS,
   ADMIN_ALERTS,
@@ -147,24 +148,229 @@ function mapAudit(e: ApiAuditEntry): AdminAuditEntry {
   };
 }
 
-// ── Public API ─────────────────────────────────────────────────────────────────
-// KPIs and alerts have no dedicated endpoint yet → always mock.
+// ── Admin fetch helper (server-side, operator session) ─────────────────────
+
+async function adminFetch<T>(path: string): Promise<T | null> {
+  const { cookies, headers } = await import("next/headers");
+  const c = await cookies();
+  const token = c.get("bestcoffee-session")?.value ?? null;
+  const h = await headers();
+  const tenantSlug = h.get("x-tenant-slug") ?? process.env.DEFAULT_TENANT_SLUG ?? "origen";
+
+  const res = await fetch(`${env.apiUrlInternal}${path}`, {
+    headers: {
+      "Content-Type": "application/json",
+      "X-Tenant-Slug": tenantSlug,
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    cache: "no-store",
+  });
+  if (!res.ok) return null;
+  return res.json() as Promise<T>;
+}
+
+// ── Dashboard KPI mappers ─────────────────────────────────────────────────────
+
+interface ApiKpiRaw {
+  // Flat numeric object (most likely backend shape)
+  salesToday?: number; totalToday?: number; revenueToday?: number;
+  ordersToday?: number; orderCountToday?: number;
+  salesMonth?: number; totalMonth?: number; revenueMonth?: number;
+  ordersMonth?: number; orderCountMonth?: number;
+  activeSubscriptions?: number; subscriptionsActive?: number; subscriptionCount?: number;
+  lowStockCount?: number; stockAlerts?: number; lowStockProducts?: number;
+  salesDeltaPct?: number; todayGrowthPct?: number; growthToday?: number;
+  salesMonthDeltaPct?: number; monthGrowthPct?: number; growthMonth?: number;
+  subscriptionsDeltaPct?: number; subsGrowthPct?: number;
+  lowStockDelta?: number;
+}
+
+function mapApiKpis(raw: unknown): AdminKpi[] {
+  // If the API already returns an array of {label, value} objects, use it directly.
+  if (Array.isArray(raw) && raw.length > 0 && typeof (raw[0] as Record<string,unknown>).label === "string") {
+    return raw as AdminKpi[];
+  }
+  // Otherwise treat as a flat numeric object and build the 4 KPI cards.
+  const d = (raw ?? {}) as ApiKpiRaw;
+  const salesToday = d.salesToday ?? d.totalToday ?? d.revenueToday ?? 0;
+  const ordersToday = d.ordersToday ?? d.orderCountToday ?? 0;
+  const salesMonth = d.salesMonth ?? d.totalMonth ?? d.revenueMonth ?? 0;
+  const ordersMonth = d.ordersMonth ?? d.orderCountMonth ?? 0;
+  const activeSubs = d.activeSubscriptions ?? d.subscriptionsActive ?? d.subscriptionCount ?? 0;
+  const lowStock = d.lowStockCount ?? d.stockAlerts ?? d.lowStockProducts ?? 0;
+
+  const deltaFor = (pct: number | undefined, fallbackPct: number | undefined, fallback2?: number) => {
+    const v = pct ?? fallbackPct ?? fallback2;
+    if (v == null) return undefined;
+    return { value: `${v >= 0 ? "+" : ""}${v}%`, positive: v >= 0 };
+  };
+
+  return [
+    {
+      label: "Ventas hoy",
+      value: formatCop(salesToday),
+      hint: `${ordersToday} pedidos`,
+      delta: deltaFor(d.salesDeltaPct, d.todayGrowthPct, d.growthToday),
+    },
+    {
+      label: "Ventas del mes",
+      value: formatCop(salesMonth),
+      hint: `${ordersMonth} pedidos`,
+      delta: deltaFor(d.salesMonthDeltaPct, d.monthGrowthPct, d.growthMonth),
+    },
+    {
+      label: "Suscripciones activas",
+      value: String(activeSubs),
+      delta: deltaFor(d.subscriptionsDeltaPct, d.subsGrowthPct),
+    },
+    {
+      label: "Stock bajo",
+      value: String(lowStock),
+      hint: "Productos por debajo del umbral",
+      delta: d.lowStockDelta != null
+        ? { value: `${d.lowStockDelta >= 0 ? "+" : ""}${d.lowStockDelta}`, positive: d.lowStockDelta <= 0 }
+        : undefined,
+    },
+  ];
+}
+
+// ── Alert mapper ──────────────────────────────────────────────────────────────
+
+interface ApiAlertRaw {
+  id?: string;
+  severity?: string; level?: string; type?: string;
+  title?: string; subject?: string;
+  body?: string; description?: string; message?: string;
+}
+
+function mapApiAlert(a: ApiAlertRaw, i: number): AdminAlert {
+  const severityRaw = (a.severity ?? a.level ?? a.type ?? "info").toLowerCase();
+  const severity: AdminAlert["severity"] =
+    severityRaw === "danger" || severityRaw === "error" || severityRaw === "critical" ? "danger"
+    : severityRaw === "warning" || severityRaw === "warn" ? "warning"
+    : "info";
+  return {
+    id: a.id ?? String(i),
+    severity,
+    title: a.title ?? a.subject ?? "Alerta",
+    body: a.body ?? a.description ?? a.message ?? "",
+  };
+}
+
+// ── Sales chart mapper ────────────────────────────────────────────────────────
+
+interface ApiSalesPoint {
+  date?: string; day?: string;
+  total?: number; amount?: number; revenue?: number; value?: number;
+}
+
+function mapApiSales(raw: unknown): number[] {
+  if (Array.isArray(raw)) {
+    // number[] directly
+    if (raw.length === 0 || typeof raw[0] === "number") return raw as number[];
+    // [{date, total}] format
+    return (raw as ApiSalesPoint[]).map(
+      (p) => p.total ?? p.amount ?? p.revenue ?? p.value ?? 0,
+    );
+  }
+  // {data: number[]} or {points: [...]}
+  const obj = raw as Record<string, unknown>;
+  const arr = obj.data ?? obj.points ?? obj.sales ?? obj.items;
+  if (Array.isArray(arr)) return mapApiSales(arr);
+  return [];
+}
+
+// ── Customer mapper ───────────────────────────────────────────────────────────
+
+interface ApiAdminCustomer {
+  id?: string;
+  name?: string; fullName?: string; firstName?: string; lastName?: string;
+  email?: string;
+  ordersCount?: number; orders?: number; orderCount?: number;
+  totalSpentCents?: number; totalSpent?: number; lifetimeValue?: number;
+  activeSubsCount?: number; activeSubscriptions?: number; subscriptionsCount?: number;
+  joinedAt?: string; createdAt?: string; memberSince?: string;
+}
+
+function formatJoinDate(iso?: string): string {
+  if (!iso) return "—";
+  try {
+    return new Date(iso).toLocaleDateString("es-CO", { month: "short", year: "numeric" });
+  } catch {
+    return iso;
+  }
+}
+
+function mapApiCustomer(c: ApiAdminCustomer): AdminCustomer {
+  const firstName = c.firstName ?? "";
+  const lastName = c.lastName ?? "";
+  const fullName = c.name ?? c.fullName ?? (firstName || lastName ? `${firstName} ${lastName}`.trim() : "—");
+  const totalCents = c.totalSpentCents ?? c.totalSpent ?? c.lifetimeValue ?? 0;
+  return {
+    id: c.id ?? "",
+    name: fullName,
+    email: c.email ?? "—",
+    ordersCount: c.ordersCount ?? c.orders ?? c.orderCount ?? 0,
+    totalSpentCents: totalCents,
+    activeSubsCount: c.activeSubsCount ?? c.activeSubscriptions ?? c.subscriptionsCount ?? 0,
+    joinedAt: formatJoinDate(c.joinedAt ?? c.createdAt ?? c.memberSince),
+  };
+}
+
+// ── Public API ──────────────────────────────────────────────────────────────
 
 export async function getDashboardKpis(): Promise<AdminKpi[]> {
-  return ADMIN_KPIS;
+  if (env.useMocks) return ADMIN_KPIS;
+  try {
+    const data = await adminFetch<unknown>("/v1/admin/dashboard/kpis");
+    if (!data) return ADMIN_KPIS;
+    const mapped = mapApiKpis(data);
+    return mapped.length > 0 ? mapped : ADMIN_KPIS;
+  } catch {
+    return ADMIN_KPIS;
+  }
 }
 
 export async function getDashboardAlerts(): Promise<AdminAlert[]> {
-  return ADMIN_ALERTS;
+  if (env.useMocks) return ADMIN_ALERTS;
+  try {
+    const raw = await adminFetch<unknown>("/v1/admin/dashboard/alerts");
+    if (!raw) return ADMIN_ALERTS;
+    const arr: ApiAlertRaw[] = Array.isArray(raw)
+      ? (raw as ApiAlertRaw[])
+      : ((raw as Record<string, unknown>).items as ApiAlertRaw[] ?? []);
+    return arr.length > 0 ? arr.map(mapApiAlert) : ADMIN_ALERTS;
+  } catch {
+    return ADMIN_ALERTS;
+  }
 }
 
 export async function getSalesLast14d(): Promise<number[]> {
-  return SALES_LAST_14D;
+  if (env.useMocks) return SALES_LAST_14D;
+  try {
+    const raw = await adminFetch<unknown>("/v1/admin/dashboard/sales?days=14");
+    if (!raw) return SALES_LAST_14D;
+    const mapped = mapApiSales(raw);
+    return mapped.length > 0 ? mapped : SALES_LAST_14D;
+  } catch {
+    return SALES_LAST_14D;
+  }
 }
 
-// No /v1/admin/customers endpoint yet → always mock.
 export async function listAdminCustomers(): Promise<AdminCustomer[]> {
-  return ADMIN_CUSTOMERS;
+  if (env.useMocks) return ADMIN_CUSTOMERS;
+  try {
+    const raw = await adminFetch<unknown>("/v1/admin/customers");
+    if (!raw) return ADMIN_CUSTOMERS;
+    const arr: ApiAdminCustomer[] = Array.isArray(raw)
+      ? (raw as ApiAdminCustomer[])
+      : ((raw as Record<string, unknown>).items as ApiAdminCustomer[]
+          ?? (raw as Record<string, unknown>).data as ApiAdminCustomer[]
+          ?? []);
+    return arr.length > 0 ? arr.map(mapApiCustomer) : ADMIN_CUSTOMERS;
+  } catch {
+    return ADMIN_CUSTOMERS;
+  }
 }
 
 export async function getRecentOrders(): Promise<AdminRecentOrder[]> {

@@ -27,13 +27,13 @@ export default async function StorefrontLayout({
           Saltar al contenido
         </a>
         <AnnounceBar messages={announce} />
-        <Header brand={tenant.brand} />
+        <Header brand={tenant.brand} features={tenant.features} />
         <main id="main" className="flex-1 pb-24 lg:pb-0">
           {children}
         </main>
         <Footer brand={tenant.brand} />
         <CartDrawer />
-        <MobileNav />
+        <MobileNav features={tenant.features} />
         <Toaster />
       </CartProvider>
     </div>

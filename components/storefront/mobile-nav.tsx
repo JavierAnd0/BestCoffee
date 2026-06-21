@@ -4,15 +4,21 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Home, Search, Coffee, User, ShoppingBag } from "lucide-react";
 import { useCart } from "./cart-context";
+import type { TenantFeatures } from "@/lib/types";
 
-const ITEMS = [
+const BASE_ITEMS = [
   { href: "/", label: "Inicio", icon: Home, exact: true },
   { href: "/catalogo", label: "Catálogo", icon: Search },
   { href: "/quiz", label: "Quiz", icon: Coffee, fab: true },
-  { href: "/cuenta", label: "Cuenta", icon: User },
 ];
 
-export function MobileNav() {
+const GRID_COLS: Record<number, string> = {
+  3: "grid-cols-3",
+  4: "grid-cols-4",
+  5: "grid-cols-5",
+};
+
+export function MobileNav({ features }: { features?: TenantFeatures }) {
   const pathname = usePathname();
   const { count, open } = useCart();
 
@@ -21,12 +27,19 @@ export function MobileNav() {
     return null;
   }
 
+  const showCart = features?.checkout ?? true;
+  const showAccount = features?.customerAccounts ?? true;
+  const ITEMS = showAccount
+    ? [...BASE_ITEMS, { href: "/cuenta", label: "Cuenta", icon: User }]
+    : BASE_ITEMS;
+  const cols = ITEMS.length + (showCart ? 1 : 0);
+
   return (
     <nav
       aria-label="Navegación principal"
       className="lg:hidden fixed inset-x-0 bottom-0 z-40 bg-background/95 backdrop-blur border-t border-border safe-area-inset"
     >
-      <div className="grid grid-cols-5">
+      <div className={"grid " + (GRID_COLS[cols] ?? "grid-cols-4")}>
         {ITEMS.map((i) => {
           const active = i.exact ? pathname === i.href : pathname.startsWith(i.href);
           const Icon = i.icon;
@@ -59,19 +72,21 @@ export function MobileNav() {
             </Link>
           );
         })}
-        <button
-          onClick={open}
-          className="flex flex-col items-center justify-center py-2.5 gap-0.5 text-muted-foreground hover:text-foreground transition-colors relative"
-          aria-label={`Carrito (${count})`}
-        >
-          <ShoppingBag className="size-5" strokeWidth={1.6} />
-          <span className="text-[10px]">Carrito</span>
-          {count > 0 && (
-            <span className="absolute top-1.5 right-[calc(50%-18px)] size-4 rounded-full bg-accent text-accent-foreground text-[9px] font-semibold grid place-items-center tabular-nums">
-              {count}
-            </span>
-          )}
-        </button>
+        {showCart && (
+          <button
+            onClick={open}
+            className="flex flex-col items-center justify-center py-2.5 gap-0.5 text-muted-foreground hover:text-foreground transition-colors relative"
+            aria-label={`Carrito (${count})`}
+          >
+            <ShoppingBag className="size-5" strokeWidth={1.6} />
+            <span className="text-[10px]">Carrito</span>
+            {count > 0 && (
+              <span className="absolute top-1.5 right-[calc(50%-18px)] size-4 rounded-full bg-accent text-accent-foreground text-[9px] font-semibold grid place-items-center tabular-nums">
+                {count}
+              </span>
+            )}
+          </button>
+        )}
       </div>
     </nav>
   );

@@ -8,7 +8,8 @@ interface Props {
 
 export function SalesChart({ data, height = 180 }: Props) {
   if (data.length === 0) return null;
-  const max = Math.max(...data);
+  // Evita división por cero cuando aún no hay ventas (todas las barras en 0).
+  const max = Math.max(...data, 1);
   const barWidth = 100 / data.length;
   return (
     <div className="w-full">

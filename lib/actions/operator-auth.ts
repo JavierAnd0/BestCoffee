@@ -74,7 +74,10 @@ export async function verifyOperatorMagicLink(
     return { error: message };
   }
 
-  const body = (await res.json().catch(() => ({}))) as { accessToken?: string };
+  const body = (await res.json().catch(() => ({}))) as {
+    accessToken?: string;
+    user?: { isPlatformOwner?: boolean; tenants?: unknown[] };
+  };
   if (!body.accessToken) {
     return { error: "Respuesta inválida del servidor." };
   }
@@ -90,5 +93,38 @@ export async function verifyOperatorMagicLink(
     maxAge: 60 * 60 * 24 * 7, // 7 días, igual que el JWT
   });
 
-  redirect("/admin");
+  // Decide el destino según el rol. La respuesta de verify ya puede traer
+  // isPlatformOwner; si no (backend viejo), lo confirmamos contra /v1/auth/me,
+  // que es la fuente de verdad. Así el routing no depende del shape de verify.
+  const destination = await resolveOperatorHome(
+    body.accessToken,
+    body.user?.isPlatformOwner,
+  );
+  redirect(destination);
+}
+
+/**
+ * Devuelve la ruta de inicio del operador: el dueño de la plataforma va al panel
+ * de superadmin; los operadores de tienda, a su panel admin.
+ */
+async function resolveOperatorHome(
+  token: string,
+  isPlatformOwnerHint?: boolean,
+): Promise<string> {
+  if (isPlatformOwnerHint === true) return "/platform/superadmin";
+
+  // Fallback: preguntar al backend si este operador es dueño de la plataforma.
+  try {
+    const meRes = await fetch(`${env.apiUrlInternal}/v1/auth/me`, {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
+    });
+    if (meRes.ok) {
+      const me = (await meRes.json()) as { isPlatformOwner?: boolean };
+      if (me.isPlatformOwner) return "/platform/superadmin";
+    }
+  } catch {
+    /* si falla, cae al panel admin de tienda */
+  }
+  return "/admin";
 }

@@ -80,6 +80,8 @@ export default async function ProductPage({
               <BuyBlock
                 product={product}
                 subscriptionDiscountPct={tenant.subscriptionDiscountPct}
+                canCheckout={tenant.features.checkout}
+                canSubscribe={tenant.features.subscriptions}
               />
             </div>
           </div>

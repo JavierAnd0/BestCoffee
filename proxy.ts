@@ -19,18 +19,22 @@ export const config = {
 export default function middleware(req: NextRequest) {
   const url = req.nextUrl;
 
-  // ── Auth route guard (/admin + /cuenta require a session) ─────────────────
-  if (url.pathname.startsWith("/admin") || url.pathname.startsWith("/cuenta")) {
+  // ── Auth route guard (/admin + /cuenta + /platform/superadmin require session)
+  const needsSession =
+    url.pathname.startsWith("/admin") ||
+    url.pathname.startsWith("/cuenta") ||
+    url.pathname.startsWith("/platform/superadmin");
+
+  if (needsSession) {
     const session = req.cookies.get("bestcoffee-session")?.value;
     if (!session) {
       const redirectUrl = url.clone();
-      // Operadores acceden por magic link en /acceso; clientes por /login.
-      if (url.pathname.startsWith("/admin")) {
-        redirectUrl.pathname = "/acceso";
-        redirectUrl.search = "";
-      } else {
+      if (url.pathname.startsWith("/cuenta")) {
         redirectUrl.pathname = "/login";
         redirectUrl.searchParams.set("next", url.pathname);
+      } else {
+        redirectUrl.pathname = "/acceso";
+        redirectUrl.search = "";
       }
       return NextResponse.redirect(redirectUrl);
     }
@@ -59,7 +63,9 @@ export default function middleware(req: NextRequest) {
   }
 
   // Tenant host hitting /platform/* directly: bounce back to root.
-  if (tenantSlug && url.pathname.startsWith("/platform")) {
+  // In dev, localhost doubles as both platform host and default tenant — allow
+  // /platform/* to pass through so superadmin is testable without a subdomain.
+  if (tenantSlug && url.pathname.startsWith("/platform") && process.env.NODE_ENV === "production") {
     const rewriteUrl = url.clone();
     rewriteUrl.pathname = "/";
     return NextResponse.redirect(rewriteUrl);

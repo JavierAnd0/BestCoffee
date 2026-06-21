@@ -5,7 +5,7 @@ import { ChevronLeft, Download, RefreshCw, MapPin } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Eyebrow } from "@/components/ui/eyebrow";
-import { getCustomerOrders } from "@/lib/data/account";
+import { getCustomerOrder } from "@/lib/data/account";
 import { ORDER_STATUS_LABEL, type OrderStatus } from "@/lib/mocks/account";
 import { formatCop } from "@/lib/format";
 
@@ -14,24 +14,6 @@ const STATUS_TONE: Record<OrderStatus, string> = {
   SHIPPED: "bg-sky-500/10 text-sky-700 border-sky-500/20",
   DELIVERED: "bg-emerald-500/10 text-emerald-700 border-emerald-500/20",
   CANCELLED: "bg-muted text-muted-foreground border-border",
-};
-
-// Mock line items — API wires real items in phase 3
-const MOCK_ITEMS: Record<string, { name: string; variant: string; qty: number; priceCents: number }[]> = {
-  "ORG-10428": [
-    { name: "Mezcla del alba", variant: "340 g · Grano entero", qty: 2, priceCents: 58_000_00 },
-    { name: "Etiopía Guji", variant: "340 g · Grano entero", qty: 1, priceCents: 72_000_00 },
-  ],
-  "ORG-10390": [
-    { name: "Hairbender", variant: "340 g · Espresso", qty: 1, priceCents: 62_000_00 },
-  ],
-  "ORG-10312": [
-    { name: "Holler Mountain", variant: "340 g · Grano entero", qty: 1, priceCents: 52_000_00 },
-    { name: "Mezcla del alba", variant: "340 g · Molido filtro", qty: 1, priceCents: 58_000_00 },
-  ],
-  "ORG-10288": [
-    { name: "Etiopía Guji", variant: "340 g · Grano entero", qty: 1, priceCents: 72_000_00 },
-  ],
 };
 
 const TIMELINE: Record<OrderStatus, { label: string; done: boolean }[]> = {
@@ -71,13 +53,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function OrderDetailPage({ params }: Props) {
   const { id } = await params;
-  const orders = await getCustomerOrders();
-  const order = orders.find((o) => o.id === id);
+  const order = await getCustomerOrder(id);
   if (!order) notFound();
 
-  const items = MOCK_ITEMS[id] ?? [
-    { name: "Café ORÍGEN", variant: "340 g · Grano entero", qty: order.itemsCount, priceCents: order.totalCents },
-  ];
+  const items = order.items?.length
+    ? order.items
+    : [{ name: "Café ORÍGEN", variant: "340 g · Grano entero", qty: order.itemsCount, priceCents: order.totalCents }];
+
   const subtotal = items.reduce((s, it) => s + it.priceCents * it.qty, 0);
   const shipping = order.fromSubscription ? 0 : 8_000_00;
   const timeline = TIMELINE[order.status];
@@ -118,9 +100,7 @@ export default async function OrderDetailPage({ params }: Props) {
               <div className="flex items-center w-full">
                 <div className={
                   "size-6 rounded-full border-2 shrink-0 grid place-items-center " +
-                  (step.done
-                    ? "bg-foreground border-foreground"
-                    : "border-border bg-background")
+                  (step.done ? "bg-foreground border-foreground" : "border-border bg-background")
                 }>
                   {step.done && (
                     <svg className="size-3 text-background" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -148,9 +128,7 @@ export default async function OrderDetailPage({ params }: Props) {
       {/* Items */}
       <section className="rounded-lg border border-border bg-background">
         <div className="p-5 border-b border-border">
-          <h2 className="font-medium text-sm">
-            Artículos ({items.length})
-          </h2>
+          <h2 className="font-medium text-sm">Artículos ({items.length})</h2>
         </div>
         <ul className="divide-y divide-border">
           {items.map((item, i) => (
@@ -175,7 +153,7 @@ export default async function OrderDetailPage({ params }: Props) {
           <h2 className="font-medium text-sm mb-3">Dirección de envío</h2>
           <div className="flex items-start gap-2 text-sm text-muted-foreground">
             <MapPin className="size-4 shrink-0 mt-0.5 text-accent" />
-            <span>Cra 12 #34-56, Bogotá · Colombia</span>
+            <span>{order.shippingAddress ?? "Cra 12 #34-56, Bogotá · Colombia"}</span>
           </div>
         </section>
 
