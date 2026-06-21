@@ -26,6 +26,11 @@ export function CreateTenantForm() {
   const [ownerEmail, setOwnerEmail] = useState("");
   const [ownerName, setOwnerName] = useState("");
   const [domain, setDomain] = useState("");
+  const [commissionEnabled, setCommissionEnabled] = useState(false);
+  const [commissionPct, setCommissionPct] = useState("");
+
+  // La comisión solo puede habilitarse en PRO/BUSINESS.
+  const commissionAllowed = tier !== "STARTER";
 
   function handleNameChange(v: string) {
     setName(v);
@@ -35,6 +40,7 @@ export function CreateTenantForm() {
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    const pct = commissionPct.trim() === "" ? undefined : parseFloat(commissionPct);
     startTransition(async () => {
       const result = await createTenantAction({
         slug,
@@ -43,6 +49,10 @@ export function CreateTenantForm() {
         ownerEmail,
         ownerName: ownerName || undefined,
         domain: domain || undefined,
+        commissionEnabled: commissionAllowed && commissionEnabled,
+        ...(commissionAllowed && commissionEnabled && pct != null
+          ? { commissionPct: pct }
+          : {}),
       });
       if (result.ok) {
         router.push(`/platform/superadmin/tenants/${result.id}`);
@@ -102,6 +112,50 @@ export function CreateTenantForm() {
             className={inputClass}
           />
         </Field>
+
+        {/* Comisión por ventas — SOLO puede habilitarse aquí, al crear. */}
+        <div className="rounded-md border border-border p-3 space-y-3">
+          <label className="flex items-start justify-between gap-3 cursor-pointer">
+            <span>
+              <span className="block text-sm font-medium">
+                Habilitar cobro por comisión
+              </span>
+              <span className="block text-xs text-muted-foreground">
+                Permite cobrar un % sobre ventas. Solo se puede activar al crear el
+                tenant y requiere plan PRO o BUSINESS. Después podrá cambiar a otra
+                modalidad, pero esta opción no se podrá habilitar más tarde.
+              </span>
+            </span>
+            <input
+              type="checkbox"
+              checked={commissionAllowed && commissionEnabled}
+              disabled={!commissionAllowed}
+              onChange={(e) => setCommissionEnabled(e.target.checked)}
+              className="mt-1 size-4 shrink-0 accent-foreground disabled:opacity-40"
+            />
+          </label>
+
+          {!commissionAllowed && (
+            <p className="text-xs text-muted-foreground">
+              Selecciona plan PRO o BUSINESS para habilitar esta opción.
+            </p>
+          )}
+
+          {commissionAllowed && commissionEnabled && (
+            <Field label="% de comisión inicial" hint="Opcional, lo puedes definir luego">
+              <input
+                type="number"
+                min={0}
+                max={100}
+                step={0.5}
+                value={commissionPct}
+                onChange={(e) => setCommissionPct(e.target.value)}
+                placeholder="8"
+                className={inputClass}
+              />
+            </Field>
+          )}
+        </div>
       </div>
 
       <div className="space-y-4">

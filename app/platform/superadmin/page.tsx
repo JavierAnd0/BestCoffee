@@ -19,6 +19,7 @@ import {
   isOverdue,
   type BillingStatus,
 } from "@/components/platform/billing-badge";
+import { billingScheduleText } from "@/components/platform/billing-summary";
 
 export const metadata: Metadata = { title: "Dashboard · Superadmin" };
 
@@ -30,8 +31,13 @@ interface TenantRow {
   name: string;
   tier: Tier;
   createdAt: string;
+  billingType: "SUBSCRIPTION" | "ONE_TIME" | "COMMISSION";
   billingStatus: BillingStatus;
+  billingCycle: "MONTHLY" | "QUARTERLY" | "ANNUAL" | null;
   currentPeriodEnd: string | null;
+  hasMaintenance: boolean;
+  billingAmountCents: number | null;
+  commissionPct: number | null;
   _count: { memberships: number; orders: number; customers: number };
 }
 
@@ -83,8 +89,11 @@ export default async function SuperadminDashboard() {
       acc.orders += t._count.orders;
       acc.customers += t._count.customers;
       acc.byTier[t.tier] += 1;
-      // MRR solo de tenants con facturación al día (ingreso recurrente real).
-      if (t.billingStatus === "ACTIVE") acc.mrrCents += TIER_MRR_COP[t.tier] * 100;
+      // MRR fijo: tenants al día con cobro fijo. La comisión es ingreso variable
+      // (depende de sus ventas) → no se suma al MRR estimado.
+      if (t.billingStatus === "ACTIVE" && t.billingType !== "COMMISSION") {
+        acc.mrrCents += TIER_MRR_COP[t.tier] * 100;
+      }
       if (t._count.orders > 0) acc.active += 1;
       if (new Date(t.createdAt) >= startOfMonth) acc.newThisMonth += 1;
       return acc;
@@ -103,6 +112,22 @@ export default async function SuperadminDashboard() {
   const recent = [...tenants]
     .sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt))
     .slice(0, 5);
+
+  // Cobros recurrentes (suscripción o pago único con mantenimiento), ordenados
+  // por proximidad del próximo cobro — para el control rutinario mensual.
+  const isRecurring = (t: TenantRow) =>
+    t.billingStatus !== "CANCELLED" &&
+    t.billingStatus !== "INACTIVE" &&
+    (t.billingType === "SUBSCRIPTION" || t.hasMaintenance);
+  const upcomingCharges = tenants
+    .filter(isRecurring)
+    .sort((a, b) => {
+      const da = a.currentPeriodEnd ? +new Date(a.currentPeriodEnd) : Infinity;
+      const db = b.currentPeriodEnd ? +new Date(b.currentPeriodEnd) : Infinity;
+      return da - db;
+    })
+    .slice(0, 6);
+
   // Prioriza problemas de cobro; si no hay, cae a tiendas sin pedidos.
   const billingIssues = tenants.filter(hasBillingIssue);
   const needsAttention = (
@@ -222,6 +247,63 @@ export default async function SuperadminDashboard() {
           </div>
         </div>
       </div>
+
+      {/* Control de cobros — revisión rutinaria de cómo se factura a cada tienda */}
+      <Panel
+        title="Control de cobros"
+        subtitle="Cobros recurrentes ordenados por proximidad"
+        action={{ href: "/platform/superadmin/tenants", label: "Ver todos" }}
+      >
+        {upcomingCharges.length === 0 ? (
+          <p className="px-5 py-8 text-sm text-muted-foreground text-center">
+            No hay cobros recurrentes configurados.
+          </p>
+        ) : (
+          upcomingCharges.map((t) => {
+            const overdue =
+              t.billingStatus === "ACTIVE" && isOverdue(t.currentPeriodEnd);
+            return (
+              <Link
+                key={t.id}
+                href={`/platform/superadmin/tenants/${t.id}`}
+                className="flex items-center justify-between gap-4 px-5 py-3.5 hover:bg-muted/30 transition-colors"
+              >
+                <div className="min-w-0">
+                  <p className="text-sm font-medium truncate">{t.name}</p>
+                  <p className="text-xs text-muted-foreground truncate">
+                    {billingScheduleText({
+                      billingType: t.billingType,
+                      billingStatus: t.billingStatus,
+                      billingCycle: t.billingCycle,
+                      currentPeriodEnd: t.currentPeriodEnd,
+                      hasMaintenance: t.hasMaintenance,
+                      billingAmountCents: t.billingAmountCents,
+                      commissionPct: t.commissionPct,
+                    })}
+                  </p>
+                </div>
+                <div className="flex items-center gap-3 shrink-0 text-right">
+                  <span
+                    className={
+                      "text-xs tabular-nums w-24 " +
+                      (overdue ? "text-red-600 font-medium" : "text-muted-foreground")
+                    }
+                  >
+                    {t.currentPeriodEnd
+                      ? new Date(t.currentPeriodEnd).toLocaleDateString("es-CO", {
+                          day: "2-digit",
+                          month: "short",
+                          year: "2-digit",
+                        })
+                      : "sin fecha"}
+                  </span>
+                  <BillingBadge status={t.billingStatus} />
+                </div>
+              </Link>
+            );
+          })
+        )}
+      </Panel>
 
       <div className="grid lg:grid-cols-2 gap-6">
         {/* Altas recientes */}

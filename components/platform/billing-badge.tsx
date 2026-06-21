@@ -35,6 +35,7 @@ export function BillingBadge({ status }: { status: BillingStatus }) {
 export const BILLING_TYPE_LABEL: Record<string, string> = {
   SUBSCRIPTION: "Suscripción",
   ONE_TIME: "Pago único",
+  COMMISSION: "Comisión por ventas",
 };
 
 export const BILLING_CYCLE_LABEL: Record<string, string> = {

@@ -22,6 +22,8 @@ export interface CreateTenantInput {
   ownerEmail: string;
   ownerName?: string;
   domain?: string;
+  commissionEnabled?: boolean;
+  commissionPct?: number;
 }
 
 export type CreateTenantState =
@@ -73,6 +75,9 @@ export interface UpdateTenantInput {
   billingStartedAt?: string | null;
   currentPeriodEnd?: string | null;
   cancelledAt?: string | null;
+  hasMaintenance?: boolean;
+  billingAmountCents?: number | null;
+  commissionPct?: number;
 }
 
 export type UpdateTenantState =
