@@ -9,7 +9,9 @@ import {
   getDashboardAlerts,
   getRecentOrders,
   getSalesLast14d,
+  getAdminBilling,
 } from "@/lib/data/admin";
+import { CommissionProposalBanner } from "@/components/admin/commission-proposal-banner";
 import { formatCop } from "@/lib/format";
 
 export const metadata: Metadata = { title: "Dashboard · Admin" };
@@ -33,11 +35,12 @@ const SEVERITY_TONE = {
 } as const;
 
 export default async function AdminDashboard() {
-  const [kpis, alerts, recent, sales] = await Promise.all([
+  const [kpis, alerts, recent, sales, billing] = await Promise.all([
     getDashboardKpis(),
     getDashboardAlerts(),
     getRecentOrders(),
     getSalesLast14d(),
+    getAdminBilling(),
   ]);
   return (
     <div className="space-y-8">
@@ -52,6 +55,13 @@ export default async function AdminDashboard() {
           Hoy · {new Date().toLocaleDateString("es-CO", { weekday: "long", day: "numeric", month: "long" })}
         </div>
       </header>
+
+      {billing?.pendingCommission && (
+        <CommissionProposalBanner
+          currentPct={billing.pendingCommission.currentPct}
+          proposedPct={billing.pendingCommission.proposedPct}
+        />
+      )}
 
       <section className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {kpis.map((k) => (

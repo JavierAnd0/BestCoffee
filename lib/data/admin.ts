@@ -169,6 +169,27 @@ async function adminFetch<T>(path: string): Promise<T | null> {
   return res.json() as Promise<T>;
 }
 
+// ── Facturación del tenant (cómo le cobra la plataforma + comisión) ──────────
+
+export interface AdminBilling {
+  billingType: "SUBSCRIPTION" | "ONE_TIME" | "COMMISSION";
+  commissionPct: number | null;
+  pendingCommission: {
+    currentPct: number | null;
+    proposedPct: number;
+    proposedAt: string | null;
+  } | null;
+}
+
+export async function getAdminBilling(): Promise<AdminBilling | null> {
+  if (env.useMocks) return null;
+  try {
+    return await adminFetch<AdminBilling>("/v1/admin/billing");
+  } catch {
+    return null;
+  }
+}
+
 // ── Dashboard KPI mappers ─────────────────────────────────────────────────────
 
 interface ApiKpiRaw {

@@ -9,11 +9,8 @@ import {
   type TierFeatures,
 } from "@/components/platform/tenant-settings-form";
 import { TenantBillingForm } from "@/components/platform/tenant-billing-form";
+import { BillingSummary } from "@/components/platform/billing-summary";
 import {
-  BillingBadge,
-  isOverdue,
-  BILLING_TYPE_LABEL,
-  BILLING_CYCLE_LABEL,
   type BillingStatus,
 } from "@/components/platform/billing-badge";
 
@@ -40,12 +37,17 @@ interface TenantDetail {
   features: Record<string, unknown>;
   branding: Record<string, unknown>;
   createdAt: string;
-  billingType: "SUBSCRIPTION" | "ONE_TIME";
+  billingType: "SUBSCRIPTION" | "ONE_TIME" | "COMMISSION";
   billingStatus: BillingStatus;
   billingCycle: "MONTHLY" | "QUARTERLY" | "ANNUAL" | null;
   billingStartedAt: string | null;
   currentPeriodEnd: string | null;
   cancelledAt: string | null;
+  hasMaintenance: boolean;
+  billingAmountCents: number | null;
+  commissionEnabled: boolean;
+  commissionPct: number | null;
+  pendingCommissionPct: number | null;
   _count: { orders: number; customers: number; subscriptions: number };
   domains: Array<{ id: string; domain: string; isPrimary: boolean; verified: boolean }>;
   memberships: Array<{
@@ -120,33 +122,23 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
         />
       </Section>
 
-      {/* Facturación hacia la plataforma — editable */}
-      <Section title="Facturación">
-        <div className="flex flex-wrap items-center gap-3 -mt-1 text-sm">
-          <BillingBadge status={tenant.billingStatus} />
-          <span className="text-muted-foreground">
-            {BILLING_TYPE_LABEL[tenant.billingType]}
-            {tenant.billingType === "SUBSCRIPTION" && tenant.billingCycle
-              ? ` · ${BILLING_CYCLE_LABEL[tenant.billingCycle]}`
-              : ""}
-          </span>
-          {tenant.billingType === "SUBSCRIPTION" && tenant.currentPeriodEnd && (
-            <span
-              className={
-                isOverdue(tenant.currentPeriodEnd) && tenant.billingStatus !== "CANCELLED"
-                  ? "text-red-600 font-medium"
-                  : "text-muted-foreground"
-              }
-            >
-              {isOverdue(tenant.currentPeriodEnd) ? "Venció el " : "Renueva el "}
-              {new Date(tenant.currentPeriodEnd).toLocaleDateString("es-CO", {
-                day: "numeric", month: "long", year: "numeric",
-              })}
-            </span>
-          )}
-        </div>
+      {/* Facturación hacia la plataforma — vista de control + edición */}
+      <Section title="Control de cobros">
+        <BillingSummary
+          data={{
+            billingType: tenant.billingType,
+            billingStatus: tenant.billingStatus,
+            billingCycle: tenant.billingCycle,
+            currentPeriodEnd: tenant.currentPeriodEnd,
+            hasMaintenance: tenant.hasMaintenance,
+            billingAmountCents: tenant.billingAmountCents,
+            commissionPct: tenant.commissionPct,
+          }}
+        />
         <TenantBillingForm
           tenantId={tenant.id}
+          tier={tenant.tier as Tier}
+          commissionEnabled={tenant.commissionEnabled}
           initial={{
             billingType: tenant.billingType,
             billingStatus: tenant.billingStatus,
@@ -154,6 +146,10 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
             billingStartedAt: tenant.billingStartedAt,
             currentPeriodEnd: tenant.currentPeriodEnd,
             cancelledAt: tenant.cancelledAt,
+            hasMaintenance: tenant.hasMaintenance,
+            billingAmountCents: tenant.billingAmountCents,
+            commissionPct: tenant.commissionPct,
+            pendingCommissionPct: tenant.pendingCommissionPct,
           }}
         />
       </Section>
