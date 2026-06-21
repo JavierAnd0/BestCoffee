@@ -2,6 +2,7 @@ import Link from "next/link";
 import { LogOut } from "lucide-react";
 import { getCurrentCustomer } from "@/lib/data/account";
 import { logoutAction } from "@/lib/actions/auth";
+import { requireFeature } from "@/lib/data/feature-guard";
 
 const NAV = [
   { href: "/cuenta", label: "Resumen" },
@@ -12,6 +13,8 @@ const NAV = [
 ];
 
 export default async function AccountLayout({ children }: { children: React.ReactNode }) {
+  // Las cuentas de cliente son una capacidad de plan (PRO+).
+  await requireFeature("customerAccounts");
   const customer = await getCurrentCustomer();
   return (
     <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-12 grid lg:grid-cols-[240px_1fr] gap-12">

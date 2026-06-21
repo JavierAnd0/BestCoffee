@@ -3,10 +3,12 @@ import type { Metadata } from "next";
 import { Check, Truck, Coffee } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Eyebrow } from "@/components/ui/eyebrow";
+import { requireFeature } from "@/lib/data/feature-guard";
 
 export const metadata: Metadata = { title: "Confirmación de pedido" };
 
-export default function ConfirmationPage() {
+export default async function ConfirmationPage() {
+  await requireFeature("checkout");
   // Mock order id; in production this comes from the URL or query param after
   // a successful Stripe redirect.
   const orderId = "ORG-10428";

@@ -4,6 +4,7 @@ import { Eyebrow } from "@/components/ui/eyebrow";
 import { Button } from "@/components/ui/button";
 import { ProductCard } from "@/components/storefront/product-card";
 import { listProducts } from "@/lib/data/products";
+import { requireFeature } from "@/lib/data/feature-guard";
 
 export const metadata: Metadata = { title: "Suscripciones" };
 
@@ -33,6 +34,7 @@ const PERKS = [
 ];
 
 export default async function SuscripcionesPage() {
+  await requireFeature("subscriptions");
   const products = await listProducts();
   const subProducts = products.filter((p) => p.subscriptionAvailability !== "NO").slice(0, 4);
 
