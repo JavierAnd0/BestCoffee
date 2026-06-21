@@ -5,6 +5,7 @@
 import type {
   Product,
   Tenant,
+  TenantFeatures,
   AnnounceMessage,
   HeroContent,
 } from "../types";
@@ -106,8 +107,48 @@ export function mapProduct(p: ApiProduct): Product {
   };
 }
 
+// Baseline por tier, espejo de TIER_FEATURES del backend. Solo se usa como
+// fallback si el backend (versión vieja) no envía `features` ya resueltas.
+const TIER_FALLBACK: Record<string, TenantFeatures> = {
+  STARTER: {
+    blog: true, catalog: true, checkout: false, customerAccounts: false,
+    subscriptions: false, discountCodes: false, reviews: false,
+    gifts: false, customDomain: false, maxProducts: 10,
+  },
+  PRO: {
+    blog: true, catalog: true, checkout: true, customerAccounts: true,
+    subscriptions: true, discountCodes: true, reviews: true,
+    gifts: false, customDomain: false, maxProducts: 50,
+  },
+  BUSINESS: {
+    blog: true, catalog: true, checkout: true, customerAccounts: true,
+    subscriptions: true, discountCodes: true, reviews: true,
+    gifts: true, customDomain: true, maxProducts: -1,
+  },
+};
+
+function resolveFeatures(tier: string, raw: Record<string, unknown>): TenantFeatures {
+  const base = TIER_FALLBACK[tier] ?? TIER_FALLBACK.STARTER;
+  const bool = (k: keyof TenantFeatures) =>
+    typeof raw[k] === "boolean" ? (raw[k] as boolean) : (base[k] as boolean);
+  return {
+    blog: bool("blog"),
+    catalog: bool("catalog"),
+    checkout: bool("checkout"),
+    customerAccounts: bool("customerAccounts"),
+    subscriptions: bool("subscriptions"),
+    discountCodes: bool("discountCodes"),
+    reviews: bool("reviews"),
+    gifts: bool("gifts"),
+    customDomain: bool("customDomain"),
+    maxProducts:
+      typeof raw.maxProducts === "number" ? raw.maxProducts : base.maxProducts,
+  };
+}
+
 export function mapTenant(t: ApiTenant): Tenant {
   const features = t.features ?? {};
+  const tier = (t.tier as Tenant["tier"]) ?? "STARTER";
   const num = (k: string, fallback: number) =>
     typeof features[k] === "number" ? (features[k] as number) : fallback;
   return {
@@ -115,6 +156,8 @@ export function mapTenant(t: ApiTenant): Tenant {
     name: t.name,
     brand: t.name,
     tagline: "Tostadores de café de especialidad",
+    tier,
+    features: resolveFeatures(tier, features),
     // These may move into the API settings endpoint later; sensible defaults
     // matching the seeded tenant for now.
     freeShippingThresholdCents: num("freeShippingThresholdCents", 150_000_00),

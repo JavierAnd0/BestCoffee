@@ -32,22 +32,7 @@ export async function platformFetch<T>(
   return res.json() as Promise<T>;
 }
 
-// Versión client-side (usa cookie directamente como header — el browser la envía)
-export async function platformFetchClient<T>(
-  path: string,
-  options?: RequestInit,
-): Promise<T> {
-  const res = await fetch(`${env.apiUrl}${path}`, {
-    ...options,
-    credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-      ...(options?.headers as Record<string, string>),
-    },
-  });
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
-    throw new Error(body?.message ?? `Error ${res.status}`);
-  }
-  return res.json() as Promise<T>;
-}
+// Nota: las mutaciones del panel (crear tenant, impersonar) NO usan un cliente
+// de navegador. El PlatformGuard del backend solo lee `Authorization: Bearer`, no
+// cookies, así que esas acciones viven en lib/actions/platform.ts como server
+// actions que leen la cookie httpOnly y la reenvían como Bearer.

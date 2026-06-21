@@ -60,11 +60,26 @@ export interface Collection {
   description?: string;
 }
 
+export interface TenantFeatures {
+  blog: boolean;
+  catalog: boolean;
+  checkout: boolean;
+  customerAccounts: boolean;
+  subscriptions: boolean;
+  discountCodes: boolean;
+  reviews: boolean;
+  gifts: boolean;
+  customDomain: boolean;
+  maxProducts: number;
+}
+
 export interface Tenant {
   slug: string;
   name: string;
   brand: string;
   tagline: string;
+  tier: "STARTER" | "PRO" | "BUSINESS";
+  features: TenantFeatures;
   freeShippingThresholdCents: number;
   subscriptionDiscountPct: number;
   currency: "COP";

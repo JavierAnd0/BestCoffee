@@ -5,30 +5,53 @@ import { useState } from "react";
 import { Search, User, ShoppingBag, Menu, X } from "lucide-react";
 import { Logo } from "./logo";
 import { useCart } from "./cart-context";
+import type { TenantFeatures } from "@/lib/types";
 
-const LEFT_LINKS = [
-  { href: "/catalogo", label: "Catálogo" },
-  { href: "/suscripciones", label: "Suscripciones" },
-  { href: "/tiendas", label: "Tiendas" },
-];
+type NavLink = { href: string; label: string };
 
-const RIGHT_LINKS = [{ href: "/blog", label: "Aprende" }];
+// Links que dependen de una feature. Si la tienda no la tiene (tier bajo),
+// el enlace no se muestra para no llevar a páginas vacías o bloqueadas.
+function buildLinks(features?: TenantFeatures) {
+  const subs = features?.subscriptions ?? true;
 
-const MOBILE_LINKS = [
-  { href: "/catalogo", label: "Catálogo" },
-  { href: "/suscripciones", label: "Suscripciones" },
-  { href: "/quiz", label: "Encuentra tu café" },
-  { href: "/blog", label: "Blog" },
-  { href: "/guias", label: "Guías de preparación" },
-  { href: "/tiendas", label: "Tiendas" },
-  { href: "/historia", label: "Nuestra historia" },
-  { href: "/impacto", label: "Impacto" },
-  { href: "/mayoristas", label: "Mayoristas" },
-];
+  const left: NavLink[] = [
+    { href: "/catalogo", label: "Catálogo" },
+    ...(subs ? [{ href: "/suscripciones", label: "Suscripciones" }] : []),
+    { href: "/tiendas", label: "Tiendas" },
+  ];
 
-export function Header({ brand }: { brand?: string }) {
+  const right: NavLink[] = [{ href: "/blog", label: "Aprende" }];
+
+  const mobile: NavLink[] = [
+    { href: "/catalogo", label: "Catálogo" },
+    ...(subs ? [{ href: "/suscripciones", label: "Suscripciones" }] : []),
+    { href: "/quiz", label: "Encuentra tu café" },
+    { href: "/blog", label: "Blog" },
+    { href: "/guias", label: "Guías de preparación" },
+    { href: "/tiendas", label: "Tiendas" },
+    { href: "/historia", label: "Nuestra historia" },
+    { href: "/impacto", label: "Impacto" },
+    { href: "/mayoristas", label: "Mayoristas" },
+  ];
+
+  return { left, right, mobile };
+}
+
+export function Header({
+  brand,
+  features,
+}: {
+  brand?: string;
+  features?: TenantFeatures;
+}) {
   const { count, open } = useCart();
   const [menuOpen, setMenuOpen] = useState(false);
+
+  const { left: LEFT_LINKS, right: RIGHT_LINKS, mobile: MOBILE_LINKS } =
+    buildLinks(features);
+  // Catálogo de solo lectura (STARTER): sin carrito. Cuentas de cliente: PRO+.
+  const showCart = features?.checkout ?? true;
+  const showAccount = features?.customerAccounts ?? true;
 
   return (
     <header className="border-b border-line bg-background/92 backdrop-blur-sm sticky top-0 z-30">
@@ -43,16 +66,20 @@ export function Header({ brand }: { brand?: string }) {
             <Menu className="size-5" />
           </button>
           <Logo size={20} brand={brand} />
-          <button
-            onClick={open}
-            aria-label={`Carrito (${count})`}
-            className="relative flex items-center gap-1.5 text-foreground/80 hover:text-foreground"
-          >
-            <ShoppingBag className="size-5" />
-            {count > 0 && (
-              <span className="text-xs font-semibold tabular-nums">{count}</span>
-            )}
-          </button>
+          {showCart ? (
+            <button
+              onClick={open}
+              aria-label={`Carrito (${count})`}
+              className="relative flex items-center gap-1.5 text-foreground/80 hover:text-foreground"
+            >
+              <ShoppingBag className="size-5" />
+              {count > 0 && (
+                <span className="text-xs font-semibold tabular-nums">{count}</span>
+              )}
+            </button>
+          ) : (
+            <span className="w-5" />
+          )}
         </div>
 
         {/* Desktop: nav | logo | actions */}
@@ -84,19 +111,23 @@ export function Header({ brand }: { brand?: string }) {
             <button aria-label="Buscar" className="text-foreground/80 hover:text-foreground">
               <Search className="size-[18px]" />
             </button>
-            <Link href="/cuenta" aria-label="Cuenta" className="text-foreground/80 hover:text-foreground">
-              <User className="size-[18px]" />
-            </Link>
-            <button
-              onClick={open}
-              aria-label={`Carrito (${count})`}
-              className="relative flex items-center gap-1.5 text-foreground/80 hover:text-foreground"
-            >
-              <ShoppingBag className="size-[18px]" />
-              {count > 0 && (
-                <span className="text-xs font-semibold tabular-nums">{count}</span>
-              )}
-            </button>
+            {showAccount && (
+              <Link href="/cuenta" aria-label="Cuenta" className="text-foreground/80 hover:text-foreground">
+                <User className="size-[18px]" />
+              </Link>
+            )}
+            {showCart && (
+              <button
+                onClick={open}
+                aria-label={`Carrito (${count})`}
+                className="relative flex items-center gap-1.5 text-foreground/80 hover:text-foreground"
+              >
+                <ShoppingBag className="size-[18px]" />
+                {count > 0 && (
+                  <span className="text-xs font-semibold tabular-nums">{count}</span>
+                )}
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -130,14 +161,16 @@ export function Header({ brand }: { brand?: string }) {
                 {l.label}
               </Link>
             ))}
-            <Link
-              href="/cuenta"
-              onClick={() => setMenuOpen(false)}
-              className="mt-6 block rounded-md px-3 py-3 text-base font-medium border border-border hover:bg-muted transition-colors"
-            >
-              <User className="size-4 inline mr-2" />
-              Mi cuenta
-            </Link>
+            {showAccount && (
+              <Link
+                href="/cuenta"
+                onClick={() => setMenuOpen(false)}
+                className="mt-6 block rounded-md px-3 py-3 text-base font-medium border border-border hover:bg-muted transition-colors"
+              >
+                <User className="size-4 inline mr-2" />
+                Mi cuenta
+              </Link>
+            )}
           </nav>
         </div>
       )}

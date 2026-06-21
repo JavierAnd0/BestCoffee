@@ -3,12 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { platformFetchClient } from "@/lib/api/platform";
-
-interface CreateTenantResult {
-  id: string;
-  slug: string;
-}
+import { createTenantAction } from "@/lib/actions/platform";
 
 function slugify(str: string) {
   return str
@@ -41,25 +36,19 @@ export function CreateTenantForm() {
     e.preventDefault();
     setError(null);
     startTransition(async () => {
-      try {
-        const result = await platformFetchClient<CreateTenantResult>(
-          "/v1/platform/tenants",
-          {
-            method: "POST",
-            body: JSON.stringify({
-              slug,
-              name,
-              tier,
-              ownerEmail,
-              ownerName: ownerName || undefined,
-              domain: domain || undefined,
-            }),
-          },
-        );
+      const result = await createTenantAction({
+        slug,
+        name,
+        tier,
+        ownerEmail,
+        ownerName: ownerName || undefined,
+        domain: domain || undefined,
+      });
+      if (result.ok) {
         router.push(`/platform/superadmin/tenants/${result.id}`);
         router.refresh();
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Error al crear el tenant");
+      } else {
+        setError(result.error);
       }
     });
   }

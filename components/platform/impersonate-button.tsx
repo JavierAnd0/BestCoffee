@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { platformFetchClient } from "@/lib/api/platform";
+import { impersonateTenantAction } from "@/lib/actions/platform";
 
 export function ImpersonateButton({ tenantId, tenantName }: { tenantId: string; tenantName: string }) {
   const router = useRouter();
@@ -13,18 +13,15 @@ export function ImpersonateButton({ tenantId, tenantName }: { tenantId: string; 
   function handleImpersonate() {
     setError(null);
     startTransition(async () => {
-      try {
-        const { accessToken } = await platformFetchClient<{ accessToken: string }>(
-          `/v1/platform/tenants/${tenantId}/impersonate`,
-          { method: "POST" },
-        );
+      const result = await impersonateTenantAction(tenantId);
+      if (result.ok) {
         // Guardar el token de impersonación en sessionStorage.
         // El cliente HTTP del admin lo leerá primero antes de usar la cookie.
-        sessionStorage.setItem("impersonation_token", accessToken);
+        sessionStorage.setItem("impersonation_token", result.accessToken);
         sessionStorage.setItem("impersonation_tenant", tenantName);
         router.push("/admin");
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Error al impersonar");
+      } else {
+        setError(result.error);
       }
     });
   }

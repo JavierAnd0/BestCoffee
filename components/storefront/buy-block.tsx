@@ -27,9 +27,15 @@ const FREQUENCIES = [
 export function BuyBlock({
   product,
   subscriptionDiscountPct,
+  canCheckout = true,
+  canSubscribe = true,
 }: {
   product: Product;
   subscriptionDiscountPct: number;
+  /** Plan STARTER: catálogo de solo lectura → sin carrito ni compra. */
+  canCheckout?: boolean;
+  /** Suscripciones de café (PRO+). Si false, solo compra única. */
+  canSubscribe?: boolean;
 }) {
   const sizes = useMemo(
     () => Array.from(new Set(product.variants.map((v) => v.sizeGrams))).sort((a, b) => a - b),
@@ -43,7 +49,9 @@ export function BuyBlock({
   const [size, setSize] = useState(sizes[0]);
   const [grind, setGrind] = useState<ProductVariant["grind"]>(grinds[0]);
   const [qty, setQty] = useState(1);
-  const [mode, setMode] = useState<"once" | "sub">("sub");
+  const [mode, setMode] = useState<"once" | "sub">(
+    canSubscribe ? "sub" : "once",
+  );
   const [freqDays, setFreqDays] = useState(14);
   const cart = useCart();
 
@@ -52,8 +60,9 @@ export function BuyBlock({
     product.variants.find((v) => v.sizeGrams === size) ??
     product.variants[0];
 
-  const isSubOnly = product.subscriptionAvailability === "SUBSCRIPTION_ONLY";
-  const isSub = mode === "sub" || isSubOnly;
+  const isSubOnly =
+    canSubscribe && product.subscriptionAvailability === "SUBSCRIPTION_ONLY";
+  const isSub = canSubscribe && (mode === "sub" || isSubOnly);
   const unit =
     isSub && variant.priceSubscriptionCents != null
       ? variant.priceSubscriptionCents
@@ -66,6 +75,50 @@ export function BuyBlock({
     d.setDate(d.getDate() + 5);
     return d.toLocaleDateString("es-CO", { day: "numeric", month: "short" });
   }, []);
+
+  // Plan STARTER: catálogo informativo. Mostramos opciones y precio, pero no
+  // hay carrito ni compra — el visitante debe contactar a la tienda.
+  if (!canCheckout) {
+    const fromPrice = Math.min(
+      ...product.variants.map((v) => v.priceOneTimeCents),
+    );
+    return (
+      <div className="space-y-7">
+        <VariantSection label="Tamaño">
+          <PillRow>
+            {sizes.map((s) => (
+              <Pill key={s} active={s === size} onClick={() => setSize(s)}>
+                {s >= 1000 ? `${s / 1000} kg` : `${s} g`}
+              </Pill>
+            ))}
+          </PillRow>
+        </VariantSection>
+
+        <VariantSection label="Molienda">
+          <PillRow>
+            {grinds.map((g) => (
+              <Pill key={g} active={g === grind} onClick={() => setGrind(g)}>
+                {GRIND_LABEL[g]}
+              </Pill>
+            ))}
+          </PillRow>
+        </VariantSection>
+
+        <div className="rounded-md border border-border bg-muted/40 p-5">
+          <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+            Precio
+          </div>
+          <div className="mt-1 font-display text-3xl font-semibold tabular-nums">
+            {formatCop(variant?.priceOneTimeCents ?? fromPrice)}
+          </div>
+          <p className="mt-3 text-sm text-muted-foreground">
+            Para realizar tu pedido, contáctanos directamente. La compra en línea
+            no está disponible en esta tienda.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-7">
@@ -99,7 +152,7 @@ export function BuyBlock({
               subtitle={formatCop(variant.priceOneTimeCents)}
             />
           )}
-          {variant.priceSubscriptionCents != null && (
+          {canSubscribe && variant.priceSubscriptionCents != null && (
             <ModeCard
               active={mode === "sub" || isSubOnly}
               onClick={() => setMode("sub")}
