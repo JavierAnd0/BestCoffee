@@ -4,6 +4,7 @@ import { Plus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { platformFetch } from "@/lib/api/platform";
+import { BillingBadge, type BillingStatus } from "@/components/platform/billing-badge";
 
 export const metadata: Metadata = { title: "Tenants · Superadmin" };
 
@@ -13,6 +14,7 @@ interface TenantRow {
   name: string;
   tier: "STARTER" | "PRO" | "BUSINESS";
   createdAt: string;
+  billingStatus: BillingStatus;
   _count: { memberships: number; orders: number; customers: number };
 }
 
@@ -44,6 +46,7 @@ export default async function TenantsPage() {
               <th className="text-left px-4 py-3 font-medium text-muted-foreground">Nombre</th>
               <th className="text-left px-4 py-3 font-medium text-muted-foreground">Slug</th>
               <th className="text-left px-4 py-3 font-medium text-muted-foreground">Tier</th>
+              <th className="text-left px-4 py-3 font-medium text-muted-foreground">Facturación</th>
               <th className="text-right px-4 py-3 font-medium text-muted-foreground">Miembros</th>
               <th className="text-right px-4 py-3 font-medium text-muted-foreground">Pedidos</th>
               <th className="text-right px-4 py-3 font-medium text-muted-foreground">Clientes</th>
@@ -58,6 +61,9 @@ export default async function TenantsPage() {
                 <td className="px-4 py-3 text-muted-foreground font-mono text-xs">{t.slug}</td>
                 <td className="px-4 py-3">
                   <Badge className={TIER_TONE[t.tier]}>{t.tier}</Badge>
+                </td>
+                <td className="px-4 py-3">
+                  <BillingBadge status={t.billingStatus} />
                 </td>
                 <td className="px-4 py-3 text-right tabular-nums">{t._count.memberships}</td>
                 <td className="px-4 py-3 text-right tabular-nums">{t._count.orders}</td>
@@ -77,7 +83,7 @@ export default async function TenantsPage() {
             ))}
             {tenants.length === 0 && (
               <tr>
-                <td colSpan={8} className="px-4 py-12 text-center text-muted-foreground text-sm">
+                <td colSpan={9} className="px-4 py-12 text-center text-muted-foreground text-sm">
                   No hay tenants todavía.{" "}
                   <Link href="/platform/superadmin/tenants/new" className="text-primary hover:underline">
                     Crear el primero

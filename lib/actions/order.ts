@@ -38,8 +38,7 @@ export async function placeOrderAction(
     store.get("bestcoffee-session")?.value ??
     store.get("customer_token")?.value;
 
-  const tenantSlug =
-    process.env.DEFAULT_TENANT_SLUG ?? "origen";
+  const tenantSlug = env.defaultTenantSlug;
 
   const body: Record<string, unknown> = {
     customerEmail: input.contact.email,

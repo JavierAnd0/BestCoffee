@@ -66,6 +66,13 @@ export interface UpdateTenantInput {
   tier?: string;
   features?: Record<string, unknown>;
   branding?: Record<string, unknown>;
+  // Facturación (ISO strings o null para limpiar fechas)
+  billingType?: string;
+  billingStatus?: string;
+  billingCycle?: string | null;
+  billingStartedAt?: string | null;
+  currentPeriodEnd?: string | null;
+  cancelledAt?: string | null;
 }
 
 export type UpdateTenantState =

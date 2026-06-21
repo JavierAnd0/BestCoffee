@@ -19,7 +19,7 @@ export async function mpConnectAction(): Promise<MpConnectResult> {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "X-Tenant-Slug": process.env.DEFAULT_TENANT_SLUG ?? "origen",
+        "X-Tenant-Slug": env.defaultTenantSlug,
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
       cache: "no-store",
