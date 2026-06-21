@@ -54,7 +54,7 @@ export async function apiServer() {
   const h = await headers();
   const c = await cookies();
 
-  const tenant = h.get("x-tenant-slug") ?? "origen";
+  const tenant = h.get("x-tenant-slug") ?? env.defaultTenantSlug;
   const token = c.get("bestcoffee-session")?.value ?? null;
 
   // Prefer the internal URL when the front is colocated with the API in a
@@ -76,10 +76,13 @@ export function apiClient() {
   client.use(
     attachHeaders(
       // Tenant from <html data-tenant> set by storefront layout; falls back to
-      // origen so dev works without subdomain.
+      // the configured default slug so dev works without subdomain.
       () => {
         if (typeof document === "undefined") return null;
-        return document.querySelector("[data-tenant]")?.getAttribute("data-tenant") ?? "origen";
+        return (
+          document.querySelector("[data-tenant]")?.getAttribute("data-tenant") ??
+          env.defaultTenantSlug
+        );
       },
       // Token from a non-HttpOnly cookie mirror; in production we may move this
       // to an Authorization header set by middleware on every request.

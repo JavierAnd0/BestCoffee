@@ -8,13 +8,14 @@ import { Toaster } from "@/components/ui/toast";
 import { getAnnounceMessages } from "@/lib/data/content";
 import { getCurrentTenant } from "@/lib/data/tenant";
 import { getTenantSlug } from "@/lib/tenant";
+import { env } from "@/lib/env";
 
 export default async function StorefrontLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const slug = (await getTenantSlug()) ?? "origen";
+  const slug = (await getTenantSlug()) ?? env.defaultTenantSlug;
   const [tenant, announce] = await Promise.all([getCurrentTenant(), getAnnounceMessages()]);
 
   return (

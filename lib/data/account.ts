@@ -22,7 +22,7 @@ async function authHeaders() {
     c.get("bestcoffee-session")?.value ?? c.get("customer_token")?.value;
   return {
     token,
-    tenantSlug: h.get("x-tenant-slug") ?? "origen",
+    tenantSlug: h.get("x-tenant-slug") ?? env.defaultTenantSlug,
   };
 }
 

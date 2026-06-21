@@ -14,6 +14,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatCop } from "@/lib/format";
 import { platformFetch } from "@/lib/api/platform";
+import {
+  BillingBadge,
+  isOverdue,
+  type BillingStatus,
+} from "@/components/platform/billing-badge";
 
 export const metadata: Metadata = { title: "Dashboard · Superadmin" };
 
@@ -25,6 +30,8 @@ interface TenantRow {
   name: string;
   tier: Tier;
   createdAt: string;
+  billingStatus: BillingStatus;
+  currentPeriodEnd: string | null;
   _count: { memberships: number; orders: number; customers: number };
 }
 
@@ -50,18 +57,34 @@ const TIER_MRR_COP: Record<Tier, number> = {
   BUSINESS: 450_000,
 };
 
+const BILLING_ATTENTION_LABEL: Record<BillingStatus, string> = {
+  ACTIVE: "Renovación vencida",
+  PAST_DUE: "Pago pendiente",
+  CANCELLED: "Suscripción cancelada",
+  INACTIVE: "Cuenta inactiva",
+};
+
 export default async function SuperadminDashboard() {
   const tenants = await platformFetch<TenantRow[]>("/v1/platform/tenants");
 
   const now = new Date();
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
+  // Una tienda con problema de cobro: pago pendiente, inactiva/cancelada, o
+  // suscripción activa pero con renovación vencida.
+  const hasBillingIssue = (t: TenantRow) =>
+    t.billingStatus === "PAST_DUE" ||
+    t.billingStatus === "INACTIVE" ||
+    t.billingStatus === "CANCELLED" ||
+    (t.billingStatus === "ACTIVE" && isOverdue(t.currentPeriodEnd));
+
   const stats = tenants.reduce(
     (acc, t) => {
       acc.orders += t._count.orders;
       acc.customers += t._count.customers;
       acc.byTier[t.tier] += 1;
-      acc.mrrCents += TIER_MRR_COP[t.tier] * 100;
+      // MRR solo de tenants con facturación al día (ingreso recurrente real).
+      if (t.billingStatus === "ACTIVE") acc.mrrCents += TIER_MRR_COP[t.tier] * 100;
       if (t._count.orders > 0) acc.active += 1;
       if (new Date(t.createdAt) >= startOfMonth) acc.newThisMonth += 1;
       return acc;
@@ -80,11 +103,14 @@ export default async function SuperadminDashboard() {
   const recent = [...tenants]
     .sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt))
     .slice(0, 5);
-  // Tiendas sin actividad (cero pedidos) — candidatas a seguimiento.
-  const needsAttention = tenants
-    .filter((t) => t._count.orders === 0)
-    .sort((a, b) => +new Date(a.createdAt) - +new Date(b.createdAt))
-    .slice(0, 5);
+  // Prioriza problemas de cobro; si no hay, cae a tiendas sin pedidos.
+  const billingIssues = tenants.filter(hasBillingIssue);
+  const needsAttention = (
+    billingIssues.length > 0
+      ? billingIssues
+      : tenants.filter((t) => t._count.orders === 0)
+  ).slice(0, 5);
+  const attentionIsBilling = billingIssues.length > 0;
 
   return (
     <div className="space-y-8">
@@ -235,11 +261,15 @@ export default async function SuperadminDashboard() {
         {/* Necesitan atención */}
         <Panel
           title="Necesitan atención"
-          subtitle="Tiendas sin pedidos todavía"
+          subtitle={
+            attentionIsBilling
+              ? "Problemas de cobro a revisar"
+              : "Tiendas sin pedidos todavía"
+          }
         >
           {needsAttention.length === 0 ? (
             <p className="px-5 py-8 text-sm text-muted-foreground text-center">
-              🎉 Todas las tiendas tienen actividad.
+              🎉 Todo en orden: cobros al día y tiendas con actividad.
             </p>
           ) : (
             needsAttention.map((t) => (
@@ -255,11 +285,19 @@ export default async function SuperadminDashboard() {
                   <div className="min-w-0">
                     <p className="text-sm font-medium truncate">{t.name}</p>
                     <p className="text-xs text-muted-foreground">
-                      {t._count.customers} clientes · 0 pedidos
+                      {attentionIsBilling
+                        ? t.billingStatus === "ACTIVE"
+                          ? "Renovación vencida"
+                          : BILLING_ATTENTION_LABEL[t.billingStatus]
+                        : `${t._count.customers} clientes · 0 pedidos`}
                     </p>
                   </div>
                 </div>
-                <ArrowUpRight className="size-4 text-muted-foreground shrink-0" />
+                {attentionIsBilling ? (
+                  <BillingBadge status={t.billingStatus} />
+                ) : (
+                  <ArrowUpRight className="size-4 text-muted-foreground shrink-0" />
+                )}
               </Link>
             ))
           )}

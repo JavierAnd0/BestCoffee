@@ -30,6 +30,11 @@ export const env = {
   // after switching) to call the real API.
   useMocks: optional("USE_MOCKS", "true") === "true",
 
+  // Tenant que sirve este front. En el modelo "una tienda por deploy", cada
+  // cliente clona el repo y setea su slug aquí; toda llamada a la API lo manda
+  // como X-Tenant-Slug. En dev sin subdominio cae a "origen".
+  defaultTenantSlug: optional("DEFAULT_TENANT_SLUG", "origen"),
+
   // Shared secret for backend → front revalidation webhook. Backend sends
   // this in the X-Revalidate-Secret header when an admin edit lands.
   revalidateSecret: optional("REVALIDATE_SECRET", "dev-revalidate-secret"),

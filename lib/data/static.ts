@@ -10,7 +10,7 @@ import { headers } from "next/headers";
 
 async function tenantSlug(): Promise<string> {
   const h = await headers();
-  return h.get("x-tenant-slug") ?? "origen";
+  return h.get("x-tenant-slug") ?? env.defaultTenantSlug;
 }
 
 // ── Store locations ───────────────────────────────────────────────────────────

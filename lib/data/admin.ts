@@ -155,7 +155,7 @@ async function adminFetch<T>(path: string): Promise<T | null> {
   const c = await cookies();
   const token = c.get("bestcoffee-session")?.value ?? null;
   const h = await headers();
-  const tenantSlug = h.get("x-tenant-slug") ?? process.env.DEFAULT_TENANT_SLUG ?? "origen";
+  const tenantSlug = h.get("x-tenant-slug") ?? env.defaultTenantSlug;
 
   const res = await fetch(`${env.apiUrlInternal}${path}`, {
     headers: {

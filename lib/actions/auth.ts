@@ -26,7 +26,7 @@ export async function loginAction(
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "X-Tenant-Slug": "origen",
+        "X-Tenant-Slug": env.defaultTenantSlug,
       },
       body: JSON.stringify({ email, password }),
       cache: "no-store",
@@ -89,7 +89,7 @@ export async function registerAction(
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "X-Tenant-Slug": "origen",
+        "X-Tenant-Slug": env.defaultTenantSlug,
       },
       body: JSON.stringify({ email, password, firstName, lastName }),
       cache: "no-store",
@@ -127,7 +127,7 @@ export async function logoutAction() {
     await fetch(`${env.apiUrlInternal}/v1/auth/customer/logout`, {
       method: "POST",
       headers: {
-        "X-Tenant-Slug": "origen",
+        "X-Tenant-Slug": env.defaultTenantSlug,
         ...(token
           ? {
               Authorization: `Bearer ${token}`,
