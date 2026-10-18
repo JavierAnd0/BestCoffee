@@ -20,7 +20,7 @@ export default function TerminosPage() {
         <section className="space-y-3">
           <h2 className="font-display font-semibold text-xl text-foreground">1. Aceptación de los términos</h2>
           <p>
-            Al acceder y utilizar el sitio web de ORÍGEN Café S.A.S. ("ORÍGEN", "nosotros" o "nuestro"),
+            Al acceder y utilizar el sitio web de ORÍGEN Café S.A.S. (“ORÍGEN”, “nosotros” o “nuestro”),
             ubicado en <strong>orígen.co</strong>, aceptas quedar vinculado por estos Términos de uso. Si no
             estás de acuerdo con alguna parte de estos términos, no deberás usar nuestros servicios.
           </p>

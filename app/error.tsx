@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import Link from "next/link";
 import { Clock, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -77,7 +78,7 @@ export default function GlobalError({
           <Check className="size-3.5" />
           Reintentar
         </Button>
-        <Button size="lg" variant="outline" render={<a href="/">Volver al inicio</a>} />
+        <Button size="lg" variant="outline" render={<Link href="/">Volver al inicio</Link>} />
       </div>
     </div>
   );

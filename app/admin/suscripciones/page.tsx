@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/admin/page-header";
 import { SUB_STATUS_LABEL, type SubStatus } from "@/lib/mocks/account";
-import { getCustomerSubscriptions } from "@/lib/data/account";
+import { listAdminSubscriptions } from "@/lib/data/admin";
 import { formatCop } from "@/lib/format";
 
 export const metadata: Metadata = { title: "Suscripciones · Admin" };
@@ -16,15 +16,28 @@ const STATUS_TONE: Record<SubStatus, string> = {
   CANCELLED: "bg-muted text-muted-foreground border-border",
 };
 
-export default async function AdminSubscriptionsPage() {
-  const baseSubs = await getCustomerSubscriptions();
-  // Spread mock subs across "customers" so the admin list feels populated.
-  const allSubs = [
-    ...baseSubs.map((s) => ({ ...s, customer: "María Restrepo" })),
-    ...baseSubs.map((s, i) => ({ ...s, id: s.id + "_b", customer: ["Andrés P.", "Clara T.", "Jorge C."][i % 3] })),
-  ];
+export default async function AdminSubscriptionsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string }>;
+}) {
+  const [{ q }, allSubs] = await Promise.all([
+    searchParams,
+    listAdminSubscriptions(),
+  ]);
+
+  const query = q?.trim().toLowerCase() ?? "";
+  const filtered = query
+    ? allSubs.filter(
+        (s) =>
+          s.customer.toLowerCase().includes(query) ||
+          s.productName.toLowerCase().includes(query),
+      )
+    : allSubs;
+
   const active = allSubs.filter((s) => s.status === "ACTIVE").length;
   const paused = allSubs.filter((s) => s.status === "PAUSED").length;
+  const failed = allSubs.filter((s) => s.status === "PAYMENT_FAILED").length;
 
   return (
     <div className="space-y-6">
@@ -32,21 +45,23 @@ export default async function AdminSubscriptionsPage() {
         title="Suscripciones"
         description={`${active} activas · ${paused} pausadas · ${allSubs.length} totales`}
         actions={
-          <div className="relative">
+          <form method="GET" className="relative">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
             <input
+              name="q"
+              defaultValue={q ?? ""}
               placeholder="Buscar cliente o producto"
               className="rounded-md border border-input bg-background pl-8 pr-3 h-9 text-sm w-72 outline-none focus-visible:border-foreground/40"
             />
-          </div>
+          </form>
         }
       />
 
       <section className="grid sm:grid-cols-4 gap-4">
         <Kpi label="Activas" value={String(active)} hint="ciclo normal" />
         <Kpi label="Pausadas" value={String(paused)} hint="esperando reactivación" />
-        <Kpi label="Pago fallido" value="2" hint="reintentando" />
-        <Kpi label="Churn 30 d" value="3.4%" hint="–0.8 pp vs mes ant." />
+        <Kpi label="Pago fallido" value={String(failed)} hint="reintentando" />
+        <Kpi label="Churn 30 d" value="—" hint="últimos 30 días" />
       </section>
 
       <div className="rounded-lg border border-border bg-background overflow-hidden">
@@ -63,7 +78,7 @@ export default async function AdminSubscriptionsPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
-            {allSubs.map((s) => (
+            {filtered.map((s) => (
               <tr key={s.id} className="hover:bg-muted/30 transition-colors">
                 <td className="px-4 py-3 font-medium">{s.customer}</td>
                 <td className="px-4 py-3">
@@ -98,6 +113,13 @@ export default async function AdminSubscriptionsPage() {
                 </td>
               </tr>
             ))}
+            {filtered.length === 0 && (
+              <tr>
+                <td colSpan={7} className="px-4 py-10 text-center text-muted-foreground text-sm">
+                  No se encontraron suscripciones.
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>

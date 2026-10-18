@@ -13,12 +13,8 @@ export function ImpersonateButton({ tenantId, tenantName }: { tenantId: string; 
   function handleImpersonate() {
     setError(null);
     startTransition(async () => {
-      const result = await impersonateTenantAction(tenantId);
+      const result = await impersonateTenantAction(tenantId, tenantName);
       if (result.ok) {
-        // Guardar el token de impersonación en sessionStorage.
-        // El cliente HTTP del admin lo leerá primero antes de usar la cookie.
-        sessionStorage.setItem("impersonation_token", result.accessToken);
-        sessionStorage.setItem("impersonation_tenant", tenantName);
         router.push("/admin");
       } else {
         setError(result.error);

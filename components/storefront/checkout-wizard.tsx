@@ -24,18 +24,26 @@ const SEED_SHIPPING: Shipping = {
   address: "Cra 12 #34-56", city: "Bogotá", region: "Cundinamarca", zip: "",
 };
 
+const EMPTY_CONTACT: Contact = { email: "", phone: "" };
+const EMPTY_SHIPPING: Shipping = {
+  firstName: "", lastName: "",
+  address: "", city: "", region: "", zip: "",
+};
+
 export function CheckoutWizard({
   paymentProvider,
   mpPublicKey,
+  useMocks = false,
 }: {
   paymentProvider?: string | null;
   mpPublicKey?: string | null;
+  useMocks?: boolean;
 }) {
   const router = useRouter();
   const cart = useCart();
   const [step, setStep] = useState<Step>(1);
-  const [contact, setContact] = useState(SEED_CONTACT);
-  const [shipping, setShipping] = useState(SEED_SHIPPING);
+  const [contact, setContact] = useState<Contact>(useMocks ? SEED_CONTACT : EMPTY_CONTACT);
+  const [shipping, setShipping] = useState<Shipping>(useMocks ? SEED_SHIPPING : EMPTY_SHIPPING);
   const [payError, setPayError] = useState<string | null>(null);
   const [placing, setPlacing] = useState(false);
 
@@ -66,7 +74,7 @@ export function CheckoutWizard({
       return;
     }
     cart.clear();
-    router.push("/checkout/confirmacion");
+    router.push(`/checkout/confirmacion?orderId=${encodeURIComponent(result.orderId)}`);
   };
 
   const isMp = paymentProvider === "mercadopago" && !!mpPublicKey;

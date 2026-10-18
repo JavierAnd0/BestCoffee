@@ -7,11 +7,14 @@ import { requireFeature } from "@/lib/data/feature-guard";
 
 export const metadata: Metadata = { title: "Confirmación de pedido" };
 
-export default async function ConfirmationPage() {
+export default async function ConfirmationPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ orderId?: string }>;
+}) {
   await requireFeature("checkout");
-  // Mock order id; in production this comes from the URL or query param after
-  // a successful Stripe redirect.
-  const orderId = "ORG-10428";
+  const { orderId: rawOrderId } = await searchParams;
+  const orderId = rawOrderId?.trim() || "ORG-10428";
 
   return (
     <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 py-20 text-center">

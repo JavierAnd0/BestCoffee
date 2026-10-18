@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { Badge } from "@/components/ui/badge";
 import { getBlogPost, listRelatedPosts } from "@/lib/data/blog";
+import { requireFeature } from "@/lib/data/feature-guard";
 
 export async function generateMetadata({
   params,
@@ -20,6 +21,7 @@ export default async function BlogArticle({
 }: {
   params: Promise<{ slug: string }>;
 }) {
+  await requireFeature("blog");
   const { slug } = await params;
   const post = await getBlogPost(slug);
   if (!post) notFound();

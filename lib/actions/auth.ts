@@ -3,6 +3,7 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { env } from "../env";
+import { resolveActiveTenantSlug } from "../tenant";
 
 export type AuthState = { error: string } | null;
 export type RegisterState = null | { error: string } | { success: true; message: string };
@@ -14,9 +15,11 @@ export async function loginAction(
 ): Promise<AuthState> {
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
-  const next = String(formData.get("next") ?? "/cuenta");
+  const next = String(formData.get("next") ?? "/cuenta").trim();
 
   if (!email) return { error: "El correo es requerido." };
+
+  const tenantSlug = await resolveActiveTenantSlug();
 
   // Login de cliente (storefront). Los operadores acceden por magic link en
   // /acceso; este flujo es solo para clientes finales.
@@ -26,7 +29,7 @@ export async function loginAction(
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "X-Tenant-Slug": env.defaultTenantSlug,
+        "X-Tenant-Slug": tenantSlug,
       },
       body: JSON.stringify({ email, password }),
       cache: "no-store",
@@ -59,13 +62,14 @@ export async function loginAction(
       path: "/",
       maxAge: 60 * 60 * 24 * 30,
     };
-    // bestcoffee-session: used by middleware (proxy.ts) for route protection
+    // bestcoffee-session: used by middleware (proxy.ts) for customer route protection
     store.set("bestcoffee-session", tokenValue, cookieOpts);
     // customer_token: forwarded verbatim to the backend for cookie-based auth guards
     store.set("customer_token", tokenValue, cookieOpts);
   }
 
-  const target = next.startsWith("/") ? next : "/cuenta";
+  const isSafeRelative = next.startsWith("/") && !next.startsWith("//") && !next.startsWith("/\\");
+  const target = isSafeRelative ? next : "/cuenta";
   redirect(target);
 }
 
@@ -83,13 +87,15 @@ export async function registerAction(
   if (!terms) return { error: "Debes aceptar los Términos de uso y la Política de privacidad." };
   if (!email || !password) return { error: "El correo y la contraseña son requeridos." };
 
+  const tenantSlug = await resolveActiveTenantSlug();
+
   let res: Response;
   try {
     res = await fetch(`${env.apiUrlInternal}/v1/auth/customer/register`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "X-Tenant-Slug": env.defaultTenantSlug,
+        "X-Tenant-Slug": tenantSlug,
       },
       body: JSON.stringify({ email, password, firstName, lastName }),
       cache: "no-store",
@@ -120,14 +126,17 @@ export async function registerAction(
 // ── Logout ────────────────────────────────────────────────────────────────────
 export async function logoutAction() {
   const store = await cookies();
-  const token = store.get("bestcoffee-session")?.value;
+  const token =
+    store.get("bestcoffee-session")?.value ??
+    store.get("customer_token")?.value;
+  const tenantSlug = await resolveActiveTenantSlug();
 
   // Notify the backend (best effort — clear cookies regardless)
   try {
     await fetch(`${env.apiUrlInternal}/v1/auth/customer/logout`, {
       method: "POST",
       headers: {
-        "X-Tenant-Slug": env.defaultTenantSlug,
+        "X-Tenant-Slug": tenantSlug,
         ...(token
           ? {
               Authorization: `Bearer ${token}`,

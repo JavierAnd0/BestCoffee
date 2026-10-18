@@ -11,7 +11,7 @@ import { env } from "../env";
 
 async function platformAuthHeader(): Promise<Record<string, string>> {
   const store = await cookies();
-  const token = store.get("bestcoffee-session")?.value;
+  const token = store.get("bestcoffee-operator-session")?.value;
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
@@ -123,11 +123,12 @@ export async function updateTenantAction(
 }
 
 export type ImpersonateState =
-  | { ok: true; accessToken: string }
+  | { ok: true }
   | { ok: false; error: string };
 
 export async function impersonateTenantAction(
   tenantId: string,
+  tenantName?: string,
 ): Promise<ImpersonateState> {
   let res: Response;
   try {
@@ -150,6 +151,23 @@ export async function impersonateTenantAction(
     return { ok: false, error: "No se pudo impersonar el tenant." };
   }
 
-  const data = (await res.json()) as { accessToken: string };
-  return { ok: true, accessToken: data.accessToken };
+  const data = (await res.json()) as { accessToken?: string };
+  if (!data.accessToken) {
+    return { ok: false, error: "Respuesta inválida del servidor." };
+  }
+
+  const store = await cookies();
+  const cookieOpts = {
+    httpOnly: true,
+    secure: !env.isDev,
+    sameSite: "lax" as const,
+    path: "/",
+    maxAge: 60 * 60 * 2, // 2 horas para sesión de impersonación
+  };
+  store.set("bestcoffee-impersonation", data.accessToken, cookieOpts);
+  if (tenantName) {
+    store.set("bestcoffee-impersonation-tenant", tenantName, cookieOpts);
+  }
+
+  return { ok: true };
 }

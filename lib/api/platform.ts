@@ -6,7 +6,7 @@ import { env } from "../env";
 async function getToken(): Promise<string | null> {
   const { cookies } = await import("next/headers");
   const c = await cookies();
-  return c.get("bestcoffee-session")?.value ?? null;
+  return c.get("bestcoffee-operator-session")?.value ?? null;
 }
 
 function buildHeaders(token: string | null, extra?: Record<string, string>) {

@@ -27,7 +27,7 @@ export function LoginForm({ next }: { next: string }) {
         <div className="relative z-10 space-y-8">
           <blockquote>
             <p className="font-display italic font-light leading-[1.18] tracking-[-0.02em]" style={{ fontSize: "clamp(2rem, 3.5vw, 2.75rem)" }}>
-              "Tostamos en lotes&nbsp;pequeños para que cada grano llegue a tu taza en su mejor momento."
+              “Tostamos en lotes&nbsp;pequeños para que cada grano llegue a tu taza en su mejor momento.”
             </p>
           </blockquote>
           <div className="flex items-center gap-4">

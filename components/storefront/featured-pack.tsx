@@ -28,7 +28,7 @@ function ImageBlock({ title }: { title: string }) {
       {/* Pull-quote text over image */}
       <div className="absolute bottom-8 left-8 right-8">
         <p className="font-display text-white/30 text-[clamp(1.1rem,2.5vw,1.5rem)] font-light italic leading-snug select-none">
-          "{title}"
+          “{title}”
         </p>
       </div>
     </div>

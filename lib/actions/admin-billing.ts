@@ -11,7 +11,9 @@ import { env } from "../env";
 async function adminHeaders(): Promise<Record<string, string>> {
   const c = await cookies();
   const h = await headers();
-  const token = c.get("bestcoffee-session")?.value;
+  const token =
+    c.get("bestcoffee-impersonation")?.value ??
+    c.get("bestcoffee-operator-session")?.value;
   const tenantSlug =
     h.get("x-tenant-slug") ?? env.defaultTenantSlug;
   return {

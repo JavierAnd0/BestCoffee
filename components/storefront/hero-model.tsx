@@ -111,20 +111,24 @@ function Steam3D({
   const spread = bounds.radius * 0.5;
   const baseSize = bounds.radius * 0.7;
 
-  const seeds = useMemo(
-    () =>
-      Array.from({ length: count }, () => ({
-        phase: Math.random(),
-        speed: 0.09 + Math.random() * 0.08,
-        xOff: (Math.random() - 0.5) * spread,
-        zOff: (Math.random() - 0.5) * spread,
-        swayAmp: 0.5 + Math.random() * 0.7,
-        swayFreq: 0.5 + Math.random() * 0.8,
-        scaleJitter: 0.7 + Math.random() * 0.5,
-      })),
-    // Reseed only when the emitter geometry changes.
-    [count, spread],
-  );
+  const seeds = useMemo(() => {
+    const prng = (seed: number) => {
+      const x = Math.sin(seed * 12.9898 + 78.233) * 43758.5453;
+      return x - Math.floor(x);
+    };
+    return Array.from({ length: count }, (_, idx) => {
+      const b = idx * 7 + 1;
+      return {
+        phase: prng(b),
+        speed: 0.09 + prng(b + 1) * 0.08,
+        xOff: (prng(b + 2) - 0.5) * spread,
+        zOff: (prng(b + 3) - 0.5) * spread,
+        swayAmp: 0.5 + prng(b + 4) * 0.7,
+        swayFreq: 0.5 + prng(b + 5) * 0.8,
+        scaleJitter: 0.7 + prng(b + 6) * 0.5,
+      };
+    });
+  }, [count, spread]);
 
   useFrame((state) => {
     if (!texture) return;

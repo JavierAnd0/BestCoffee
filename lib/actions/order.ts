@@ -2,6 +2,7 @@
 
 import { cookies } from "next/headers";
 import { env } from "../env";
+import { resolveActiveTenantSlug } from "../tenant";
 import type { CartItem } from "@/components/storefront/cart-context";
 import type { MpPaymentData } from "@/components/storefront/mercadopago-fields";
 
@@ -38,7 +39,7 @@ export async function placeOrderAction(
     store.get("bestcoffee-session")?.value ??
     store.get("customer_token")?.value;
 
-  const tenantSlug = env.defaultTenantSlug;
+  const tenantSlug = await resolveActiveTenantSlug();
 
   const body: Record<string, unknown> = {
     customerEmail: input.contact.email,

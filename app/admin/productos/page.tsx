@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/admin/page-header";
 import { listProducts } from "@/lib/data/products";
 import { formatCop } from "@/lib/format";
+import type { Product } from "@/lib/types";
 
 export const metadata: Metadata = { title: "Productos · Admin" };
 
@@ -23,8 +24,39 @@ const BADGE_LABEL: Record<string, string> = {
   SEASONAL: "Temporada",
 };
 
-export default async function ProductsListPage() {
-  const products = await listProducts();
+const FILTERS: { label: string; value?: Product["status"] }[] = [
+  { label: "Todos" },
+  { label: "Activos", value: "ACTIVE" },
+  { label: "Borrador", value: "DRAFT" },
+  { label: "Archivados", value: "ARCHIVED" },
+];
+
+export default async function ProductsListPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ status?: string; q?: string }>;
+}) {
+  const [{ status, q }, products] = await Promise.all([
+    searchParams,
+    listProducts(),
+  ]);
+
+  const query = q?.trim().toLowerCase() ?? "";
+  const activeStatus = FILTERS.some((f) => f.value === status)
+    ? (status as Product["status"])
+    : undefined;
+
+  const filtered = products.filter((p) => {
+    if (activeStatus && p.status !== activeStatus) return false;
+    if (query) {
+      return (
+        p.name.toLowerCase().includes(query) ||
+        p.slug.toLowerCase().includes(query)
+      );
+    }
+    return true;
+  });
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -32,30 +64,47 @@ export default async function ProductsListPage() {
         description={`${products.length} productos · ${products.filter((p) => p.status === "ACTIVE").length} activos`}
         actions={
           <>
-            <div className="relative">
+            <form method="GET" className="relative">
+              {activeStatus && (
+                <input type="hidden" name="status" value={activeStatus} />
+              )}
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
               <input
+                name="q"
+                defaultValue={q ?? ""}
                 placeholder="Buscar productos"
                 className="rounded-md border border-input bg-background pl-8 pr-3 h-9 text-sm w-64 outline-none focus-visible:border-foreground/40"
               />
-            </div>
+            </form>
             <Button render={<Link href="/admin/productos/nuevo"><Plus className="size-4" />Nuevo producto</Link>} />
           </>
         }
       />
 
       <div className="flex gap-2 text-xs">
-        {["Todos", "Activos", "Borrador", "Archivados"].map((t, i) => (
-          <button
-            key={t}
-            className={
-              "rounded-md px-3 py-1.5 transition-colors " +
-              (i === 0 ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground")
-            }
-          >
-            {t}
-          </button>
-        ))}
+        {FILTERS.map((f) => {
+          const isCurrent = f.value === activeStatus;
+          const params = new URLSearchParams();
+          if (f.value) params.set("status", f.value);
+          if (q) params.set("q", q);
+          const href = params.toString()
+            ? `/admin/productos?${params.toString()}`
+            : "/admin/productos";
+          return (
+            <Link
+              key={f.label}
+              href={href}
+              className={
+                "rounded-md px-3 py-1.5 transition-colors " +
+                (isCurrent
+                  ? "bg-foreground text-background"
+                  : "text-muted-foreground hover:text-foreground")
+              }
+            >
+              {f.label}
+            </Link>
+          );
+        })}
       </div>
 
       <div className="rounded-lg border border-border bg-background overflow-hidden">
@@ -72,11 +121,14 @@ export default async function ProductsListPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
-            {products.map((p) => {
-              const cheapest = p.variants.reduce(
-                (a, b) => (a.priceOneTimeCents <= b.priceOneTimeCents ? a : b),
-                p.variants[0],
-              );
+            {filtered.map((p) => {
+              const cheapest =
+                p.variants.length > 0
+                  ? p.variants.reduce(
+                      (a, b) => (a.priceOneTimeCents <= b.priceOneTimeCents ? a : b),
+                      p.variants[0],
+                    )
+                  : undefined;
               const totalStock = p.variants.reduce((n, v) => n + v.stock, 0);
               return (
                 <tr key={p.id} className="hover:bg-muted/30 transition-colors">
@@ -93,7 +145,7 @@ export default async function ProductsListPage() {
                   <td className="px-4 py-3 tabular-nums">{p.roastLevel}/9</td>
                   <td className="px-4 py-3 tabular-nums">{totalStock}</td>
                   <td className="px-4 py-3 tabular-nums font-medium">
-                    {formatCop(cheapest.priceOneTimeCents)}
+                    {cheapest ? formatCop(cheapest.priceOneTimeCents) : "—"}
                   </td>
                   <td className="px-4 py-3">
                     <Badge variant="outline" className="font-normal">
@@ -112,6 +164,13 @@ export default async function ProductsListPage() {
                 </tr>
               );
             })}
+            {filtered.length === 0 && (
+              <tr>
+                <td colSpan={7} className="px-4 py-10 text-center text-muted-foreground text-sm">
+                  No se encontraron productos.
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>

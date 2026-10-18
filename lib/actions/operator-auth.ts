@@ -82,16 +82,19 @@ export async function verifyOperatorMagicLink(
     return { error: "Respuesta inválida del servidor." };
   }
 
-  // La sesión de operador vive en bestcoffee-session: el middleware la usa para
-  // proteger rutas y apiServer() la reenvía como Bearer a /v1/admin y /v1/platform.
+  // La sesión de operador vive en bestcoffee-operator-session: el middleware la usa para
+  // proteger rutas administrativas y apiServer() la reenvía como Bearer a /v1/admin y /v1/platform.
   const store = await cookies();
-  store.set("bestcoffee-session", body.accessToken, {
+  store.set("bestcoffee-operator-session", body.accessToken, {
     httpOnly: true,
     secure: !env.isDev,
     sameSite: "lax",
     path: "/",
     maxAge: 60 * 60 * 24 * 7, // 7 días, igual que el JWT
   });
+  // Limpiar cualquier sesión de impersonación previa al iniciar sesión fresca
+  store.set("bestcoffee-impersonation", "", { maxAge: 0, path: "/" });
+  store.set("bestcoffee-impersonation-tenant", "", { maxAge: 0, path: "/" });
 
   // Decide el destino según el rol. La respuesta de verify ya puede traer
   // isPlatformOwner; si no (backend viejo), lo confirmamos contra /v1/auth/me,
@@ -127,4 +130,21 @@ async function resolveOperatorHome(
     /* si falla, cae al panel admin de tienda */
   }
   return "/admin";
+}
+
+// ── Cerrar sesión de operador / superadmin ──────────────────────────────────────
+export async function logoutOperatorAction() {
+  const store = await cookies();
+  store.set("bestcoffee-operator-session", "", { maxAge: 0, path: "/" });
+  store.set("bestcoffee-impersonation", "", { maxAge: 0, path: "/" });
+  store.set("bestcoffee-impersonation-tenant", "", { maxAge: 0, path: "/" });
+  redirect("/acceso");
+}
+
+// ── Salir del modo impersonación y volver a superadmin ─────────────────────────
+export async function stopImpersonationAction() {
+  const store = await cookies();
+  store.set("bestcoffee-impersonation", "", { maxAge: 0, path: "/" });
+  store.set("bestcoffee-impersonation-tenant", "", { maxAge: 0, path: "/" });
+  redirect("/platform/superadmin/tenants");
 }

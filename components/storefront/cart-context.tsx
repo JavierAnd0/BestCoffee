@@ -38,9 +38,26 @@ interface CartContextValue {
 
 const Ctx = createContext<CartContextValue | null>(null);
 
-const STORAGE_KEY = "bestcoffee:cart:v1";
+const STORAGE_PREFIX = "bestcoffee:cart:v1";
 
-export function CartProvider({ children }: { children: React.ReactNode }) {
+function resolveStorageKey(tenantSlug?: string): string {
+  if (tenantSlug) return `${STORAGE_PREFIX}:${tenantSlug}`;
+  if (typeof document !== "undefined") {
+    const domTenant = document
+      .querySelector("[data-tenant]")
+      ?.getAttribute("data-tenant");
+    if (domTenant) return `${STORAGE_PREFIX}:${domTenant}`;
+  }
+  return STORAGE_PREFIX;
+}
+
+export function CartProvider({
+  tenantSlug,
+  children,
+}: {
+  tenantSlug?: string;
+  children: React.ReactNode;
+}) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [isOpen, setOpen] = useState(false);
   const [hydrated, setHydrated] = useState(false);
@@ -48,22 +65,28 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   // Hydrate from localStorage once on mount; defer writes until after that
   // so the initial empty state can't clobber a saved cart on first render.
   useEffect(() => {
+    const key = resolveStorageKey(tenantSlug);
+    let initialItems: CartItem[] = [];
     try {
-      const raw = localStorage.getItem(STORAGE_KEY);
+      const raw = localStorage.getItem(key) ?? localStorage.getItem(STORAGE_PREFIX);
       if (raw) {
         const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed)) setItems(parsed);
+        if (Array.isArray(parsed)) initialItems = parsed;
       }
     } catch {}
-    setHydrated(true);
-  }, []);
+    queueMicrotask(() => {
+      if (initialItems.length > 0) setItems(initialItems);
+      setHydrated(true);
+    });
+  }, [tenantSlug]);
 
   useEffect(() => {
     if (!hydrated) return;
+    const key = resolveStorageKey(tenantSlug);
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+      localStorage.setItem(key, JSON.stringify(items));
     } catch {}
-  }, [items, hydrated]);
+  }, [items, hydrated, tenantSlug]);
 
   const addItem = useCallback<CartContextValue["addItem"]>((incoming) => {
     setItems((curr) => {
