@@ -20,21 +20,27 @@ import type { paths } from "./types";
 import { env } from "../env";
 
 // Build a middleware that attaches the headers every call needs.
-function attachHeaders(getTenant: () => string | null, getToken: () => string | null): Middleware {
+function attachHeaders(
+  getTenant: () => string | null,
+  getToken: (url: string) => string | null,
+): Middleware {
   return {
     async onRequest({ request }) {
       const tenant = getTenant();
       if (tenant && !request.headers.has("x-tenant-slug")) {
         request.headers.set("x-tenant-slug", tenant);
       }
-      const token = getToken();
+      const token = getToken(request.url);
       if (token) {
         if (!request.headers.has("authorization")) {
           request.headers.set("authorization", `Bearer ${token}`);
         }
-        // Also forward as the backend's cookie name; covers guards that read
-        // customer_token directly instead of the Authorization header.
-        if (!request.headers.has("cookie")) {
+        // Also forward as the backend's cookie name for customer routes; covers
+        // guards that read customer_token directly instead of Authorization.
+        const isAdminOrPlatform =
+          request.url.includes("/v1/admin") ||
+          request.url.includes("/v1/platform");
+        if (!isAdminOrPlatform && !request.headers.has("cookie")) {
           request.headers.set("cookie", `customer_token=${token}`);
         }
       }
@@ -55,14 +61,29 @@ export async function apiServer() {
   const c = await cookies();
 
   const tenant = h.get("x-tenant-slug") ?? env.defaultTenantSlug;
-  const token = c.get("bestcoffee-session")?.value ?? null;
+  const operatorToken =
+    c.get("bestcoffee-impersonation")?.value ??
+    c.get("bestcoffee-operator-session")?.value ??
+    null;
+  const customerToken =
+    c.get("bestcoffee-session")?.value ??
+    c.get("customer_token")?.value ??
+    null;
 
   // Prefer the internal URL when the front is colocated with the API in a
   // VPC; the public URL works everywhere.
   const baseUrl = env.apiUrlInternal;
 
   const client = createClient<paths>({ baseUrl });
-  client.use(attachHeaders(() => tenant, () => token));
+  client.use(
+    attachHeaders(
+      () => tenant,
+      (url) =>
+        url.includes("/v1/admin") || url.includes("/v1/platform")
+          ? operatorToken
+          : customerToken,
+    ),
+  );
   return client;
 }
 

@@ -50,17 +50,26 @@ export default async function AccountHome() {
             Ver todos →
           </Link>
         </div>
-        <div className="flex items-center gap-4">
-          <div className="size-14 rounded-md bg-muted" aria-hidden />
-          <div className="flex-1">
-            <div className="font-medium">#{last.id}</div>
-            <div className="text-xs text-muted-foreground mt-0.5">
-              {last.createdAt} · {last.itemsCount} artículos
+        {last ? (
+          <div className="flex items-center gap-4">
+            <div className="size-14 rounded-md bg-muted" aria-hidden />
+            <div className="flex-1">
+              <div className="font-medium">#{last.id}</div>
+              <div className="text-xs text-muted-foreground mt-0.5">
+                {last.createdAt} · {last.itemsCount} artículos
+              </div>
             </div>
+            <Badge variant="outline">{ORDER_STATUS_LABEL[last.status]}</Badge>
+            <span className="font-semibold tabular-nums">{formatCop(last.totalCents)}</span>
           </div>
-          <Badge variant="outline">{ORDER_STATUS_LABEL[last.status]}</Badge>
-          <span className="font-semibold tabular-nums">{formatCop(last.totalCents)}</span>
-        </div>
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            Aún no tienes pedidos registrados.{" "}
+            <Link href="/catalogo" className="underline underline-offset-2 text-foreground">
+              Explorar el catálogo →
+            </Link>
+          </p>
+        )}
       </section>
 
       <section>
@@ -73,26 +82,35 @@ export default async function AccountHome() {
             Gestionar →
           </Link>
         </div>
-        <div className="grid gap-3">
-          {activeSubs.map((s) => (
-            <div
-              key={s.id}
-              className="flex items-center gap-4 rounded-lg border border-border bg-background p-4"
-            >
-              <div className="size-12 rounded-md bg-muted" aria-hidden />
-              <div className="flex-1">
-                <div className="font-medium">{s.productName}</div>
-                <div className="text-xs text-muted-foreground">{s.variantLabel}</div>
-              </div>
-              <div className="text-right">
-                <div className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground">
-                  Próximo
+        {activeSubs.length > 0 ? (
+          <div className="grid gap-3">
+            {activeSubs.map((s) => (
+              <div
+                key={s.id}
+                className="flex items-center gap-4 rounded-lg border border-border bg-background p-4"
+              >
+                <div className="size-12 rounded-md bg-muted" aria-hidden />
+                <div className="flex-1">
+                  <div className="font-medium">{s.productName}</div>
+                  <div className="text-xs text-muted-foreground">{s.variantLabel}</div>
                 </div>
-                <div className="text-sm font-medium">{s.nextShipAt}</div>
+                <div className="text-right">
+                  <div className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground">
+                    Próximo
+                  </div>
+                  <div className="text-sm font-medium">{s.nextShipAt}</div>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <div className="rounded-lg border border-border bg-background p-6 text-sm text-muted-foreground">
+            No tienes suscripciones activas en este momento.{" "}
+            <Link href="/suscripciones" className="underline underline-offset-2 text-foreground">
+              Conocer beneficios →
+            </Link>
+          </div>
+        )}
       </section>
     </div>
   );

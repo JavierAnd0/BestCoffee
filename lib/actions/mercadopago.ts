@@ -2,6 +2,7 @@
 
 import { cookies } from "next/headers";
 import { env } from "../env";
+import { resolveActiveTenantSlug } from "../tenant";
 
 export type MpConnectResult =
   | { url: string }
@@ -10,8 +11,9 @@ export type MpConnectResult =
 export async function mpConnectAction(): Promise<MpConnectResult> {
   const store = await cookies();
   const token =
-    store.get("bestcoffee-session")?.value ??
-    store.get("customer_token")?.value;
+    store.get("bestcoffee-impersonation")?.value ??
+    store.get("bestcoffee-operator-session")?.value;
+  const tenantSlug = await resolveActiveTenantSlug();
 
   let res: Response;
   try {
@@ -19,7 +21,7 @@ export async function mpConnectAction(): Promise<MpConnectResult> {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "X-Tenant-Slug": env.defaultTenantSlug,
+        "X-Tenant-Slug": tenantSlug,
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
       cache: "no-store",

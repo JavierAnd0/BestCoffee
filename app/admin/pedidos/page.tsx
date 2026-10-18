@@ -3,8 +3,7 @@ import type { Metadata } from "next";
 import { Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/admin/page-header";
-import { getRecentOrders } from "@/lib/data/admin";
-import { getCustomerOrders } from "@/lib/data/account";
+import { listAdminOrders } from "@/lib/data/admin";
 import { ORDER_STATUS_LABEL, type OrderStatus } from "@/lib/mocks/account";
 import { formatCop } from "@/lib/format";
 
@@ -17,55 +16,85 @@ const STATUS_TONE: Record<OrderStatus, string> = {
   CANCELLED: "bg-muted text-muted-foreground border-border",
 };
 
-export default async function AdminOrdersPage() {
-  const [recent, customerOrders] = await Promise.all([getRecentOrders(), getCustomerOrders()]);
-  // Compose a richer mock list by merging admin recent orders with customer orders.
-  const rows = [
-    ...recent.map((o) => ({
-      id: o.id,
-      customer: o.customer,
-      totalCents: o.totalCents,
-      status: o.status as OrderStatus,
-      createdAt: o.createdAt,
-      fromSub: false,
-    })),
-    ...customerOrders.map((o) => ({
-      id: o.id,
-      customer: "María Restrepo",
-      totalCents: o.totalCents,
-      status: o.status,
-      createdAt: o.createdAt,
-      fromSub: o.fromSubscription,
-    })),
-  ];
+const FILTERS: { label: string; value?: OrderStatus }[] = [
+  { label: "Todos" },
+  { label: "Procesando", value: "PROCESSING" },
+  { label: "Enviado", value: "SHIPPED" },
+  { label: "Entregado", value: "DELIVERED" },
+  { label: "Cancelado", value: "CANCELLED" },
+];
+
+export default async function AdminOrdersPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ status?: string; q?: string }>;
+}) {
+  const [{ status, q }, allOrders] = await Promise.all([
+    searchParams,
+    listAdminOrders(),
+  ]);
+
+  const query = q?.trim().toLowerCase() ?? "";
+  const activeStatus = FILTERS.some((f) => f.value === status)
+    ? (status as OrderStatus)
+    : undefined;
+
+  const rows = allOrders.filter((o) => {
+    if (activeStatus && o.status !== activeStatus) return false;
+    if (query) {
+      return (
+        o.id.toLowerCase().includes(query) ||
+        o.customer.toLowerCase().includes(query)
+      );
+    }
+    return true;
+  });
+
   return (
     <div className="space-y-6">
       <PageHeader
         title="Pedidos"
         description={`${rows.length} pedidos en los últimos 30 días`}
         actions={
-          <div className="relative">
+          <form method="GET" className="relative">
+            {activeStatus && (
+              <input type="hidden" name="status" value={activeStatus} />
+            )}
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
             <input
-              placeholder="Buscar #ORG-..."
+              name="q"
+              defaultValue={q ?? ""}
+              placeholder="Buscar # pedido o cliente..."
               className="rounded-md border border-input bg-background pl-8 pr-3 h-9 text-sm w-64 outline-none focus-visible:border-foreground/40"
             />
-          </div>
+          </form>
         }
       />
 
       <div className="flex gap-2 text-xs">
-        {["Todos", "Procesando", "Enviado", "Entregado", "Cancelado"].map((t, i) => (
-          <button
-            key={t}
-            className={
-              "rounded-md px-3 py-1.5 transition-colors " +
-              (i === 0 ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground")
-            }
-          >
-            {t}
-          </button>
-        ))}
+        {FILTERS.map((f) => {
+          const isCurrent = f.value === activeStatus;
+          const params = new URLSearchParams();
+          if (f.value) params.set("status", f.value);
+          if (q) params.set("q", q);
+          const href = params.toString()
+            ? `/admin/pedidos?${params.toString()}`
+            : "/admin/pedidos";
+          return (
+            <Link
+              key={f.label}
+              href={href}
+              className={
+                "rounded-md px-3 py-1.5 transition-colors " +
+                (isCurrent
+                  ? "bg-foreground text-background"
+                  : "text-muted-foreground hover:text-foreground")
+              }
+            >
+              {f.label}
+            </Link>
+          );
+        })}
       </div>
 
       <div className="rounded-lg border border-border bg-background overflow-hidden">
@@ -106,6 +135,13 @@ export default async function AdminOrdersPage() {
                 <td className="px-4 py-3 text-xs text-muted-foreground">{o.createdAt}</td>
               </tr>
             ))}
+            {rows.length === 0 && (
+              <tr>
+                <td colSpan={6} className="px-4 py-10 text-center text-muted-foreground text-sm">
+                  No se encontraron pedidos con esos criterios.
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>

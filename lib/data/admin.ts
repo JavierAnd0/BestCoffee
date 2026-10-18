@@ -153,7 +153,10 @@ function mapAudit(e: ApiAuditEntry): AdminAuditEntry {
 async function adminFetch<T>(path: string): Promise<T | null> {
   const { cookies, headers } = await import("next/headers");
   const c = await cookies();
-  const token = c.get("bestcoffee-session")?.value ?? null;
+  const token =
+    c.get("bestcoffee-impersonation")?.value ??
+    c.get("bestcoffee-operator-session")?.value ??
+    null;
   const h = await headers();
   const tenantSlug = h.get("x-tenant-slug") ?? env.defaultTenantSlug;
 
@@ -167,6 +170,58 @@ async function adminFetch<T>(path: string): Promise<T | null> {
   });
   if (!res.ok) return null;
   return res.json() as Promise<T>;
+}
+
+export interface OperatorProfile {
+  name: string;
+  email: string;
+  role: string;
+  impersonatingTenant?: string | null;
+}
+
+export async function getCurrentOperator(): Promise<OperatorProfile | null> {
+  const { cookies } = await import("next/headers");
+  const c = await cookies();
+  const impersonatingTenant = c.get("bestcoffee-impersonation-tenant")?.value ?? null;
+
+  if (env.useMocks) {
+    return {
+      name: "María R.",
+      email: "hola@cafeorigen.co",
+      role: impersonatingTenant ? `Impersonando · ${impersonatingTenant}` : "Tenant Owner",
+      impersonatingTenant,
+    };
+  }
+
+  const token =
+    c.get("bestcoffee-impersonation")?.value ??
+    c.get("bestcoffee-operator-session")?.value ??
+    null;
+  if (!token) return null;
+
+  try {
+    const res = await fetch(`${env.apiUrlInternal}/v1/auth/me`, {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
+    });
+    if (!res.ok) return null;
+    const me = (await res.json()) as {
+      name?: string | null;
+      email?: string;
+      role?: string;
+      isPlatformOwner?: boolean;
+    };
+    const email = me.email ?? "";
+    const name = me.name?.trim() || email.split("@")[0] || "Operador";
+    const role = impersonatingTenant
+      ? `Impersonando · ${impersonatingTenant}`
+      : me.isPlatformOwner
+        ? "Superadmin"
+        : me.role ?? "Tenant Admin";
+    return { name, email, role, impersonatingTenant };
+  } catch {
+    return null;
+  }
 }
 
 // ── Facturación del tenant (cómo le cobra la plataforma + comisión) ──────────
@@ -338,17 +393,125 @@ function mapApiCustomer(c: ApiAdminCustomer): AdminCustomer {
   };
 }
 
+// ── Admin Order & Subscription mappers ────────────────────────────────────────
+
+export interface AdminOrderRow {
+  id: string;
+  customer: string;
+  totalCents: number;
+  status: "PROCESSING" | "SHIPPED" | "DELIVERED" | "CANCELLED";
+  createdAt: string;
+  fromSub: boolean;
+}
+
+interface ApiAdminOrder extends ApiOrder {
+  fromSubscription?: boolean;
+  subscriptionId?: string | null;
+}
+
+const ADMIN_ORDER_STATUS_MAP: Record<string, AdminOrderRow["status"]> = {
+  RECEIVED: "PROCESSING",
+  PREPARING: "PROCESSING",
+  PROCESSING: "PROCESSING",
+  SHIPPED: "SHIPPED",
+  DELIVERED: "DELIVERED",
+  CANCELLED: "CANCELLED",
+};
+
+function mapAdminOrderRow(o: ApiAdminOrder): AdminOrderRow {
+  return {
+    id: o.id,
+    customer: o.customer?.name ?? o.customer?.email ?? "—",
+    totalCents: o.totalCents ?? o.total ?? 0,
+    status: ADMIN_ORDER_STATUS_MAP[o.status ?? ""] ?? "PROCESSING",
+    createdAt: ago(o.createdAt),
+    fromSub: o.fromSubscription ?? Boolean(o.subscriptionId),
+  };
+}
+
+export interface AdminSubscriptionRow {
+  id: string;
+  customer: string;
+  productName: string;
+  variantLabel: string;
+  frequencyDays: number;
+  nextShipAt: string;
+  status: "ACTIVE" | "PAUSED" | "PAYMENT_FAILED" | "CANCELLED";
+  unitPriceCents: number;
+}
+
+interface ApiAdminSubscription {
+  id: string;
+  customer?: { name?: string; email?: string } | null;
+  customerName?: string;
+  product?: { name?: string } | null;
+  productName?: string;
+  variantLabel?: string;
+  variant?: { sizeGrams?: number; grind?: string } | null;
+  frequencyDays?: number;
+  nextShipAt?: string | null;
+  nextDeliveryAt?: string | null;
+  status?: string;
+  unitPriceCents?: number;
+  unitPrice?: number;
+}
+
+const ADMIN_SUB_STATUS_MAP: Record<string, AdminSubscriptionRow["status"]> = {
+  ACTIVE: "ACTIVE",
+  PAUSED: "PAUSED",
+  SKIPPED_NEXT: "ACTIVE",
+  PAYMENT_FAILED: "PAYMENT_FAILED",
+  CANCELLED: "CANCELLED",
+};
+
+function mapAdminSubscription(s: ApiAdminSubscription): AdminSubscriptionRow {
+  const grindLabel: Record<string, string> = {
+    WHOLE_BEAN: "Grano",
+    ESPRESSO: "Espresso",
+    FILTER: "Filtro",
+    FRENCH_PRESS: "Prensa",
+  };
+  let variantLabel = s.variantLabel ?? "";
+  if (!variantLabel && s.variant) {
+    const size = s.variant.sizeGrams
+      ? s.variant.sizeGrams >= 1000
+        ? `${s.variant.sizeGrams / 1000} kg`
+        : `${s.variant.sizeGrams} g`
+      : "";
+    const grind = grindLabel[s.variant.grind ?? ""] ?? "";
+    variantLabel = [size, grind].filter(Boolean).join(" · ");
+  }
+  const status = ADMIN_SUB_STATUS_MAP[s.status ?? ""] ?? "ACTIVE";
+  const nextIso = s.nextShipAt ?? s.nextDeliveryAt;
+  const nextShipAt =
+    status === "PAUSED" || !nextIso
+      ? "—"
+      : new Date(nextIso).toLocaleDateString("es-CO", {
+          day: "2-digit",
+          month: "short",
+        });
+
+  return {
+    id: s.id,
+    customer: s.customerName ?? s.customer?.name ?? s.customer?.email ?? "—",
+    productName: s.productName ?? s.product?.name ?? "Café",
+    variantLabel,
+    frequencyDays: s.frequencyDays ?? 14,
+    nextShipAt,
+    status,
+    unitPriceCents: s.unitPriceCents ?? Math.round(s.unitPrice ?? 0),
+  };
+}
+
 // ── Public API ──────────────────────────────────────────────────────────────
 
 export async function getDashboardKpis(): Promise<AdminKpi[]> {
   if (env.useMocks) return ADMIN_KPIS;
   try {
     const data = await adminFetch<unknown>("/v1/admin/dashboard/kpis");
-    if (!data) return ADMIN_KPIS;
-    const mapped = mapApiKpis(data);
-    return mapped.length > 0 ? mapped : ADMIN_KPIS;
+    return mapApiKpis(data ?? {});
   } catch {
-    return ADMIN_KPIS;
+    return mapApiKpis({});
   }
 }
 
@@ -356,13 +519,13 @@ export async function getDashboardAlerts(): Promise<AdminAlert[]> {
   if (env.useMocks) return ADMIN_ALERTS;
   try {
     const raw = await adminFetch<unknown>("/v1/admin/dashboard/alerts");
-    if (!raw) return ADMIN_ALERTS;
+    if (!raw) return [];
     const arr: ApiAlertRaw[] = Array.isArray(raw)
       ? (raw as ApiAlertRaw[])
       : ((raw as Record<string, unknown>).items as ApiAlertRaw[] ?? []);
-    return arr.length > 0 ? arr.map(mapApiAlert) : ADMIN_ALERTS;
+    return arr.map(mapApiAlert);
   } catch {
-    return ADMIN_ALERTS;
+    return [];
   }
 }
 
@@ -370,11 +533,11 @@ export async function getSalesLast14d(): Promise<number[]> {
   if (env.useMocks) return SALES_LAST_14D;
   try {
     const raw = await adminFetch<unknown>("/v1/admin/dashboard/sales?days=14");
-    if (!raw) return SALES_LAST_14D;
+    if (!raw) return Array(14).fill(0);
     const mapped = mapApiSales(raw);
-    return mapped.length > 0 ? mapped : SALES_LAST_14D;
+    return mapped.length > 0 ? mapped : Array(14).fill(0);
   } catch {
-    return SALES_LAST_14D;
+    return Array(14).fill(0);
   }
 }
 
@@ -382,15 +545,15 @@ export async function listAdminCustomers(): Promise<AdminCustomer[]> {
   if (env.useMocks) return ADMIN_CUSTOMERS;
   try {
     const raw = await adminFetch<unknown>("/v1/admin/customers");
-    if (!raw) return ADMIN_CUSTOMERS;
+    if (!raw) return [];
     const arr: ApiAdminCustomer[] = Array.isArray(raw)
       ? (raw as ApiAdminCustomer[])
       : ((raw as Record<string, unknown>).items as ApiAdminCustomer[]
           ?? (raw as Record<string, unknown>).data as ApiAdminCustomer[]
           ?? []);
-    return arr.length > 0 ? arr.map(mapApiCustomer) : ADMIN_CUSTOMERS;
+    return arr.map(mapApiCustomer);
   } catch {
-    return ADMIN_CUSTOMERS;
+    return [];
   }
 }
 
@@ -401,10 +564,57 @@ export async function getRecentOrders(): Promise<AdminRecentOrder[]> {
     const { data, error } = await api.GET("/v1/admin/orders", {
       params: { query: { limit: 5 } },
     });
-    if (error || !data) return ADMIN_RECENT_ORDERS;
+    if (error || !data) return [];
     return items<ApiOrder>(data).slice(0, 5).map(mapOrder);
   } catch {
-    return ADMIN_RECENT_ORDERS;
+    return [];
+  }
+}
+
+export async function listAdminOrders(): Promise<AdminOrderRow[]> {
+  if (env.useMocks) {
+    return ADMIN_RECENT_ORDERS.map((o) => ({
+      id: o.id,
+      customer: o.customer,
+      totalCents: o.totalCents,
+      status: o.status,
+      createdAt: o.createdAt,
+      fromSub: false,
+    }));
+  }
+  try {
+    const api = await apiServer();
+    const { data, error } = await api.GET("/v1/admin/orders", {
+      params: { query: { limit: 50 } },
+    });
+    if (error || !data) return [];
+    return items<ApiAdminOrder>(data).map(mapAdminOrderRow);
+  } catch {
+    return [];
+  }
+}
+
+export async function listAdminSubscriptions(): Promise<AdminSubscriptionRow[]> {
+  if (env.useMocks) {
+    const { MOCK_SUBSCRIPTIONS } = await import("../mocks/account");
+    const sampleCustomers = ["María Restrepo", "Andrés P.", "Clara T."];
+    return MOCK_SUBSCRIPTIONS.map((s, idx) => ({
+      id: s.id,
+      customer: sampleCustomers[idx % sampleCustomers.length],
+      productName: s.productName,
+      variantLabel: s.variantLabel,
+      frequencyDays: s.frequencyDays,
+      nextShipAt: s.nextShipAt,
+      status: s.status,
+      unitPriceCents: s.unitPriceCents,
+    }));
+  }
+  try {
+    const raw = await adminFetch<unknown>("/v1/admin/subscriptions");
+    if (!raw) return [];
+    return items<ApiAdminSubscription>(raw).map(mapAdminSubscription);
+  } catch {
+    return [];
   }
 }
 
@@ -415,10 +625,10 @@ export async function listPendingReviews(): Promise<AdminReview[]> {
     const { data, error } = await api.GET("/v1/admin/reviews", {
       params: { query: { status: "PENDING" } },
     });
-    if (error || !data) return ADMIN_REVIEWS;
+    if (error || !data) return [];
     return items<ApiReview>(data).map(mapReview);
   } catch {
-    return ADMIN_REVIEWS;
+    return [];
   }
 }
 
@@ -427,10 +637,10 @@ export async function listDiscountCodes(): Promise<AdminDiscountCode[]> {
   try {
     const api = await apiServer();
     const { data, error } = await api.GET("/v1/admin/discount-codes");
-    if (error || !data) return ADMIN_DISCOUNTS;
+    if (error || !data) return [];
     return items<ApiDiscountCode>(data).map(mapDiscount);
   } catch {
-    return ADMIN_DISCOUNTS;
+    return [];
   }
 }
 
@@ -439,9 +649,9 @@ export async function listAuditEntries(): Promise<AdminAuditEntry[]> {
   try {
     const api = await apiServer();
     const { data, error } = await api.GET("/v1/admin/audit-logs");
-    if (error || !data) return ADMIN_AUDIT;
+    if (error || !data) return [];
     return items<ApiAuditEntry>(data).map(mapAudit);
   } catch {
-    return ADMIN_AUDIT;
+    return [];
   }
 }

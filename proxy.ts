@@ -20,22 +20,29 @@ export default function middleware(req: NextRequest) {
   const url = req.nextUrl;
 
   // ── Auth route guard (/admin + /cuenta + /platform/superadmin require session)
-  const needsSession =
+  const isCustomerRoute = url.pathname.startsWith("/cuenta");
+  const isOperatorRoute =
     url.pathname.startsWith("/admin") ||
-    url.pathname.startsWith("/cuenta") ||
     url.pathname.startsWith("/platform/superadmin");
 
-  if (needsSession) {
-    const session = req.cookies.get("bestcoffee-session")?.value;
-    if (!session) {
+  if (isCustomerRoute) {
+    const customerSession =
+      req.cookies.get("bestcoffee-session")?.value ??
+      req.cookies.get("customer_token")?.value;
+    if (!customerSession) {
       const redirectUrl = url.clone();
-      if (url.pathname.startsWith("/cuenta")) {
-        redirectUrl.pathname = "/login";
-        redirectUrl.searchParams.set("next", url.pathname);
-      } else {
-        redirectUrl.pathname = "/acceso";
-        redirectUrl.search = "";
-      }
+      redirectUrl.pathname = "/login";
+      redirectUrl.searchParams.set("next", url.pathname);
+      return NextResponse.redirect(redirectUrl);
+    }
+  } else if (isOperatorRoute) {
+    const operatorSession =
+      req.cookies.get("bestcoffee-impersonation")?.value ??
+      req.cookies.get("bestcoffee-operator-session")?.value;
+    if (!operatorSession) {
+      const redirectUrl = url.clone();
+      redirectUrl.pathname = "/acceso";
+      redirectUrl.search = "";
       return NextResponse.redirect(redirectUrl);
     }
   }

@@ -77,9 +77,21 @@ async function fetchMe(): Promise<MockCustomer | null> {
 export async function getCurrentCustomer(): Promise<MockCustomer> {
   if (env.useMocks) return MOCK_CUSTOMER;
   try {
-    return (await fetchMe()) ?? MOCK_CUSTOMER;
+    return (
+      (await fetchMe()) ?? {
+        name: "Cliente",
+        email: "",
+        phone: "",
+        memberSince: "—",
+      }
+    );
   } catch {
-    return MOCK_CUSTOMER;
+    return {
+      name: "Cliente",
+      email: "",
+      phone: "",
+      memberSince: "—",
+    };
   }
 }
 
@@ -146,7 +158,7 @@ function mapOrder(o: ApiOrder): MockOrder {
     status: ORDER_STATUS_MAP[o.status ?? ""] ?? "PROCESSING",
     fromSubscription: o.fromSubscription ?? !!o.subscriptionId,
     items: (o.items ?? []).map((i) => ({
-      name: i.productName ?? "Café ORÍGEN",
+      name: i.productName ?? "Café",
       variant: i.variantLabel ?? i.variant ?? "",
       qty: i.qty ?? i.quantity ?? 1,
       priceCents: i.priceCents ?? i.unitPrice ?? i.price ?? 0,
@@ -170,12 +182,12 @@ export async function getCustomerOrders(): Promise<MockOrder[]> {
       },
       cache: "no-store",
     });
-    if (!res.ok) return MOCK_ORDERS;
+    if (!res.ok) return [];
     const data = await res.json();
     const list = items<ApiOrder>(data);
     return list.map(mapOrder);
   } catch {
-    return MOCK_ORDERS;
+    return [];
   }
 }
 
@@ -264,7 +276,7 @@ function mapSubscription(s: ApiSubscription): MockSubscription {
   return {
     id: s.id,
     productSlug: s.productSlug ?? s.product?.slug ?? "",
-    productName: s.productName ?? s.product?.name ?? "Café ORÍGEN",
+    productName: s.productName ?? s.product?.name ?? "Café",
     variantLabel,
     unitPriceCents: s.unitPriceCents ?? Math.round((s.unitPrice ?? 0)),
     frequencyDays: s.frequencyDays ?? 14,
@@ -287,12 +299,12 @@ export async function getCustomerSubscriptions(): Promise<MockSubscription[]> {
       },
       cache: "no-store",
     });
-    if (!res.ok) return MOCK_SUBSCRIPTIONS;
+    if (!res.ok) return [];
     const data = await res.json();
     const list = items<ApiSubscription>(data);
     return list.map(mapSubscription);
   } catch {
-    return MOCK_SUBSCRIPTIONS;
+    return [];
   }
 }
 
@@ -335,12 +347,11 @@ export async function getCustomerAddresses(): Promise<MockAddress[]> {
       },
       cache: "no-store",
     });
-    if (!res.ok) return MOCK_ADDRESSES;
+    if (!res.ok) return [];
     const data = await res.json();
     const list = items<ApiAddress>(data);
-    if (list.length === 0) return MOCK_ADDRESSES;
     return list.map(mapAddress);
   } catch {
-    return MOCK_ADDRESSES;
+    return [];
   }
 }

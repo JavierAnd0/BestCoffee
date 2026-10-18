@@ -53,7 +53,7 @@ export async function listBlogPosts(): Promise<BlogPost[]> {
   if (env.useMocks) return BLOG_POSTS;
   const api = await apiServer();
   const { data, error } = await api.GET("/v1/blog");
-  if (error || !data) return BLOG_POSTS;
+  if (error || !data) return [];
   const items = (data as unknown as { items: ApiBlogItem[] }).items ?? [];
   return items.map(mapPost);
 }
@@ -72,10 +72,10 @@ export async function getBlogPost(slug: string): Promise<BlogPost | undefined> {
   return mapPost(data as unknown as ApiBlogItem);
 }
 
-export async function getFeaturedPost(): Promise<BlogPost> {
+export async function getFeaturedPost(): Promise<BlogPost | null> {
   if (env.useMocks) return featMock();
   const all = await listBlogPosts();
-  return all[0] ?? featMock();
+  return all[0] ?? null;
 }
 
 export async function listRelatedPosts(slug: string, limit = 3): Promise<BlogPost[]> {

@@ -5,12 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Eyebrow } from "@/components/ui/eyebrow";
 import { BLOG_CATEGORIES } from "@/lib/mocks/blog";
 import { listBlogPosts, getFeaturedPost } from "@/lib/data/blog";
+import { requireFeature } from "@/lib/data/feature-guard";
 
 export const metadata: Metadata = { title: "Blog · Café y comunidad" };
 
 export default async function BlogIndex() {
+  await requireFeature("blog");
   const [featured, all] = await Promise.all([getFeaturedPost(), listBlogPosts()]);
-  const rest = all.filter((p) => p.slug !== featured.slug);
+  const rest = featured ? all.filter((p) => p.slug !== featured.slug) : all;
 
   return (
     <>
@@ -50,44 +52,46 @@ export default async function BlogIndex() {
         </div>
       </div>
 
-      <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-16">
-        <Eyebrow>Artículo destacado</Eyebrow>
-        <article className="mt-6 grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
-          <Link
-            href={`/blog/${featured.slug}`}
-            className="aspect-[4/3] rounded-lg bg-muted grid place-items-center text-sm text-muted-foreground"
-          >
-            {featured.title}
-          </Link>
-          <div>
-            <div className="flex items-center gap-3">
-              <Badge variant="outline" className="uppercase tracking-[0.12em] font-normal">
-                {featured.category}
-              </Badge>
-              <span className="text-xs text-muted-foreground">
-                {featured.publishedAt} · {featured.readMinutes} min de lectura
-              </span>
-            </div>
-            <h2 className="mt-4 font-display text-4xl lg:text-5xl font-semibold tracking-tight">
+      {featured && (
+        <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-16">
+          <Eyebrow>Artículo destacado</Eyebrow>
+          <article className="mt-6 grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
+            <Link
+              href={`/blog/${featured.slug}`}
+              className="aspect-[4/3] rounded-lg bg-muted grid place-items-center text-sm text-muted-foreground"
+            >
               {featured.title}
-            </h2>
-            <p className="mt-4 text-base text-muted-foreground leading-relaxed">
-              {featured.excerpt}
-            </p>
-            <div className="mt-6 flex items-center gap-3">
-              <span className="size-9 rounded-full bg-foreground/10" aria-hidden />
-              <span className="text-xs text-muted-foreground">
-                Por {featured.author.name} · {featured.author.role}
-              </span>
+            </Link>
+            <div>
+              <div className="flex items-center gap-3">
+                <Badge variant="outline" className="uppercase tracking-[0.12em] font-normal">
+                  {featured.category}
+                </Badge>
+                <span className="text-xs text-muted-foreground">
+                  {featured.publishedAt} · {featured.readMinutes} min de lectura
+                </span>
+              </div>
+              <h2 className="mt-4 font-display text-4xl lg:text-5xl font-semibold tracking-tight">
+                {featured.title}
+              </h2>
+              <p className="mt-4 text-base text-muted-foreground leading-relaxed">
+                {featured.excerpt}
+              </p>
+              <div className="mt-6 flex items-center gap-3">
+                <span className="size-9 rounded-full bg-foreground/10" aria-hidden />
+                <span className="text-xs text-muted-foreground">
+                  Por {featured.author.name} · {featured.author.role}
+                </span>
+              </div>
+              <Button
+                variant="outline"
+                className="mt-6"
+                render={<Link href={`/blog/${featured.slug}`}>Leer la historia →</Link>}
+              />
             </div>
-            <Button
-              variant="outline"
-              className="mt-6"
-              render={<Link href={`/blog/${featured.slug}`}>Leer la historia →</Link>}
-            />
-          </div>
-        </article>
-      </section>
+          </article>
+        </section>
+      )}
 
       <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pb-24">
         <div className="flex items-center justify-between mb-10">
@@ -96,14 +100,17 @@ export default async function BlogIndex() {
           </h2>
           <span className="text-xs text-muted-foreground">{rest.length} artículos</span>
         </div>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-12">
-          {rest.map((p) => (
-            <ArticleCard key={p.slug} post={p} />
-          ))}
-        </div>
-        <div className="mt-16 flex justify-center">
-          <Button variant="outline">Cargar más artículos</Button>
-        </div>
+        {rest.length > 0 ? (
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-12">
+            {rest.map((p) => (
+              <ArticleCard key={p.slug} post={p} />
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground py-8">
+            No hay más artículos publicados por ahora.
+          </p>
+        )}
       </section>
     </>
   );

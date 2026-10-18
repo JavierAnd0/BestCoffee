@@ -20,7 +20,7 @@ export default async function StorefrontLayout({
 
   return (
     <div data-tenant={slug} className="flex flex-col min-h-screen">
-      <CartProvider>
+      <CartProvider tenantSlug={slug}>
         <a
           href="#main"
           className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:top-2 focus:left-2 focus:bg-background focus:text-foreground focus:border focus:border-border focus:rounded-md focus:px-3 focus:py-2 focus:text-sm"

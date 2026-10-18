@@ -48,16 +48,14 @@ export async function listStoreLocations(): Promise<StoreLocation[]> {
       headers: { "X-Tenant-Slug": slug },
       next: { revalidate: 3600 },
     });
-    if (!res.ok) return STORE_LOCATIONS;
+    if (!res.ok) return [];
     const data = await res.json();
     const list: ApiLocation[] = Array.isArray(data)
       ? data
       : (data?.items ?? data?.data ?? []);
-    // Fall back to mock content if the tenant hasn't added stores yet
-    if (list.length === 0) return STORE_LOCATIONS;
     return list.map(mapLocation);
   } catch {
-    return STORE_LOCATIONS;
+    return [];
   }
 }
 
@@ -112,12 +110,11 @@ async function fetchBrewGuides(): Promise<BrewGuide[]> {
     headers: { "X-Tenant-Slug": slug },
     next: { revalidate: 3600 },
   });
-  if (!res.ok) return BREW_GUIDES;
+  if (!res.ok) return [];
   const data = await res.json();
   const list: ApiBrewGuide[] = Array.isArray(data)
     ? data
     : (data?.items ?? data?.data ?? []);
-  if (list.length === 0) return BREW_GUIDES;
   return list.map(mapBrewGuide);
 }
 
@@ -126,7 +123,7 @@ export async function listBrewGuides(): Promise<BrewGuide[]> {
   try {
     return await fetchBrewGuides();
   } catch {
-    return BREW_GUIDES;
+    return [];
   }
 }
 
@@ -143,6 +140,6 @@ export async function getBrewGuide(slug: string): Promise<BrewGuide | undefined>
     const all = await fetchBrewGuides();
     return all.find((g) => g.slug === slug);
   } catch {
-    return findGuideMock(slug);
+    return undefined;
   }
 }

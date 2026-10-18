@@ -63,7 +63,7 @@ export default function RegistroPage() {
           {/* Pull stat */}
           <div className="border-t border-foreground/10 pt-8">
             <p className="font-display italic font-light leading-tight" style={{ fontSize: "clamp(1.5rem, 2.8vw, 2.1rem)" }}>
-              "+3.200 suscriptores ya reciben su café fresco cada mes."
+              “+3.200 suscriptores ya reciben su café fresco cada mes.”
             </p>
           </div>
         </div>

@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { LayoutDashboard, Store, LogOut } from "lucide-react";
 import { platformFetch } from "@/lib/api/platform";
+import { logoutOperatorAction } from "@/lib/actions/operator-auth";
 
 const NAV = [
   { href: "/platform/superadmin", label: "Dashboard", icon: LayoutDashboard, exact: true },
@@ -21,7 +22,7 @@ export default async function SuperadminLayout({
     isPlatformOwner = false;
   }
 
-  if (!isPlatformOwner) redirect("/login");
+  if (!isPlatformOwner) redirect("/acceso");
 
   return (
     <div className="flex min-h-screen">
@@ -45,13 +46,15 @@ export default async function SuperadminLayout({
           ))}
         </nav>
         <div className="p-3 border-t border-border">
-          <Link
-            href="/login"
-            className="flex items-center gap-2.5 rounded-md px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-          >
-            <LogOut className="size-4" />
-            Salir
-          </Link>
+          <form action={logoutOperatorAction}>
+            <button
+              type="submit"
+              className="w-full flex items-center gap-2.5 rounded-md px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-colors text-left"
+            >
+              <LogOut className="size-4" />
+              Salir
+            </button>
+          </form>
         </div>
       </aside>
       <div className="flex-1 min-w-0 bg-muted/30">
