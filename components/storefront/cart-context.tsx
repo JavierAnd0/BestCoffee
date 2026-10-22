@@ -9,6 +9,7 @@ import {
   useState,
 } from "react";
 import type { Product, ProductVariant } from "@/lib/types";
+import { GRIND_SHORT } from "@/lib/grind";
 import { toast } from "@/components/ui/toast";
 
 export interface CartItem {
@@ -161,12 +162,6 @@ export function buildCartItem(
   mode: CartItem["mode"],
   frequencyDays?: number,
 ): Omit<CartItem, "qty"> {
-  const GRIND_LABEL: Record<ProductVariant["grind"], string> = {
-    WHOLE_BEAN: "Grano",
-    ESPRESSO: "Espresso",
-    FILTER: "Filtro",
-    FRENCH_PRESS: "Prensa",
-  };
   const size = variant.sizeGrams >= 1000 ? `${variant.sizeGrams / 1000} kg` : `${variant.sizeGrams} g`;
   const unit =
     mode === "SUBSCRIPTION" && variant.priceSubscriptionCents != null
@@ -177,7 +172,7 @@ export function buildCartItem(
     productSlug: product.slug,
     productName: product.name,
     variantId: variant.id,
-    variantLabel: `${size} · ${GRIND_LABEL[variant.grind]}`,
+    variantLabel: `${size} · ${GRIND_SHORT[variant.grind]}`,
     unitPriceCents: unit,
     mode,
     frequencyDays,

@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
+import { useState } from "react";
 import { motion } from "motion/react";
 import { Plus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -41,6 +43,8 @@ export function ProductCard({
   imageHeight?: number;
 }) {
   const { addItem, open } = useCart();
+  const mainImage = product.images[0];
+  const [imageBroken, setImageBroken] = useState(false);
   const cheapest = product.variants.reduce(
     (a, b) => (a.priceOneTimeCents <= b.priceOneTimeCents ? a : b),
     product.variants[0],
@@ -85,6 +89,18 @@ export function ProductCard({
         <div className="absolute inset-0 grid place-items-center text-[9px] text-white/10 tracking-widest uppercase select-none">
           {product.images[0]?.alt ?? product.name}
         </div>
+
+        {/* Foto principal (si existe y carga) — tapa el degradado */}
+        {mainImage && !imageBroken && (
+          <Image
+            src={mainImage.url}
+            alt={mainImage.alt ?? product.name}
+            fill
+            sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw"
+            className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]"
+            onError={() => setImageBroken(true)}
+          />
+        )}
 
         {/* Badge */}
         {badge && (

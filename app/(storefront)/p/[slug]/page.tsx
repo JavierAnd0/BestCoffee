@@ -6,6 +6,7 @@ import { Roast } from "@/components/ui/roast";
 import { Stars } from "@/components/ui/stars";
 import { BuyBlock } from "@/components/storefront/buy-block";
 import { ProductCard } from "@/components/storefront/product-card";
+import { ProductGallery } from "@/components/storefront/product-gallery";
 import { getProductBySlug, listRelated } from "@/lib/data/products";
 import { getCurrentTenant } from "@/lib/data/tenant";
 
@@ -49,7 +50,7 @@ export default async function ProductPage({
         </nav>
 
         <div className="grid lg:grid-cols-2 gap-12 lg:gap-20">
-          <Gallery alt={product.images[0]?.alt ?? product.name} />
+          <ProductGallery images={product.images} name={product.name} />
 
           <div>
             <Badge variant="outline" className="font-normal uppercase tracking-[0.12em]">
@@ -133,31 +134,6 @@ export default async function ProductPage({
         </section>
       )}
     </>
-  );
-}
-
-function Gallery({ alt }: { alt: string }) {
-  return (
-    <div className="space-y-3">
-      <div
-        aria-label={alt}
-        className="aspect-square rounded-lg bg-muted grid place-items-center text-sm text-muted-foreground"
-      >
-        {alt}
-      </div>
-      <div className="grid grid-cols-4 gap-2">
-        {[0, 1, 2, 3].map((i) => (
-          <button
-            key={i}
-            aria-label={`Vista ${i + 1}`}
-            className={
-              "aspect-square rounded-md bg-muted/70 hover:ring-2 hover:ring-foreground/20 transition " +
-              (i === 0 ? "ring-2 ring-foreground" : "")
-            }
-          />
-        ))}
-      </div>
-    </div>
   );
 }
 

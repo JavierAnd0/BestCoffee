@@ -90,6 +90,3 @@ pnpm lint          # eslint
 
 Vercel. Conectar el repo, definir env vars, deploy automático en cada push a `main`. Preview deployments para PRs.
 
-## Plan del proyecto
-
-Plan completo en `/Users/javier/.claude/plans/sequential-shimmying-floyd.md`.

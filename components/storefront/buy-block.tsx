@@ -6,14 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Stepper } from "@/components/ui/stepper";
 import { formatCop } from "@/lib/format";
 import type { Product, ProductVariant } from "@/lib/types";
+import { GRIND_LABEL, sortGrinds } from "@/lib/grind";
 import { useCart, buildCartItem } from "./cart-context";
-
-const GRIND_LABEL: Record<ProductVariant["grind"], string> = {
-  WHOLE_BEAN: "Grano entero",
-  ESPRESSO: "Espresso",
-  FILTER: "Filtro",
-  FRENCH_PRESS: "Prensa",
-};
 
 const FREQUENCIES = [
   { days: 7, label: "Cada semana" },
@@ -42,7 +36,7 @@ export function BuyBlock({
     [product.variants],
   );
   const grinds = useMemo(
-    () => Array.from(new Set(product.variants.map((v) => v.grind))),
+    () => sortGrinds(Array.from(new Set(product.variants.map((v) => v.grind)))),
     [product.variants],
   );
 

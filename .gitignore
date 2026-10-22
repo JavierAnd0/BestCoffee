@@ -42,3 +42,7 @@ next-env.d.ts
 
 # AI / editor local folders
 .claude/
+
+# Raw uncompressed 3D renders
+/raw_frames/
+

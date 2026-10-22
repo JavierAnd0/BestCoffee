@@ -12,60 +12,62 @@ import {
 import Link from "next/link";
 import type { HeroContent } from "@/lib/types";
 
-// Three.js cannot SSR — defer to client. Until the canvas is ready the panel
-// stays dark, then the model fades in (handled by the model's own Suspense).
+// Three.js cannot SSR — defer to client.
 const HeroModel = dynamic(
   () => import("./hero-model").then((m) => m.HeroModel),
   { ssr: false, loading: () => null },
 );
 
 /* ═══════════════════════════════════════════════════════════
-   TEXT PHASE — symmetric in/out with blur + lift, generous
-   overlap so the screen is never empty between phases.
+   STATION TEXT — Editorial floating copy synchronized with
+   the 4 vertical 3D stations. Pure GPU opacity + translateY.
    ═══════════════════════════════════════════════════════════ */
-function TextPhase({
+function StationCard({
   progress,
   inAt,
   outAt,
-  lift = 26,
+  stayIn = false,
+  stayOut = false,
+  interactive = false,
   children,
-  className = "",
 }: {
   progress: MotionValue<number>;
   inAt: number;
   outAt: number;
-  lift?: number;
+  stayIn?: boolean;
+  stayOut?: boolean;
+  interactive?: boolean;
   children: React.ReactNode;
-  className?: string;
 }) {
-  // Fade window: ramp up over the first 35% of the phase, hold, ramp down
-  // over the last 35%. Wider ramps = softer, more cinematic crossfades.
   const span = outAt - inAt;
-  const inEnd = inAt + span * 0.34;
-  const outStart = outAt - span * 0.34;
+  const inEnd = stayIn ? inAt : inAt + span * 0.24;
+  const outStart = stayOut ? outAt : outAt - span * 0.24;
 
   const opacity = useTransform(
     progress,
     [inAt, inEnd, outStart, outAt],
-    [0, 1, 1, 0],
+    [stayIn ? 1 : 0, 1, 1, stayOut ? 1 : 0],
   );
-  // Enter from below, exit upward — a continuous drift, never a snap back.
+
   const y = useTransform(
     progress,
     [inAt, inEnd, outStart, outAt],
-    [lift, 0, 0, -lift * 0.7],
+    [stayIn ? 0 : 36, 0, 0, stayOut ? 0 : -36],
   );
-  const blur = useTransform(
-    progress,
-    [inAt, inEnd, outStart, outAt],
-    [8, 0, 0, 6],
+
+  const pointerEvents = useTransform(opacity, (v) =>
+    interactive && v > 0.45 ? "auto" : "none",
   );
-  const filter = useTransform(blur, (b) => `blur(${b}px)`);
 
   return (
     <motion.div
-      style={{ opacity, y, filter, willChange: "opacity, transform, filter" }}
-      className={`absolute ${className}`}
+      style={{
+        opacity,
+        y,
+        pointerEvents,
+        willChange: "opacity, transform",
+      }}
+      className="absolute inset-x-6 sm:inset-x-auto sm:left-10 lg:left-20 xl:left-28 bottom-12 sm:bottom-auto sm:top-1/2 sm:-translate-y-1/2 max-w-[30rem] z-30"
     >
       {children}
     </motion.div>
@@ -73,15 +75,79 @@ function TextPhase({
 }
 
 /* ═══════════════════════════════════════════════════════════
-   SCROLL STORY — cinematic scroll experience.
+   STATION DOT — Right-hand vertical progress indicator
+   Adapts cleanly as Station 4 transitions to warm cream.
+   ═══════════════════════════════════════════════════════════ */
+function StationStepDot({
+  progress,
+  range,
+  label,
+  num,
+}: {
+  progress: MotionValue<number>;
+  range: [number, number];
+  label: string;
+  num: string;
+}) {
+  const activeOpacity = useTransform(
+    progress,
+    [
+      Math.max(0, range[0] - 0.04),
+      range[0] + 0.03,
+      range[1] - 0.03,
+      Math.min(1, range[1] + 0.04),
+    ],
+    [0.32, 1, 1, 0.32],
+  );
+  const barScale = useTransform(
+    progress,
+    [range[0], range[1]],
+    [0, 1],
+  );
+  const labelColor = useTransform(
+    progress,
+    [0.75, 0.88],
+    ["rgba(247, 239, 228, 0.85)", "rgba(23, 13, 4, 0.82)"],
+  );
+  const trackBg = useTransform(
+    progress,
+    [0.75, 0.88],
+    ["rgba(247, 239, 228, 0.16)", "rgba(23, 13, 4, 0.14)"],
+  );
 
-   Design principles for the "premium" feel:
-   • The 3D model rotates CONTINUOUSLY on its own (inside HeroModel),
-     decoupled from scroll — so motion never freezes when the user stops.
-   • Scroll drives only position / scale / opacity, and is smoothed through
-     a spring so micro scroll jitter becomes buttery glide.
-   • Text phases cross-fade with wide overlapping windows + blur, so there's
-     never an empty frame and never a hard cut.
+  return (
+    <motion.div
+      style={{ opacity: activeOpacity }}
+      className="flex items-center justify-end gap-3"
+    >
+      <motion.span
+        style={{ color: labelColor }}
+        className="text-[10px] font-mono uppercase tracking-[0.22em]"
+      >
+        {num} · {label}
+      </motion.span>
+      <motion.div
+        style={{ backgroundColor: trackBg }}
+        className="w-1 h-7 rounded-full overflow-hidden relative"
+      >
+        <motion.div
+          className="absolute inset-x-0 top-0 bottom-0 origin-top"
+          style={{
+            scaleY: barScale,
+            backgroundColor: "var(--accent)",
+          }}
+        />
+      </motion.div>
+    </motion.div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SCROLL STORY — 4-Station 3D Coffee Ritual (500vh)
+   Station 1: El Origen / El Grano (Bag + 64 Instanced Beans)
+   Station 2: La Molienda (Conical Burr Grinder + Grounds Stream)
+   Station 3: La Alquimia (Bialetti Extraction + Liquid Pour)
+   Station 4: El Resultado (Steaming Cup + Rising Crema + CTA)
    ═══════════════════════════════════════════════════════════ */
 export function ScrollStory({ content }: { content: HeroContent }) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -91,245 +157,314 @@ export function ScrollStory({ content }: { content: HeroContent }) {
     offset: ["start start", "end end"],
   });
 
-  // ── Spring-smoothed progress: the single biggest lever for a premium feel.
-  // Critically damped-ish so it glides without overshoot wobble.
+  // Smooth scrub (equivalent to scrub: 0.5 in GSAP + Lenis)
   const p = useSpring(scrollYProgress, {
-    stiffness: 90,
+    stiffness: 140,
     damping: 30,
-    restDelta: 0.00015,
-    mass: 0.9,
+    mass: 0.5,
+    restDelta: 0.0004,
   });
 
-  /* ── Cup choreography — stays CENTERED horizontally the whole time. Only
-       a small vertical lift + scale breathing; no drift to the sides. The
-       model spins itself (sway) and steams itself, both inside the canvas. ── */
-  // Sits a touch below center during the brand title (so the title owns the
-  // screen), rises to its hero spot as the title leaves, then a gentle
-  // upward exit. Always horizontally centered.
-  const cupY = useTransform(
-    p,
-    [0, 0.1, 0.24, 0.9, 1],
-    [90, 46, -28, -28, -70],
-  );
-  const cupOpacity = useTransform(p, [0, 0.06, 0.98, 1], [0, 1, 1, 0.92]);
-  const cupScale = useTransform(
-    p,
-    [0, 0.1, 0.24, 0.9, 1],
-    [0.55, 0.72, 1, 1, 0.92],
-  );
-  // Horizontal stays at 0 — centered. (No cupX drift.)
-  // Subtle parallax tilt only, for life without displacement.
-  const cupTilt = useTransform(p, [0, 0.5, 1], [-2.5, 0, 2.5]);
-
-  /* ── Background: deep roast → warm cream, eased across the last third. ── */
-  const lightOverlayOpacity = useTransform(p, [0, 0.58, 0.82, 1], [0, 0, 0.78, 1]);
-  // Vignette tightens slightly through the middle for depth, then releases.
-  const vignetteOpacity = useTransform(p, [0, 0.3, 0.7, 1], [0.5, 0.7, 0.55, 0.2]);
-
-  /* ── Scroll cue fades the moment the user engages. ── */
+  // Seamless transition from Warm Espresso Roast (Stations 1–3)
+  // to the storefront's Warm Cream/Ivory palette in Station 4
+  const creamStageOpacity = useTransform(p, [0.74, 0.89], [0, 1]);
+  const darkVignetteOpacity = useTransform(p, [0.72, 0.88], [1, 0]);
   const scrollCueOpacity = useTransform(p, [0, 0.05], [1, 0]);
 
-  const lines = content.title.split("\n");
-
   return (
-    /* ── Tall scroll-driver section ── */
-    <div ref={containerRef} style={{ height: "520vh" }}>
-
-      {/* ── Sticky viewport ── */}
-      <div className="sticky top-0 h-[100svh] overflow-hidden flex items-center justify-center">
-
-        {/* ── Deep roast background ── */}
-        <div
-          className="absolute inset-0"
-          style={{
-            background:
-              "linear-gradient(155deg,#0a0401 0%,#1c0905 44%,#301208 100%)",
-          }}
-        />
-
-        {/* ── Warm cream overlay that bleeds in near the CTA ── */}
-        <motion.div
-          className="absolute inset-0"
-          style={{ opacity: lightOverlayOpacity, background: "var(--background)" }}
-        />
-
-        {/* ── Vignette for depth ── */}
+    /* ── 500vh scroll driver ── */
+    <div
+      ref={containerRef}
+      style={{ height: "500vh", backgroundColor: "#110602" }}
+    >
+      {/* ── Sticky full-viewport stage ── */}
+      <div
+        className="sticky top-0 h-[100svh] w-full overflow-hidden"
+        style={{
+          background:
+            "radial-gradient(ellipse 85% 75% at 64% 48%, #341509 0%, #1c0904 52%, #0d0401 100%)",
+          color: "#f7efe4",
+        }}
+      >
+        {/* ── Warm terracotta & crema studio backlight behind the 3D rail ── */}
         <motion.div
           className="absolute inset-0 pointer-events-none"
           style={{
-            opacity: vignetteOpacity,
+            opacity: darkVignetteOpacity,
             background:
-              "radial-gradient(ellipse at center, transparent 42%, rgba(8,3,1,0.9) 100%)",
+              "radial-gradient(circle 540px at 63% 48%, rgba(184, 92, 50, 0.26) 0%, rgba(212, 165, 116, 0.10) 45%, transparent 75%)",
           }}
         />
 
-        {/* Film grain */}
-        <div
-          className="absolute inset-0 mix-blend-overlay pointer-events-none"
-          style={{ backgroundImage: "var(--grain)", backgroundSize: "200px", opacity: 0.045 }}
+        {/* ── Station 4 Editorial Warm Cream background transition ── */}
+        <motion.div
+          className="absolute inset-0 pointer-events-none z-0"
+          style={{
+            opacity: creamStageOpacity,
+            background:
+              "radial-gradient(ellipse 80% 75% at 64% 50%, #fffdf9 0%, #faf7f1 58%, #f2ece1 100%)",
+          }}
         />
 
-        {/* ════════ TEXT PHASES ════════ */}
+        {/* ── Subtle analog film grain from globals.css ── */}
+        <div
+          className="absolute inset-0 pointer-events-none z-20 opacity-30 mix-blend-overlay"
+          style={{
+            backgroundImage: "var(--grain)",
+            backgroundSize: "180px 180px",
+          }}
+        />
 
-        {/* Phase 0 — Brand entrance (2–22%) */}
-        <TextPhase
-          progress={p}
-          inAt={0.02} outAt={0.22}
-          className="inset-0 flex flex-col items-center justify-center text-white text-center px-6 pointer-events-none"
-          lift={16}
-        >
-          <p className="eyebrow text-white/45 tracking-[0.3em] mb-6">{content.eyebrow}</p>
+        {/* ── Fullscreen 3D Canvas Stage (4 Stations along vertical Y rail) ── */}
+        <div className="absolute inset-0 z-10">
+          <HeroModel scrollProgress={p} />
+        </div>
+
+        {/* ── Warm espresso vignette (fades out as Station 4 opens into cream) ── */}
+        <motion.div
+          className="absolute inset-0 pointer-events-none z-20"
+          style={{
+            opacity: darkVignetteOpacity,
+            background:
+              "radial-gradient(ellipse 75% 70% at 62% 50%, transparent 48%, rgba(11, 4, 1, 0.72) 100%)",
+          }}
+        />
+
+        {/* ════════ 4 STATIONS FLOATING TEXT (EDITORIAL KINFOLK STYLE) ════════ */}
+
+        {/* ESTACIÓN 1: El Grano (0% a 23%) */}
+        <StationCard progress={p} inAt={0} outAt={0.23} stayIn>
+          <span
+            className="inline-flex items-center gap-2.5 text-xs font-mono font-medium tracking-[0.22em] uppercase"
+            style={{ color: "#e09f67" }}
+          >
+            <span
+              className="w-2 h-2 rounded-full animate-pulse"
+              style={{ backgroundColor: "var(--accent)" }}
+            />
+            01. El Origen · {content.eyebrow}
+          </span>
           <h1
-            className="font-display font-light leading-[0.88] tracking-tight"
-            style={{
-              fontSize: "clamp(3.8rem,10vw,8.5rem)",
-              textShadow: "0 4px 60px rgba(0,0,0,0.5)",
-            }}
+            className="font-display font-light text-[clamp(2.6rem,5.2vw,4.6rem)] leading-[0.95] tracking-tight mt-3"
+            style={{ color: "#fbf6ee" }}
           >
-            {lines.map((l, i) => <span key={i} className="block">{l}</span>)}
+            Seleccionado
+            <br />
+            <em className="italic font-normal" style={{ color: "#e8b888" }}>
+              grano a grano.
+            </em>
           </h1>
-        </TextPhase>
-
-        {/* Phase 1 — Left: origin / Right: profile (22–46%) */}
-        <TextPhase
-          progress={p}
-          inAt={0.22} outAt={0.46}
-          className="left-6 sm:left-10 lg:left-20 xl:left-28 top-1/2 -translate-y-1/2 text-white pointer-events-none"
-          lift={20}
-        >
-          <p className="eyebrow text-white/40 mb-3">Origen</p>
-          <p className="font-display font-light text-[clamp(1.8rem,3.5vw,3rem)] leading-tight text-white/92">
-            Colombia
-          </p>
-          <p className="mt-2 text-sm text-white/50 font-light">1.800m de altura</p>
-          <div className="mt-4 w-8 h-px" style={{ background: "rgba(255,255,255,0.22)" }} />
-          <p className="mt-4 text-xs text-white/40 font-light leading-relaxed max-w-[150px]">
-            Microlotes seleccionados<br />de fincas familiares
-          </p>
-        </TextPhase>
-
-        <TextPhase
-          progress={p}
-          inAt={0.22} outAt={0.46}
-          className="right-6 sm:right-10 lg:right-20 xl:right-28 top-1/2 -translate-y-1/2 text-white pointer-events-none text-right"
-          lift={20}
-        >
-          <p className="eyebrow text-white/40 mb-3">Perfil de taza</p>
-          <p className="font-display font-light text-[clamp(1.8rem,3.5vw,3rem)] leading-tight text-white/92">
-            Origen<br />único
-          </p>
-          <p className="mt-2 text-sm text-white/50 font-light">Chocolatado · Cítrico</p>
-          <div className="mt-4 w-8 h-px ml-auto" style={{ background: "rgba(255,255,255,0.22)" }} />
-          <p className="mt-4 text-xs text-white/40 font-light leading-relaxed max-w-[150px] ml-auto">
-            Tueste medio<br />en lotes pequeños
-          </p>
-        </TextPhase>
-
-        {/* Phase 2 — Main tagline below cup (46–66%) */}
-        <TextPhase
-          progress={p}
-          inAt={0.46} outAt={0.66}
-          className="inset-x-0 bottom-[15%] sm:bottom-[17%] px-6 text-center text-white pointer-events-none"
-          lift={26}
-        >
           <p
-            className="font-display mx-auto leading-[1.32] max-w-[26rem] sm:max-w-xl"
-            style={{
-              fontSize: "clamp(1.3rem,2.5vw,2.15rem)",
-              fontWeight: 400,
-              textShadow: "0 2px 50px rgba(0,0,0,0.65)",
-            }}
+            className="mt-4 text-base sm:text-lg font-light leading-relaxed max-w-md"
+            style={{ color: "rgba(244, 232, 217, 0.78)" }}
           >
-            {content.subtitle}
+            Tostión media en lotes pequeños que preserva las notas
+            achocolatadas y la acidez brillante de los 1.800 m de altura.
           </p>
-        </TextPhase>
-
-        {/* Phase 3 — Freshness promise (66–84%) */}
-        <TextPhase
-          progress={p}
-          inAt={0.66} outAt={0.84}
-          className="inset-x-0 bottom-[15%] sm:bottom-[17%] px-6 text-center text-white pointer-events-none"
-          lift={24}
-        >
-          <p className="eyebrow text-white/45 tracking-[0.26em] mb-4">Frescura garantizada</p>
-          <p
-            className="font-display leading-[1.18]"
-            style={{
-              fontSize: "clamp(1.5rem,3.2vw,2.6rem)",
-              fontWeight: 400,
-              textShadow: "0 2px 50px rgba(0,0,0,0.65)",
-            }}
+          <div
+            className="mt-6 flex items-center gap-4 text-[11px] font-mono uppercase tracking-[0.18em]"
+            style={{ color: "rgba(224, 159, 103, 0.72)" }}
           >
-            Tostado esta semana.<br />En tu puerta mañana.
-          </p>
-        </TextPhase>
+            <span>Cordillera Central</span>
+            <span>·</span>
+            <span>SCA 86.5 pts</span>
+          </div>
+        </StationCard>
 
-        {/* Phase 4 — CTA (84–100%): cup drifts right, text resolves on the left */}
-        <TextPhase
-          progress={p}
-          inAt={0.84} outAt={1.0}
-          className="left-6 sm:left-10 lg:left-20 xl:left-28 top-1/2 -translate-y-[55%] pointer-events-auto"
-          lift={28}
-        >
-          <p className="eyebrow text-foreground/50 mb-5 tracking-[0.24em]">Café de especialidad</p>
+        {/* ESTACIÓN 2: El Molino (25% a 48%) */}
+        <StationCard progress={p} inAt={0.25} outAt={0.48}>
+          <span
+            className="inline-flex items-center gap-2.5 text-xs font-mono font-medium tracking-[0.22em] uppercase"
+            style={{ color: "#e09f67" }}
+          >
+            <span
+              className="w-2 h-2 rounded-full"
+              style={{ backgroundColor: "var(--accent)" }}
+            />
+            02. La Molienda
+          </span>
           <h2
-            className="font-display font-light leading-[0.92] tracking-tight text-foreground"
-            style={{ fontSize: "clamp(2.4rem,5vw,4.25rem)" }}
+            className="font-display font-light text-[clamp(2.6rem,5.2vw,4.6rem)] leading-[0.95] tracking-tight mt-3"
+            style={{ color: "#fbf6ee" }}
           >
-            Descubre<br />tu origen.
+            Molienda fresca
+            <br />
+            <em className="italic font-normal" style={{ color: "#e8b888" }}>
+              al instante.
+            </em>
           </h2>
-          <div className="mt-10 flex flex-col gap-4">
+          <p
+            className="mt-4 text-base sm:text-lg font-light leading-relaxed max-w-md"
+            style={{ color: "rgba(244, 232, 217, 0.78)" }}
+          >
+            El grano recién tostado ingresa al molino manual; sus muelas cónicas
+            giran en frío liberando una molienda uniforme directa al filtro.
+          </p>
+          <div
+            className="mt-6 flex items-center gap-4 text-[11px] font-mono uppercase tracking-[0.18em]"
+            style={{ color: "rgba(224, 159, 103, 0.72)" }}
+          >
+            <span>Corte en frío</span>
+            <span>·</span>
+            <span>Granulometría precisa</span>
+          </div>
+        </StationCard>
+
+        {/* ESTACIÓN 3: La Cafetera / Armado y Extracción (50% a 73%) */}
+        <StationCard progress={p} inAt={0.5} outAt={0.73}>
+          <span
+            className="inline-flex items-center gap-2.5 text-xs font-mono font-medium tracking-[0.22em] uppercase"
+            style={{ color: "#e09f67" }}
+          >
+            <span
+              className="w-2 h-2 rounded-full"
+              style={{ backgroundColor: "var(--accent)" }}
+            />
+            03. La Alquimia Moka
+          </span>
+          <h2
+            className="font-display font-light text-[clamp(2.6rem,5.2vw,4.6rem)] leading-[0.95] tracking-tight mt-3"
+            style={{ color: "#fbf6ee" }}
+          >
+            Del embudo al
+            <br />
+            <em className="italic font-normal" style={{ color: "#e8b888" }}>
+              cuerpo perfecto.
+            </em>
+          </h2>
+          <p
+            className="mt-4 text-base sm:text-lg font-light leading-relaxed max-w-md"
+            style={{ color: "rgba(244, 232, 217, 0.78)" }}
+          >
+            El café molido reposa en el embudo de aluminio antes de sellar la
+            cafetera pieza a pieza para extraer una infusión intensa y sedosa.
+          </p>
+          <div
+            className="mt-6 flex items-center gap-4 text-[11px] font-mono uppercase tracking-[0.18em]"
+            style={{ color: "rgba(224, 159, 103, 0.72)" }}
+          >
+            <span>Sellado hermético</span>
+            <span>·</span>
+            <span>Extracción a presión</span>
+          </div>
+        </StationCard>
+
+        {/* ESTACIÓN 4: La Taza / El Resultado (76% hasta el final — sobre crema editorial) */}
+        <StationCard
+          progress={p}
+          inAt={0.76}
+          outAt={1.0}
+          stayOut
+          interactive
+        >
+          <span
+            className="inline-flex items-center gap-2.5 text-xs font-mono font-semibold tracking-[0.22em] uppercase"
+            style={{ color: "var(--accent)" }}
+          >
+            <span
+              className="w-2 h-2 rounded-full"
+              style={{ backgroundColor: "var(--accent)" }}
+            />
+            04. El Resultado
+          </span>
+          <h2
+            className="font-display font-light text-[clamp(2.6rem,5.2vw,4.6rem)] leading-[0.95] tracking-tight mt-3"
+            style={{ color: "var(--foreground)" }}
+          >
+            Tu taza perfecta
+            <br />
+            <em
+              className="italic font-normal"
+              style={{ color: "var(--accent)" }}
+            >
+              está lista.
+            </em>
+          </h2>
+          <p
+            className="mt-4 text-base sm:text-lg font-light leading-relaxed max-w-md"
+            style={{ color: "var(--muted)" }}
+          >
+            {content.subtitle} Tostado esta semana, en tu puerta mañana.
+          </p>
+          <div className="mt-8 flex flex-wrap items-center gap-5">
             <Link
               href={content.ctaPrimaryHref}
-              className="group inline-flex items-center gap-3 text-sm font-medium tracking-wide border-b border-foreground/25 pb-1 hover:border-foreground transition-colors w-fit"
+              className="group inline-flex items-center gap-3 px-7 py-4 text-xs uppercase tracking-[0.18em] font-semibold rounded-full transition-all duration-300 shadow-lg hover:scale-[1.02]"
+              style={{
+                backgroundColor: "var(--foreground)",
+                color: "var(--background)",
+              }}
             >
               {content.ctaPrimaryLabel}
-              <span className="transition-transform duration-300 group-hover:translate-x-1">→</span>
+              <span className="transition-transform duration-300 group-hover:translate-x-1">
+                →
+              </span>
             </Link>
             {content.ctaSecondaryHref && (
               <Link
                 href={content.ctaSecondaryHref}
-                className="text-sm text-muted-foreground hover:text-foreground transition-colors font-light"
+                className="text-sm transition-colors font-normal border-b pb-0.5"
+                style={{
+                  color: "var(--foreground)",
+                  borderColor: "var(--border-strong)",
+                }}
               >
                 {content.ctaSecondaryLabel}
               </Link>
             )}
           </div>
-        </TextPhase>
+        </StationCard>
 
-        {/* ════════ THE 3D CUP ════════ */}
-        <motion.div
-          className="relative z-20"
-          style={{
-            y: cupY,
-            opacity: cupOpacity,
-            scale: cupScale,
-            rotate: cupTilt,
-            willChange: "transform, opacity",
-          }}
+        {/* ── Right-side Vertical Station Rail HUD ── */}
+        <div
+          className="hidden md:flex flex-col gap-4 absolute right-8 lg:right-12 top-1/2 -translate-y-1/2 z-30 pointer-events-none"
+          aria-hidden="true"
         >
-          {/* The model sways + steams inside its own canvas; the canvas is
-              taller than the cup so the rising steam isn't clipped. */}
-          <div className="relative w-[260px] h-[360px] sm:w-[320px] sm:h-[440px] lg:w-[380px] lg:h-[520px]">
-            <HeroModel autoRotateSpeed={0.3} floatIntensity={0.32} />
-          </div>
-        </motion.div>
+          <StationStepDot
+            progress={p}
+            range={[0.0, 0.25]}
+            num="01"
+            label="El Grano"
+          />
+          <StationStepDot
+            progress={p}
+            range={[0.25, 0.5]}
+            num="02"
+            label="El Molino"
+          />
+          <StationStepDot
+            progress={p}
+            range={[0.5, 0.75]}
+            num="03"
+            label="El Método"
+          />
+          <StationStepDot
+            progress={p}
+            range={[0.75, 1.0]}
+            num="04"
+            label="La Taza"
+          />
+        </div>
 
-        {/* ── Scroll cue ── */}
+        {/* ── Initial Scroll Cue ── */}
         <motion.div
-          className="absolute bottom-7 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 pointer-events-none"
+          className="absolute bottom-7 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 pointer-events-none z-30"
           style={{ opacity: scrollCueOpacity }}
           aria-hidden="true"
         >
-          <span className="eyebrow text-white/35">Scroll</span>
+          <span
+            className="text-[10px] font-mono uppercase tracking-[0.26em]"
+            style={{ color: "rgba(244, 232, 217, 0.65)" }}
+          >
+            Iniciar preparación
+          </span>
           <motion.div
-            className="w-px h-8 bg-white/25"
-            animate={{ scaleY: [0.4, 1, 0.4], opacity: [0.2, 0.65, 0.2] }}
-            transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
-            style={{ originY: 0 }}
+            className="w-px h-8"
+            style={{ backgroundColor: "var(--accent)", originY: 0 }}
+            animate={{ scaleY: [0.4, 1, 0.4], opacity: [0.3, 0.9, 0.3] }}
+            transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
           />
         </motion.div>
-
       </div>
     </div>
   );
