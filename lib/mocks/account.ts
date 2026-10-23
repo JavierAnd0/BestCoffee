@@ -14,6 +14,9 @@ export interface MockOrder {
   createdAt: string; // already formatted "04 jun 2026"
   itemsCount: number;
   totalCents: number;
+  subtotalCents?: number;
+  shippingCents?: number;
+  discountCents?: number;
   status: OrderStatus;
   fromSubscription: boolean;
   items?: MockOrderItem[];
@@ -37,6 +40,13 @@ export interface MockAddress {
   label: string;
   line: string;
   isDefault: boolean;
+  line1?: string;
+  line2?: string;
+  city?: string;
+  state?: string;
+  postalCode?: string;
+  country?: string;
+  phone?: string;
 }
 
 export interface MockCustomer {

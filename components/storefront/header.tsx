@@ -13,10 +13,12 @@ type NavLink = { href: string; label: string };
 // el enlace no se muestra para no llevar a páginas vacías o bloqueadas.
 function buildLinks(features?: TenantFeatures) {
   const subs = features?.subscriptions ?? true;
+  const accessories = features?.accessories ?? true;
 
   const left: NavLink[] = [
     { href: "/catalogo", label: "Catálogo" },
     ...(subs ? [{ href: "/suscripciones", label: "Suscripciones" }] : []),
+    ...(accessories ? [{ href: "/accesorios", label: "Accesorios" }] : []),
     { href: "/tiendas", label: "Tiendas" },
   ];
 
@@ -25,6 +27,7 @@ function buildLinks(features?: TenantFeatures) {
   const mobile: NavLink[] = [
     { href: "/catalogo", label: "Catálogo" },
     ...(subs ? [{ href: "/suscripciones", label: "Suscripciones" }] : []),
+    ...(accessories ? [{ href: "/accesorios", label: "Accesorios" }] : []),
     { href: "/quiz", label: "Encuentra tu café" },
     { href: "/blog", label: "Blog" },
     { href: "/guias", label: "Guías de preparación" },

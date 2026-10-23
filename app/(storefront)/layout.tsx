@@ -4,6 +4,7 @@ import { Footer } from "@/components/storefront/footer";
 import { CartProvider } from "@/components/storefront/cart-context";
 import { CartDrawer } from "@/components/storefront/cart-drawer";
 import { MobileNav } from "@/components/storefront/mobile-nav";
+import { NewsletterModal } from "@/components/storefront/newsletter-modal";
 import { Toaster } from "@/components/ui/toast";
 import { getAnnounceMessages } from "@/lib/data/content";
 import { getCurrentTenant } from "@/lib/data/tenant";
@@ -35,6 +36,7 @@ export default async function StorefrontLayout({
         <Footer brand={tenant.brand} />
         <CartDrawer />
         <MobileNav features={tenant.features} />
+        <NewsletterModal />
         <Toaster />
       </CartProvider>
     </div>

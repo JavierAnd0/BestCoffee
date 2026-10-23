@@ -47,11 +47,19 @@ export async function loginAction(
     return { error: message };
   }
 
-  // JWT is delivered in Set-Cookie; store it under our session name
+  // JWT is delivered in Set-Cookie or JSON body; store it under our session name
   const setCookieHeader = res.headers.get("set-cookie") ?? "";
   const rawPair = setCookieHeader.split(";")[0]; // e.g. "customer_token=eyJ..."
   const eqIdx = rawPair.indexOf("=");
-  const tokenValue = eqIdx >= 0 ? rawPair.slice(eqIdx + 1).trim() : "";
+  let tokenValue = eqIdx >= 0 ? rawPair.slice(eqIdx + 1).trim() : "";
+
+  if (!tokenValue) {
+    try {
+      const clonedRes = res.clone();
+      const body = (await clonedRes.json()) as { accessToken?: string; token?: string; customer_token?: string };
+      tokenValue = body?.accessToken || body?.token || body?.customer_token || "";
+    } catch { /* ignore */ }
+  }
 
   if (tokenValue) {
     const store = await cookies();
@@ -124,7 +132,7 @@ export async function registerAction(
 }
 
 // ── Logout ────────────────────────────────────────────────────────────────────
-export async function logoutAction() {
+export async function logoutAction(shouldRedirect: boolean | FormData = true) {
   const store = await cookies();
   const token =
     store.get("bestcoffee-session")?.value ??
@@ -148,8 +156,25 @@ export async function logoutAction() {
     });
   } catch { /* ignore */ }
 
+  // Clear standard session cookies
   store.set("bestcoffee-session", "", { maxAge: 0, path: "/" });
   store.set("customer_token", "", { maxAge: 0, path: "/" });
 
-  redirect("/login");
+  // Clear Neon Auth cookies
+  store.set("__Secure-neon-auth.session_token", "", { maxAge: 0, path: "/" });
+  store.set("neon-auth.session_token", "", { maxAge: 0, path: "/" });
+  store.set("better-auth.session_token", "", { maxAge: 0, path: "/" });
+
+  if (env.neonAuthUrl) {
+    try {
+      const { auth } = await import("../auth/server");
+      await auth.signOut();
+    } catch { /* ignore */ }
+  }
+
+  if (shouldRedirect !== false) {
+    redirect("/login");
+  }
+
+  return { success: true };
 }

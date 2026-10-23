@@ -1,48 +1,29 @@
 import type { Metadata } from "next";
 import { Eyebrow } from "@/components/ui/eyebrow";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { getCustomerAddresses } from "@/lib/data/account";
+import { AddressManager } from "@/components/storefront/address-manager";
 
-export const metadata: Metadata = { title: "Direcciones" };
+export const metadata: Metadata = {
+  title: "Mis Direcciones",
+  description: "Administra tus direcciones de entrega para pedidos y suscripciones de café.",
+};
 
 export default async function AddressesPage() {
   const addresses = await getCustomerAddresses();
+
   return (
     <div className="space-y-8">
       <header>
-        <Eyebrow>Envío</Eyebrow>
+        <Eyebrow>Envío y Entrega</Eyebrow>
         <h1 className="mt-3 font-display text-4xl font-semibold tracking-tight">
           Mis direcciones
         </h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Administra las direcciones donde recibes tus pedidos de café fresco y suscripciones.
+        </p>
       </header>
-      <div className="space-y-3">
-        {addresses.map((a) => (
-          <div
-            key={a.id}
-            className="rounded-lg border border-border bg-background p-5 flex items-start gap-4"
-          >
-            <div className="flex-1">
-              <div className="flex items-center gap-2">
-                <span className="font-medium">{a.label}</span>
-                {a.isDefault && <Badge variant="outline">Predeterminada</Badge>}
-              </div>
-              <div className="text-sm text-muted-foreground mt-1">{a.line}</div>
-            </div>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm">
-                Editar
-              </Button>
-              <Button variant="ghost" size="sm">
-                Eliminar
-              </Button>
-            </div>
-          </div>
-        ))}
-        <Button variant="outline" className="w-full">
-          + Agregar dirección
-        </Button>
-      </div>
+
+      <AddressManager initialAddresses={addresses} />
     </div>
   );
 }

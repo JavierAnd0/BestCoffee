@@ -10,21 +10,39 @@ import type { Product } from "../types";
 
 export async function listProducts(): Promise<Product[]> {
   if (env.useMocks) return PRODUCTS;
-  const api = await apiServer();
-  const { data, error } = await api.GET("/v1/products");
-  if (error || !data) throw new Error("API GET /v1/products failed");
-  const items = (data as unknown as { items: ApiProduct[] }).items ?? [];
-  return items.map(mapProduct);
+  try {
+    const api = await apiServer();
+    const { data, error } = await api.GET("/v1/products");
+    if (error || !data) return PRODUCTS;
+    const items = (data as unknown as { items?: ApiProduct[]; data?: ApiProduct[] }).items ??
+                  (data as unknown as { items?: ApiProduct[]; data?: ApiProduct[] }).data ?? [];
+    if (!items.length) return PRODUCTS;
+    const backendProducts = items.map(mapProduct);
+    // Si el backend aún no almacena accesorios (tipo ACCESSORY),
+    // incluimos los accesorios para que la tienda y catálogo cuenten con su sección de equipos.
+    const hasAccessories = backendProducts.some((p) => p.type === "ACCESSORY");
+    if (!hasAccessories) {
+      const mockAccessories = PRODUCTS.filter((p) => p.type === "ACCESSORY");
+      return [...backendProducts, ...mockAccessories];
+    }
+    return backendProducts;
+  } catch {
+    return PRODUCTS;
+  }
 }
 
 export async function getProductBySlug(slug: string): Promise<Product | undefined> {
   if (env.useMocks) return findMock(slug);
-  const api = await apiServer();
-  const { data, error } = await api.GET("/v1/products/{slug}", {
-    params: { path: { slug } },
-  });
-  if (error || !data) return undefined;
-  return mapProduct(data as unknown as ApiProduct);
+  try {
+    const api = await apiServer();
+    const { data, error } = await api.GET("/v1/products/{slug}", {
+      params: { path: { slug } },
+    });
+    if (error || !data) return findMock(slug);
+    return mapProduct(data as unknown as ApiProduct);
+  } catch {
+    return findMock(slug);
+  }
 }
 
 export async function listBestsellers(): Promise<Product[]> {
@@ -48,4 +66,14 @@ export async function listRelated(
   const sameType = all.filter((p) => p.slug !== product.slug && p.type === product.type);
   const pool = sameType.length ? sameType : all.filter((p) => p.slug !== product.slug);
   return pool.slice(0, limit);
+}
+
+export async function listAccessories(): Promise<Product[]> {
+  const all = await listProducts();
+  return all.filter((p) => p.type === "ACCESSORY" || p.collectionSlugs.includes("accesorios"));
+}
+
+export async function listCoffees(): Promise<Product[]> {
+  const all = await listProducts();
+  return all.filter((p) => p.type !== "ACCESSORY");
 }

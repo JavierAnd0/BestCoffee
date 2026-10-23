@@ -23,9 +23,13 @@ const TYPE_LABEL: Record<Product["type"], string> = {
   BLEND: "Mezcla",
   SINGLE_ORIGIN: "Origen único",
   DECAF: "Descafeinado",
+  ACCESSORY: "Accesorio",
 };
 
-function roastGradient(level: number): string {
+function roastGradient(level: number, type?: Product["type"]): string {
+  if (type === "ACCESSORY") {
+    return "linear-gradient(158deg,#181c20 0%,#2c3238 45%,#414952 80%,#55606c 100%)";
+  }
   if (level <= 3)
     return "linear-gradient(158deg,#3b2010 0%,#6b3d22 45%,#a86840 80%,#c4935a 100%)";
   if (level <= 5)
@@ -67,7 +71,7 @@ export function ProductCard({
         {/* Gradient bg */}
         <div
           className="absolute inset-0 transition-transform duration-700 ease-out group-hover:scale-[1.04]"
-          style={{ background: roastGradient(product.roastLevel) }}
+          style={{ background: roastGradient(product.roastLevel, product.type) }}
         />
 
         {/* Centre glow */}

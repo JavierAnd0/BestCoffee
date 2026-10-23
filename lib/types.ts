@@ -1,7 +1,7 @@
 // Domain types — mirror future API (NestJS + Prisma) so swapping mock
 // to live data is purely a fetch swap.
 
-export type ProductType = "BLEND" | "SINGLE_ORIGIN" | "DECAF";
+export type ProductType = "BLEND" | "SINGLE_ORIGIN" | "DECAF" | "ACCESSORY";
 export type GrindFormat =
   | "WHOLE_BEAN"
   | "ESPRESSO"
@@ -70,6 +70,7 @@ export interface TenantFeatures {
   reviews: boolean;
   gifts: boolean;
   customDomain: boolean;
+  accessories: boolean;
   maxProducts: number;
 }
 

@@ -16,6 +16,7 @@ const TYPE_FILTERS = [
   { value: "BLEND", label: "Mezcla" },
   { value: "SINGLE_ORIGIN", label: "Origen único" },
   { value: "DECAF", label: "Descafeinado" },
+  { value: "ACCESSORY", label: "Accesorios y Barismo" },
 ];
 
 const FORMATS = ["Grano entero", "Molido espresso", "Molido filtro", "Molido prensa"];

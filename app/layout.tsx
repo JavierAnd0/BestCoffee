@@ -29,6 +29,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html
       lang="es"
+      data-scroll-behavior="smooth"
       className={`${sans.variable} ${display.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-background text-foreground font-sans">

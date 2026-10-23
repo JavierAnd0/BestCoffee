@@ -44,6 +44,16 @@ export const env = {
   // 32-byte random secret.
   authSecret: optional("AUTH_SECRET", "dev-auth-secret-replace-in-prod"),
 
+  // Neon Auth (Managed Better Auth)
+  neonAuthUrl: optional(
+    "NEXT_PUBLIC_NEON_AUTH_URL",
+    optional("NEON_AUTH_BASE_URL", ""),
+  ),
+  neonAuthCookieSecret: optional(
+    "NEON_AUTH_COOKIE_SECRET",
+    "dev-neon-auth-cookie-secret-min-32-chars-long!",
+  ),
+
   isDev: process.env.NODE_ENV !== "production",
 };
 

@@ -30,30 +30,37 @@ interface HomeContent {
   featuredBundle: { data: { title: string; productSlugs: string[] } };
 }
 
-async function fetchHome(): Promise<HomeContent> {
-  const api = await apiServer();
-  const { data, error } = await api.GET("/v1/content/home");
-  if (error || !data) throw new Error("API GET /v1/content/home failed");
-  return data as unknown as HomeContent;
+async function fetchHome(): Promise<HomeContent | null> {
+  try {
+    const api = await apiServer();
+    const { data, error } = await api.GET("/v1/content/home");
+    if (error || !data) return null;
+    return data as unknown as HomeContent;
+  } catch {
+    return null;
+  }
 }
 
 export async function getAnnounceMessages(): Promise<AnnounceMessage[]> {
   if (env.useMocks) return ANNOUNCE_MESSAGES;
   const home = await fetchHome();
+  if (!home) return ANNOUNCE_MESSAGES;
   return mapAnnouncements(home.announcements);
 }
 
 export async function getHomeHero(): Promise<HeroContent> {
   if (env.useMocks) return HERO_HOME;
   const home = await fetchHome();
+  if (!home) return HERO_HOME;
   return mapHero(home.hero);
 }
 
 export async function getHomeSpotlight(): Promise<SpotlightContent> {
   if (env.useMocks) return SPOTLIGHT_HOME;
   const home = await fetchHome();
-  const slug = home.spotlight.data.productSlug;
-  const product = await getProductBySlug(slug);
+  if (!home) return SPOTLIGHT_HOME;
+  const slug = home.spotlight?.data?.productSlug;
+  const product = slug ? await getProductBySlug(slug) : undefined;
   if (!product) return SPOTLIGHT_HOME;
   return {
     eyebrow: "Origen único · spotlight",
@@ -70,7 +77,8 @@ export async function getHomeSpotlight(): Promise<SpotlightContent> {
 export async function getFeaturedPack(): Promise<FeaturedPackContent> {
   if (env.useMocks) return FEATURED_PACK_HOME;
   const home = await fetchHome();
-  const slugs = home.featuredBundle.data.productSlugs ?? [];
+  if (!home) return FEATURED_PACK_HOME;
+  const slugs = home.featuredBundle?.data?.productSlugs ?? [];
   // Price the bundle as the sum of each product's cheapest variant.
   const products = await Promise.all(slugs.map((s) => getProductBySlug(s)));
   const priceCents = products.reduce(

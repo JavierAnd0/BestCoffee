@@ -14,6 +14,7 @@ const TYPE_LABEL = {
   BLEND: "Mezcla",
   SINGLE_ORIGIN: "Origen único",
   DECAF: "Descafeinado",
+  ACCESSORY: "Accesorio de Barismo",
 } as const;
 
 export async function generateMetadata({
@@ -63,9 +64,11 @@ export default async function ProductPage({
             <div className="mt-3">
               <Stars value={5} count={128} />
             </div>
-            <div className="mt-6">
-              <Roast level={product.roastLevel} />
-            </div>
+            {product.type !== "ACCESSORY" && (
+              <div className="mt-6">
+                <Roast level={product.roastLevel} />
+              </div>
+            )}
             <div className="mt-4 flex flex-wrap gap-2">
               {product.flavorNotes.map((n) => (
                 <Badge key={n} variant="outline" className="font-normal">

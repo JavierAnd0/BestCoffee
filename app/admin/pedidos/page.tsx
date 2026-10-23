@@ -43,8 +43,8 @@ export default async function AdminOrdersPage({
     if (activeStatus && o.status !== activeStatus) return false;
     if (query) {
       return (
-        o.id.toLowerCase().includes(query) ||
-        o.customer.toLowerCase().includes(query)
+        String(o.id ?? "").toLowerCase().includes(query) ||
+        String(o.customer ?? "").toLowerCase().includes(query)
       );
     }
     return true;
@@ -128,8 +128,8 @@ export default async function AdminOrdersPage({
                   {formatCop(o.totalCents)}
                 </td>
                 <td className="px-4 py-3">
-                  <Badge variant="outline" className={STATUS_TONE[o.status]}>
-                    {ORDER_STATUS_LABEL[o.status]}
+                  <Badge variant="outline" className={STATUS_TONE[o.status] ?? "bg-muted text-muted-foreground border-border"}>
+                    {ORDER_STATUS_LABEL[o.status] ?? o.status}
                   </Badge>
                 </td>
                 <td className="px-4 py-3 text-xs text-muted-foreground">{o.createdAt}</td>

@@ -15,13 +15,10 @@ import {
   Settings,
   ShieldCheck,
   Truck,
-  LogOut,
 } from "lucide-react";
 import { Logo } from "@/components/storefront/logo";
-import {
-  logoutOperatorAction,
-  stopImpersonationAction,
-} from "@/lib/actions/operator-auth";
+import { stopImpersonationAction } from "@/lib/actions/operator-auth";
+import { OperatorLogoutButton } from "./operator-logout-button";
 
 const NAV = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
@@ -110,15 +107,7 @@ export function AdminSidebar({
               {operator.role}
             </div>
           </div>
-          <form action={logoutOperatorAction}>
-            <button
-              type="submit"
-              aria-label="Cerrar sesión"
-              className="text-muted-foreground hover:text-foreground"
-            >
-              <LogOut className="size-4" />
-            </button>
-          </form>
+          <OperatorLogoutButton />
         </div>
       </div>
     </aside>

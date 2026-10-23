@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@/lib/auth/server";
 
 // Hosts treated as the platform shell (no tenant). `localhost` alone is the
 // dev fallback for the platform; per-tenant work uses `<slug>.localhost:3000`.
@@ -16,8 +17,69 @@ export const config = {
   matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\.).*)"],
 };
 
-export default function middleware(req: NextRequest) {
+export default async function middleware(req: NextRequest) {
   const url = req.nextUrl;
+
+  // ── Neon Auth OAuth verifier exchange (e.g. returning from Google OAuth)
+  if (url.searchParams.has("neon_auth_session_verifier")) {
+    const neonHandler = auth.middleware({ loginUrl: "/login" });
+    const res = await neonHandler(req);
+
+    // Sincronizar automáticamente con el backend NestJS para emitir customer_token en la respuesta
+    try {
+      const sessionDataCookie =
+        res.cookies.get("__Secure-neon-auth.local.session_data")?.value ??
+        res.cookies.get("neon-auth.local.session_data")?.value;
+
+      let email: string | undefined;
+      let name: string | undefined;
+
+      if (sessionDataCookie) {
+        const parts = sessionDataCookie.split(".");
+        if (parts.length >= 2) {
+          const payload = JSON.parse(Buffer.from(parts[1], "base64url").toString("utf-8"));
+          email = payload?.user?.email;
+          name = payload?.user?.name;
+        }
+      }
+
+      if (email) {
+        const hostHeader = req.headers.get("host") ?? "";
+        const host = hostHeader.split(":")[0].toLowerCase();
+        const tenantSlug = resolveTenantSlug(host) || "origen";
+        const apiUrl = process.env.API_URL_INTERNAL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+
+        const syncRes = await fetch(`${apiUrl}/v1/auth/customer/neon-sync`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Tenant-Slug": tenantSlug,
+          },
+          body: JSON.stringify({ email, name }),
+          cache: "no-store",
+        });
+
+        if (syncRes.ok) {
+          const syncData = await syncRes.json();
+          if (syncData?.accessToken) {
+            const cookieOpts = {
+              path: "/",
+              httpOnly: true,
+              secure: process.env.NODE_ENV === "production",
+              sameSite: "lax" as const,
+              maxAge: 60 * 60 * 24 * 30,
+            };
+            res.cookies.set("customer_token", syncData.accessToken, cookieOpts);
+            res.cookies.set("bestcoffee-session", syncData.accessToken, cookieOpts);
+          }
+        }
+      }
+    } catch (err) {
+      console.warn("Middleware neon-sync notice:", err);
+    }
+
+    return res;
+  }
 
   // ── Auth route guard (/admin + /cuenta + /platform/superadmin require session)
   const isCustomerRoute = url.pathname.startsWith("/cuenta");
@@ -28,7 +90,10 @@ export default function middleware(req: NextRequest) {
   if (isCustomerRoute) {
     const customerSession =
       req.cookies.get("bestcoffee-session")?.value ??
-      req.cookies.get("customer_token")?.value;
+      req.cookies.get("customer_token")?.value ??
+      req.cookies.get("__Secure-neon-auth.session_token")?.value ??
+      req.cookies.get("neon-auth.session_token")?.value ??
+      req.cookies.get("better-auth.session_token")?.value;
     if (!customerSession) {
       const redirectUrl = url.clone();
       redirectUrl.pathname = "/login";

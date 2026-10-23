@@ -416,8 +416,15 @@ function InstancedBeansFlow({
     const mesh = instancedRef.current;
     if (!mesh) return;
     const p = scrollProgress.get();
-    const t = state.clock.elapsedTime;
 
+    const globalFade = 1 - smoothstep(0.25, 0.29, p);
+    if (globalFade <= 0.001) {
+      if (mesh.visible) mesh.visible = false;
+      return;
+    }
+    if (!mesh.visible) mesh.visible = true;
+
+    const t = state.clock.elapsedTime;
     const flow = clamp01((p - 0.035) / 0.2);
     const endY = GRINDER_RIM_Y - 0.35;
 
@@ -1282,6 +1289,15 @@ export function HeroModel({ scrollProgress }: HeroModelProps = {}) {
           powerPreference: "high-performance",
           toneMapping: THREE.ACESFilmicToneMapping,
           toneMappingExposure: 1.22,
+        }}
+        onCreated={({ gl }) => {
+          gl.domElement.addEventListener(
+            "webglcontextlost",
+            (e) => {
+              e.preventDefault();
+            },
+            false,
+          );
         }}
       >
         <ambientLight intensity={0.65} color="#f7e4cf" />

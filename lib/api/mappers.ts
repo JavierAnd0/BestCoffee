@@ -113,17 +113,17 @@ const TIER_FALLBACK: Record<string, TenantFeatures> = {
   STARTER: {
     blog: true, catalog: true, checkout: false, customerAccounts: false,
     subscriptions: false, discountCodes: false, reviews: false,
-    gifts: false, customDomain: false, maxProducts: 10,
+    gifts: false, customDomain: false, accessories: true, maxProducts: 10,
   },
   PRO: {
     blog: true, catalog: true, checkout: true, customerAccounts: true,
     subscriptions: true, discountCodes: true, reviews: true,
-    gifts: false, customDomain: false, maxProducts: 50,
+    gifts: false, customDomain: false, accessories: true, maxProducts: 50,
   },
   BUSINESS: {
     blog: true, catalog: true, checkout: true, customerAccounts: true,
     subscriptions: true, discountCodes: true, reviews: true,
-    gifts: true, customDomain: true, maxProducts: -1,
+    gifts: true, customDomain: true, accessories: true, maxProducts: -1,
   },
 };
 
@@ -141,6 +141,7 @@ function resolveFeatures(tier: string, raw: Record<string, unknown>): TenantFeat
     reviews: bool("reviews"),
     gifts: bool("gifts"),
     customDomain: bool("customDomain"),
+    accessories: bool("accessories"),
     maxProducts:
       typeof raw.maxProducts === "number" ? raw.maxProducts : base.maxProducts,
   };

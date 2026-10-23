@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Eyebrow } from "@/components/ui/eyebrow";
 import { getCustomerOrder } from "@/lib/data/account";
 import { ORDER_STATUS_LABEL, type OrderStatus } from "@/lib/mocks/account";
-import { formatCop } from "@/lib/format";
+import { formatCop, formatOrderCode } from "@/lib/format";
 
 const STATUS_TONE: Record<OrderStatus, string> = {
   PROCESSING: "bg-amber-500/10 text-amber-700 border-amber-500/20",
@@ -58,10 +58,12 @@ export default async function OrderDetailPage({ params }: Props) {
 
   const items = order.items?.length
     ? order.items
-    : [{ name: "Café ORÍGEN", variant: "340 g · Grano entero", qty: order.itemsCount, priceCents: order.totalCents }];
+    : [{ name: "Café ORÍGEN", variant: "250 g · Grano entero", qty: order.itemsCount, priceCents: order.totalCents }];
 
-  const subtotal = items.reduce((s, it) => s + it.priceCents * it.qty, 0);
-  const shipping = order.fromSubscription ? 0 : 8_000_00;
+  const subtotal = order.subtotalCents ?? items.reduce((s, it) => s + it.priceCents * it.qty, 0);
+  const total = order.totalCents;
+  const shipping = order.shippingCents ?? Math.max(0, total - subtotal);
+  const discount = order.discountCents ?? 0;
   const timeline = TIMELINE[order.status];
 
   return (
@@ -77,7 +79,7 @@ export default async function OrderDetailPage({ params }: Props) {
         <div className="flex flex-wrap items-center gap-3">
           <Eyebrow>Pedido</Eyebrow>
           <h1 className="font-display text-4xl font-semibold tracking-tight">
-            #{order.id}
+            #{formatOrderCode(order.id)}
           </h1>
           <Badge variant="outline" className={STATUS_TONE[order.status]}>
             {ORDER_STATUS_LABEL[order.status]}
@@ -86,6 +88,11 @@ export default async function OrderDetailPage({ params }: Props) {
         <p className="text-sm text-muted-foreground mt-1">
           {order.createdAt}
           {order.fromSubscription && " · Pedido de suscripción"}
+          {order.id.length > 12 && (
+            <span className="ml-2 font-mono text-[11px] text-muted-foreground/70">
+              (ID: {order.id})
+            </span>
+          )}
         </p>
       </header>
 
@@ -162,26 +169,38 @@ export default async function OrderDetailPage({ params }: Props) {
           <h2 className="font-medium text-sm mb-3">Resumen</h2>
           <dl className="space-y-2 text-sm">
             <div className="flex justify-between text-muted-foreground">
-              <dt>Subtotal</dt>
+              <dt>Subtotal productos</dt>
               <dd className="tabular-nums">{formatCop(subtotal)}</dd>
             </div>
             <div className="flex justify-between text-muted-foreground">
               <dt>Envío</dt>
-              <dd>{shipping === 0 ? "Gratis" : formatCop(shipping)}</dd>
+              <dd>{shipping === 0 ? "Gratis ($0)" : formatCop(shipping)}</dd>
             </div>
-            <div className="flex justify-between font-semibold pt-2 border-t border-border">
-              <dt>Total</dt>
-              <dd className="tabular-nums">{formatCop(subtotal + shipping)}</dd>
+            {discount > 0 && (
+              <div className="flex justify-between text-emerald-600">
+                <dt>Descuento aplicado</dt>
+                <dd className="tabular-nums">-{formatCop(discount)}</dd>
+              </div>
+            )}
+            <div className="flex justify-between font-semibold pt-2 border-t border-border text-foreground">
+              <dt>Total pagado</dt>
+              <dd className="tabular-nums text-base">{formatCop(total)}</dd>
             </div>
           </dl>
         </section>
       </div>
 
       <div className="flex flex-wrap gap-3">
-        <Button variant="outline" size="sm" className="gap-2">
-          <Download className="size-4" />
-          Descargar factura
-        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          render={
+            <Link href={`/cuenta/pedidos/${order.id}/factura`} className="inline-flex items-center gap-2">
+              <Download className="size-4" />
+              Ver / Descargar factura
+            </Link>
+          }
+        />
         {order.status === "DELIVERED" && (
           <Button variant="outline" size="sm" className="gap-2">
             <RefreshCw className="size-4" />

@@ -16,6 +16,7 @@ export const TENANT_ORIGEN: Tenant = {
     reviews: true,
     gifts: false,
     customDomain: false,
+    accessories: true,
     maxProducts: 50,
   },
   freeShippingThresholdCents: 45_000_00, // $45.000 COP

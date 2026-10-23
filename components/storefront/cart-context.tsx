@@ -162,7 +162,10 @@ export function buildCartItem(
   mode: CartItem["mode"],
   frequencyDays?: number,
 ): Omit<CartItem, "qty"> {
-  const size = variant.sizeGrams >= 1000 ? `${variant.sizeGrams / 1000} kg` : `${variant.sizeGrams} g`;
+  const variantLabel =
+    product.type === "ACCESSORY"
+      ? "Accesorio · Barismo"
+      : `${variant.sizeGrams >= 1000 ? `${variant.sizeGrams / 1000} kg` : `${variant.sizeGrams} g`} · ${GRIND_SHORT[variant.grind] || "Grano"}`;
   const unit =
     mode === "SUBSCRIPTION" && variant.priceSubscriptionCents != null
       ? variant.priceSubscriptionCents
@@ -172,7 +175,7 @@ export function buildCartItem(
     productSlug: product.slug,
     productName: product.name,
     variantId: variant.id,
-    variantLabel: `${size} · ${GRIND_SHORT[variant.grind]}`,
+    variantLabel,
     unitPriceCents: unit,
     mode,
     frequencyDays,
