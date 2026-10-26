@@ -1,36 +1,92 @@
 export interface StoreLocation {
   slug: string;
   name: string;
+  neighborhood: string;
   address: string;
   city: string;
   hours: string;
   phone: string;
+  coordinates: {
+    lat: number;
+    lng: number;
+  };
+  features: string[];
+  description: string;
+  googleMapsUrl?: string;
+  wazeUrl?: string;
 }
 
 export const STORE_LOCATIONS: StoreLocation[] = [
   {
     slug: "chapinero",
     name: "ORÍGEN Chapinero",
+    neighborhood: "Chapinero Alto",
     address: "Cra 13 #57-32",
     city: "Bogotá",
     hours: "Lun–Dom · 7:00–20:00",
-    phone: "+57 1 234 5678",
+    phone: "+57 (601) 234-5678",
+    coordinates: {
+      lat: 4.6443,
+      lng: -74.0628,
+    },
+    features: [
+      "Barra de filtrados",
+      "Molienda personalizada",
+      "Pet friendly",
+      "WiFi de alta velocidad",
+      "Terraza",
+    ],
+    description:
+      "Nuestra tienda insignia en el corazón de Chapinero. Espacio de dos niveles con barra de métodos manuales (V60, Chemex, Aeropress), tueste visible y ambiente ideal para trabajar o disfrutar una buena taza.",
+    googleMapsUrl: "https://www.google.com/maps/dir/?api=1&destination=4.6443,-74.0628",
+    wazeUrl: "https://waze.com/ul?ll=4.6443,-74.0628&navigate=yes",
   },
   {
     slug: "usaquen",
     name: "ORÍGEN Usaquén",
+    neighborhood: "Usaquén Colonial",
     address: "Cl 119 #6-15",
     city: "Bogotá",
     hours: "Mar–Dom · 8:00–19:00",
-    phone: "+57 1 345 6789",
+    phone: "+57 (601) 345-6789",
+    coordinates: {
+      lat: 4.6957,
+      lng: -74.0312,
+    },
+    features: [
+      "Casona colonial",
+      "Jardín interior",
+      "Barra Synesso",
+      "Pet friendly",
+      "Venta de accesorios",
+    ],
+    description:
+      "Ubicada en una arquitectura colonial restaurada a pasos de la plaza de Usaquén. Un oasis de calma con jardín interior donde probar ediciones limitadas y maridajes de autor.",
+    googleMapsUrl: "https://www.google.com/maps/dir/?api=1&destination=4.6957,-74.0312",
+    wazeUrl: "https://waze.com/ul?ll=4.6957,-74.0312&navigate=yes",
   },
   {
     slug: "candelaria",
     name: "ORÍGEN La Candelaria",
+    neighborhood: "Centro Histórico",
     address: "Cl 11 #4-29",
     city: "Bogotá",
     hours: "Lun–Sáb · 8:00–18:00",
-    phone: "+57 1 456 7890",
+    phone: "+57 (601) 456-7890",
+    coordinates: {
+      lat: 4.5976,
+      lng: -74.0734,
+    },
+    features: [
+      "Centro histórico",
+      "Catas guiadas los sábados",
+      "Café para llevar",
+      "Asesoría barista",
+    ],
+    description:
+      "A pocos metros de la Plaza de Bolívar y el Chorro de Quevedo. Celebramos la tradición cafetera colombiana con catas guiadas sensoriales y café fresco empacado en el día.",
+    googleMapsUrl: "https://www.google.com/maps/dir/?api=1&destination=4.5976,-74.0734",
+    wazeUrl: "https://waze.com/ul?ll=4.5976,-74.0734&navigate=yes",
   },
 ];
 

@@ -19,6 +19,7 @@ const COLUMNS: { title: string; links: FooterLink[] }[] = [
       { label: "Suscripciones", href: "/suscripciones" },
       { label: "Paquetes", href: "/catalogo?coleccion=paquetes" },
       { label: "Accesorios", href: "/accesorios" },
+      { label: "Nuestras tiendas", href: "/tiendas" },
     ],
   },
   {

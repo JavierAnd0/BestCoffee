@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import { Eyebrow } from "@/components/ui/eyebrow";
 import { Button } from "@/components/ui/button";
 
@@ -26,7 +27,7 @@ const PERKS = [
 export default function MayoristasPage() {
   return (
     <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 py-16">
-      <header className="mb-12 text-center max-w-2xl mx-auto">
+      <header className="mb-10 text-center max-w-2xl mx-auto">
         <Eyebrow>Mayoristas · B2B</Eyebrow>
         <h1 className="mt-3 font-display text-5xl font-semibold tracking-tight">
           Café para tu negocio
@@ -36,6 +37,23 @@ export default function MayoristasPage() {
           de tu operación y te respondemos en menos de 48 horas.
         </p>
       </header>
+
+      {/* Imagen destacada B2B de sacos de café */}
+      <div className="relative aspect-[21/9] w-full rounded-2xl overflow-hidden mb-12 shadow-md border border-border">
+        <Image
+          src="/img/sacos-cafe-verde.jpg"
+          alt="Sacos de café verde para mayoristas"
+          fill
+          priority
+          sizes="100vw"
+          className="object-cover object-center"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent flex items-end p-6 sm:p-8">
+          <p className="text-white font-display text-lg sm:text-xl font-light">
+            Suministro de microlotes y mezclas personalizadas para hostelería y empresas
+          </p>
+        </div>
+      </div>
 
       <section className="grid sm:grid-cols-2 gap-6 mb-16">
         {PERKS.map((p) => (

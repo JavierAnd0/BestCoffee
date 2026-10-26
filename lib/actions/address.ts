@@ -1,10 +1,10 @@
 "use server";
 
-import { cookies, headers } from "next/headers";
+import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { env } from "../env";
 import { resolveActiveTenantSlug } from "../tenant";
-import { getCurrentCustomer } from "../data/account";
+import { authHeaders } from "../data/account";
 
 export type AddressActionState = {
   error?: string;
@@ -13,19 +13,27 @@ export type AddressActionState = {
 } | null;
 
 async function getAuthContext() {
-  // Asegurar que la sesión de Neon Auth esté sincronizada con el backend
-  await getCurrentCustomer();
-
+  const { token, tenantSlug: headerTenantSlug } = await authHeaders();
   const c = await cookies();
-  const h = await headers();
 
-  const token =
-    c.get("customer_token")?.value ??
-    c.get("bestcoffee-session")?.value;
+  if (token && token !== "mock-session-test") {
+    const existing = c.get("customer_token")?.value;
+    if (existing !== token) {
+      const cookieOpts = {
+        path: "/",
+        httpOnly: true,
+        secure: !env.isDev,
+        sameSite: "lax" as const,
+        maxAge: 60 * 60 * 24 * 30,
+      };
+      c.set("customer_token", token, cookieOpts);
+      c.set("bestcoffee-session", token, cookieOpts);
+    }
+  }
 
   const tenantSlug =
-    h.get("x-tenant-slug") ??
-    (await resolveActiveTenantSlug()) ??
+    headerTenantSlug ||
+    (await resolveActiveTenantSlug()) ||
     env.defaultTenantSlug;
 
   return { token, tenantSlug };

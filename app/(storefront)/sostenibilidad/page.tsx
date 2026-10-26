@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import Image from "next/image";
 import { Eyebrow } from "@/components/ui/eyebrow";
 import { Leaf, Sprout, HeartHandshake, Recycle, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -53,6 +54,23 @@ export default function SostenibilidadPage() {
           Para nosotros, la sostenibilidad no es una etiqueta publicitaria: es el modelo económico y ético que permite que el mejor café colombiano siga existiendo para las próximas generaciones.
         </p>
       </section>
+
+      {/* Imagen destacada de origen */}
+      <div className="relative aspect-[21/9] w-full rounded-2xl overflow-hidden mb-16 shadow-lg border border-border">
+        <Image
+          src="/img/bulto-colombia.jpg"
+          alt="Saco de café Product of Colombia"
+          fill
+          priority
+          sizes="100vw"
+          className="object-cover object-center"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-transparent flex items-end p-6 sm:p-10">
+          <p className="text-white font-display text-xl sm:text-2xl font-light drop-shadow-md">
+            100% Café de origen colombiano con trazabilidad directa desde la finca
+          </p>
+        </div>
+      </div>
 
       {/* Métricas */}
       <section className="grid grid-cols-2 lg:grid-cols-4 gap-6 py-10 border-y border-border mb-16">

@@ -204,24 +204,47 @@ export async function getCurrentOperator(): Promise<OperatorProfile | null> {
       headers: { Authorization: `Bearer ${token}` },
       cache: "no-store",
     });
-    if (!res.ok) return null;
-    const me = (await res.json()) as {
-      name?: string | null;
-      email?: string;
-      role?: string;
-      isPlatformOwner?: boolean;
-    };
-    const email = me.email ?? "";
-    const name = me.name?.trim() || email.split("@")[0] || "Operador";
-    const role = impersonatingTenant
-      ? `Impersonando · ${impersonatingTenant}`
-      : me.isPlatformOwner
-        ? "Superadmin"
-        : me.role ?? "Tenant Admin";
-    return { name, email, role, impersonatingTenant };
+    if (res.ok) {
+      const me = (await res.json()) as {
+        name?: string | null;
+        email?: string;
+        role?: string;
+        isPlatformOwner?: boolean;
+      };
+      const email = me.email ?? "";
+      const name = me.name?.trim() || email.split("@")[0] || "Operador";
+      const role = impersonatingTenant
+        ? `Impersonando · ${impersonatingTenant}`
+        : me.isPlatformOwner
+          ? "Superadmin"
+          : me.role ?? "Tenant Admin";
+      return { name, email, role, impersonatingTenant };
+    }
   } catch {
-    return null;
+    // Fallback a sesión local de operador si el backend no está disponible
   }
+
+  if (token.endsWith(".local_operator_session")) {
+    try {
+      const parts = token.split(".");
+      if (parts.length >= 2) {
+        const payload = JSON.parse(
+          Buffer.from(parts[1], "base64url").toString("utf-8"),
+        ) as { email?: string; isPlatformOwner?: boolean };
+        if (payload.email) {
+          const name = payload.email.split("@")[0] || "Operador";
+          const role = impersonatingTenant
+            ? `Impersonando · ${impersonatingTenant}`
+            : payload.isPlatformOwner
+              ? "Superadmin"
+              : "Tenant Admin";
+          return { name, email: payload.email, role, impersonatingTenant };
+        }
+      }
+    } catch {}
+  }
+
+  return null;
 }
 
 // ── Facturación del tenant (cómo le cobra la plataforma + comisión) ──────────

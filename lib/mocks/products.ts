@@ -21,7 +21,8 @@ export const PRODUCTS: Product[] = [
     status: "ACTIVE",
     subscriptionAvailability: "YES",
     images: [
-      { id: "i1", url: "/img/products/alba-1.jpg", alt: "Bolsa Mezcla del alba" },
+      { id: "i1", url: "/img/products/catalogo-1.jpg", alt: "Bolsa Mezcla del alba" },
+      { id: "i2", url: "/img/products/catalogo-2.jpg", alt: "Detalle empaque de café" },
     ],
     variants: [
       {
@@ -67,7 +68,10 @@ export const PRODUCTS: Product[] = [
     badges: ["NEW"],
     status: "ACTIVE",
     subscriptionAvailability: "YES",
-    images: [{ id: "i1", url: "/img/products/guji-1.jpg", alt: "Etiopía Guji" }],
+    images: [
+      { id: "i1", url: "/img/products/catalogo-2.jpg", alt: "Etiopía Guji" },
+      { id: "i2", url: "/img/products/catalogo-1.jpg", alt: "Detalle empaque de café" },
+    ],
     variants: [
       {
         id: "v_guji_340_grain",
@@ -101,7 +105,10 @@ export const PRODUCTS: Product[] = [
     badges: [],
     status: "ACTIVE",
     subscriptionAvailability: "YES",
-    images: [{ id: "i1", url: "/img/products/hairbender-1.jpg", alt: "Hairbender" }],
+    images: [
+      { id: "i1", url: "/img/products/catalogo-1.jpg", alt: "Hairbender" },
+      { id: "i2", url: "/img/products/catalogo-2.jpg", alt: "Detalle empaque de café" },
+    ],
     variants: [
       {
         id: "v_hb_340_espresso",
@@ -133,7 +140,10 @@ export const PRODUCTS: Product[] = [
     badges: [],
     status: "ACTIVE",
     subscriptionAvailability: "YES",
-    images: [{ id: "i1", url: "/img/products/holler-1.jpg", alt: "Holler Mountain" }],
+    images: [
+      { id: "i1", url: "/img/products/catalogo-2.jpg", alt: "Holler Mountain" },
+      { id: "i2", url: "/img/products/catalogo-1.jpg", alt: "Detalle empaque de café" },
+    ],
     variants: [
       {
         id: "v_holler_340_grain",
@@ -163,7 +173,10 @@ export const PRODUCTS: Product[] = [
     badges: ["LIMITED"],
     status: "ACTIVE",
     subscriptionAvailability: "YES",
-    images: [{ id: "i1", url: "/img/products/esperanza-1.jpg", alt: "Finca La Esperanza" }],
+    images: [
+      { id: "i1", url: "/img/products/catalogo-1.jpg", alt: "Finca La Esperanza" },
+      { id: "i2", url: "/img/products/catalogo-2.jpg", alt: "Detalle empaque de café" },
+    ],
     variants: [
       {
         id: "v_esp_340_grain",
@@ -195,7 +208,10 @@ export const PRODUCTS: Product[] = [
     badges: [],
     status: "ACTIVE",
     subscriptionAvailability: "YES",
-    images: [{ id: "i1", url: "/img/products/decaf-1.jpg", alt: "Decaf Trapper" }],
+    images: [
+      { id: "i1", url: "/img/products/catalogo-2.jpg", alt: "Decaf Trapper" },
+      { id: "i2", url: "/img/products/catalogo-1.jpg", alt: "Detalle empaque de café" },
+    ],
     variants: [
       {
         id: "v_decaf_340_grain",
@@ -223,7 +239,10 @@ export const PRODUCTS: Product[] = [
     badges: ["ORIGEN ÚNICO"],
     status: "ACTIVE",
     subscriptionAvailability: "YES",
-    images: [{ id: "i1", url: "/img/products/alba-1.jpg", alt: "Bolsa Sierra Nevada" }],
+    images: [
+      { id: "i1", url: "/img/products/catalogo-1.jpg", alt: "Bolsa Sierra Nevada" },
+      { id: "i2", url: "/img/products/catalogo-2.jpg", alt: "Detalle empaque de café" },
+    ],
     variants: [
       {
         id: "v_sierra_340_grain",
@@ -243,6 +262,216 @@ export const PRODUCTS: Product[] = [
       },
     ],
     collectionSlugs: ["origenes", "bestsellers"],
+  },
+  {
+    id: "p_gesha_cubillos",
+    slug: "gesha-juan-cubillos",
+    name: "LOT61 Colombia Gesha · Juan Cubillos",
+    type: "SINGLE_ORIGIN",
+    origin: "Huila / Nariño, Colombia",
+    producerStory:
+      "Cosechado por Juan Cubillos a 1.950 msnm. Variedad Gesha con proceso de beneficio lavado estricto que exalta notas florales complejas.",
+    shortDescription:
+      "Microlote exclusivo de Gesha en presentación 100g con rueda de notas sensoriales.",
+    longDescription:
+      "Una de las variedades más codiciadas del mundo. Notas extraordinarias a flor de saúco, durazno maduro y té blanco. Un perfil limpio, sedoso y brillante perfecto para métodos de vertido como V60 o Kalita.",
+    roastLevel: 3,
+    flavorNotes: ["flor de saúco", "durazno", "té blanco", "jazmín"],
+    badges: ["LIMITED", "NEW"],
+    status: "ACTIVE",
+    subscriptionAvailability: "YES",
+    images: [
+      { id: "i1", url: "/img/products/catalogo-2.jpg", alt: "LOT61 Colombia Gesha Juan Cubillos" },
+      { id: "i2", url: "/img/products/catalogo-1.jpg", alt: "Detalle empaque de café" },
+    ],
+    variants: [
+      {
+        id: "v_gesha_100_grain",
+        sizeGrams: 100,
+        grind: "WHOLE_BEAN",
+        priceOneTimeCents: price(54_000),
+        priceSubscriptionCents: price(45_900),
+        stock: 20,
+      },
+      {
+        id: "v_gesha_100_filter",
+        sizeGrams: 100,
+        grind: "FILTER",
+        priceOneTimeCents: price(54_000),
+        priceSubscriptionCents: price(45_900),
+        stock: 15,
+      },
+    ],
+    collectionSlugs: ["origenes", "limitados", "bestsellers"],
+  },
+  {
+    id: "p_fresh_water_decaf",
+    slug: "lot61-fresh-water",
+    name: "LOT61 Fresh Water Decaf",
+    type: "DECAF",
+    origin: "Single Origin · Colombia",
+    producerStory:
+      "Descafeinado con proceso natural al agua de montaña (Mountain Water Process) que conserva íntegros los azúcares naturales del grano sin rastros de solventes químicos.",
+    shortDescription:
+      "Descafeinado de origen único con notas a chocolate, frutos del bosque y vainilla.",
+    longDescription:
+      "Formulado para brindar el máximo cuerpo y dulzura tanto en espresso como en preparaciones de filtro. Disfruta una taza reconfortante a cualquier hora sin perder el perfil de un café de especialidad.",
+    roastLevel: 4,
+    flavorNotes: ["chocolate", "frutos del bosque", "panela", "vainilla"],
+    badges: ["BESTSELLER"],
+    status: "ACTIVE",
+    subscriptionAvailability: "YES",
+    images: [
+      { id: "i1", url: "/img/products/catalogo-1.jpg", alt: "LOT61 Fresh Water Decaf" },
+      { id: "i2", url: "/img/products/catalogo-2.jpg", alt: "Detalle empaque de café" },
+    ],
+    variants: [
+      {
+        id: "v_fw_340_grain",
+        sizeGrams: 340,
+        grind: "WHOLE_BEAN",
+        priceOneTimeCents: price(68_000),
+        priceSubscriptionCents: price(57_800),
+        stock: 30,
+      },
+      {
+        id: "v_fw_340_filter",
+        sizeGrams: 340,
+        grind: "FILTER",
+        priceOneTimeCents: price(68_000),
+        priceSubscriptionCents: price(57_800),
+        stock: 22,
+      },
+    ],
+    collectionSlugs: ["descafeinados", "bestsellers"],
+  },
+  {
+    id: "p_narino_galeras",
+    slug: "narino-galeras",
+    name: "Nariño Volcán Galeras",
+    type: "SINGLE_ORIGIN",
+    origin: "La Florida, Nariño (2.050 m)",
+    producerStory:
+      "Cultivado en las faldas volcánicas ricas en minerales. Cosechas de recolección selectiva manual.",
+    shortDescription:
+      "Acidez cítrica brillante y notas de mandarina, miel silvestre y caramelo.",
+    longDescription:
+      "Las grandes altitudes de Nariño permiten una maduración lenta de la cereza, concentrando azúcares y aportando una acidez jugosa y elegante en taza.",
+    roastLevel: 3,
+    flavorNotes: ["mandarina", "miel silvestre", "caramelo"],
+    badges: ["ORIGEN ÚNICO"],
+    status: "ACTIVE",
+    subscriptionAvailability: "YES",
+    images: [
+      { id: "i1", url: "/img/products/catalogo-2.jpg", alt: "Nariño Volcán Galeras" },
+      { id: "i2", url: "/img/products/catalogo-1.jpg", alt: "Detalle empaque de café" },
+    ],
+    variants: [
+      {
+        id: "v_ng_340_grain",
+        sizeGrams: 340,
+        grind: "WHOLE_BEAN",
+        priceOneTimeCents: price(69_000),
+        priceSubscriptionCents: price(58_650),
+        stock: 18,
+      },
+      {
+        id: "v_ng_340_filter",
+        sizeGrams: 340,
+        grind: "FILTER",
+        priceOneTimeCents: price(69_000),
+        priceSubscriptionCents: price(58_650),
+        stock: 14,
+      },
+    ],
+    collectionSlugs: ["origenes"],
+  },
+  {
+    id: "p_tolima_san_antonio",
+    slug: "tolima-san-antonio",
+    name: "Tolima San Antonio Caturra",
+    type: "SINGLE_ORIGIN",
+    origin: "San Antonio, Tolima (1.820 m)",
+    producerStory:
+      "Producido por la asociación de caficultores de San Antonio con fermentación controlada de 24 horas.",
+    shortDescription:
+      "Cosecha de altura con notas a manzana roja, limoncillo y miel de caña.",
+    longDescription:
+      "Un café balanceado con dulzura marcada de panela, retrogusto refrescante a limoncillo y cuerpo medio sedoso.",
+    roastLevel: 4,
+    flavorNotes: ["manzana roja", "limoncillo", "miel de caña"],
+    badges: ["SEASONAL"],
+    status: "ACTIVE",
+    subscriptionAvailability: "YES",
+    images: [
+      { id: "i1", url: "/img/products/catalogo-1.jpg", alt: "Tolima San Antonio Caturra" },
+      { id: "i2", url: "/img/products/catalogo-2.jpg", alt: "Detalle empaque de café" },
+    ],
+    variants: [
+      {
+        id: "v_tolima_340_grain",
+        sizeGrams: 340,
+        grind: "WHOLE_BEAN",
+        priceOneTimeCents: price(66_000),
+        priceSubscriptionCents: price(56_100),
+        stock: 25,
+      },
+      {
+        id: "v_tolima_340_filter",
+        sizeGrams: 340,
+        grind: "FILTER",
+        priceOneTimeCents: price(66_000),
+        priceSubscriptionCents: price(56_100),
+        stock: 19,
+      },
+    ],
+    collectionSlugs: ["origenes"],
+  },
+  {
+    id: "p_espresso_reserva",
+    slug: "espresso-reserva",
+    name: "Espresso Reserva Especial",
+    type: "BLEND",
+    shortDescription:
+      "Mezcla de tueste medio balanceada con notas a cacao amargo, almendra y avellana.",
+    longDescription:
+      "Diseñada especialmente para máquinas de espresso y cafeteras italianas (moka). Produce una crema densa y dorada con notas persistentes de chocolate y frutos secos.",
+    roastLevel: 5,
+    flavorNotes: ["cacao amargo", "almendra tostada", "avellana"],
+    badges: ["BESTSELLER"],
+    status: "ACTIVE",
+    subscriptionAvailability: "YES",
+    images: [
+      { id: "i1", url: "/img/products/catalogo-2.jpg", alt: "Espresso Reserva Especial" },
+      { id: "i2", url: "/img/products/catalogo-1.jpg", alt: "Detalle empaque de café" },
+    ],
+    variants: [
+      {
+        id: "v_reserva_340_grain",
+        sizeGrams: 340,
+        grind: "WHOLE_BEAN",
+        priceOneTimeCents: price(59_000),
+        priceSubscriptionCents: price(50_150),
+        stock: 32,
+      },
+      {
+        id: "v_reserva_340_espresso",
+        sizeGrams: 340,
+        grind: "ESPRESSO",
+        priceOneTimeCents: price(59_000),
+        priceSubscriptionCents: price(50_150),
+        stock: 28,
+      },
+      {
+        id: "v_reserva_1k_grain",
+        sizeGrams: 1000,
+        grind: "WHOLE_BEAN",
+        priceOneTimeCents: price(158_000),
+        priceSubscriptionCents: price(134_300),
+        stock: 15,
+      },
+    ],
+    collectionSlugs: ["mezclas", "bestsellers"],
   },
   {
     id: "p_molino_precision",

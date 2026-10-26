@@ -5,10 +5,12 @@ import { Mail, CheckCircle2, Loader2, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { sendContactMessageAction } from "@/lib/actions/contact";
 
 export function ContactForm() {
   const [isPending, startTransition] = useTransition();
   const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -18,10 +20,20 @@ export function ContactForm() {
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    setError(null);
     startTransition(async () => {
-      // Simular despacho de mensaje al soporte
-      await new Promise((res) => setTimeout(res, 600));
-      setSubmitted(true);
+      const data = new FormData();
+      data.append("name", formData.name);
+      data.append("email", formData.email);
+      data.append("subject", formData.subject);
+      data.append("message", formData.message);
+
+      const res = await sendContactMessageAction(null, data);
+      if (res?.error) {
+        setError(res.error);
+      } else {
+        setSubmitted(true);
+      }
     });
   }
 
@@ -59,6 +71,12 @@ export function ContactForm() {
         <Mail className="size-4" />
         <span>Escríbenos directamente</span>
       </div>
+
+      {error && (
+        <div className="rounded-md border border-red-300/60 bg-red-50 px-4 py-3 text-sm text-red-800">
+          {error}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>

@@ -4,7 +4,7 @@ import { useState, useActionState } from "react";
 import Link from "next/link";
 import { Eye, EyeOff, ArrowLeft, Loader2 } from "lucide-react";
 import { Logo } from "@/components/storefront/logo";
-import { loginAction, type AuthState } from "@/lib/actions/auth";
+import { loginAction, logoutAction, type AuthState } from "@/lib/actions/auth";
 import { authClient } from "@/lib/auth/client";
 
 const OAUTH_ERROR_MESSAGES: Record<string, string> = {
@@ -38,9 +38,22 @@ export function LoginForm({
       setGoogleLoading(true);
       setGoogleError(null);
 
-      const res = await authClient.signIn.social({
+      // Limpiar cualquier sesión previa en cookies y cliente antes de iniciar OAuth
+      await logoutAction(false).catch(() => {});
+      await authClient.signOut().catch(() => {});
+
+      const res = await (authClient.signIn.social as unknown as (opts: {
+        provider: "google";
+        callbackURL?: string;
+        prompt?: string;
+        authParams?: Record<string, string>;
+      }) => Promise<{ error?: { message?: string } } | undefined>)({
         provider: "google",
         callbackURL: next || "/cuenta",
+        prompt: "select_account",
+        authParams: {
+          prompt: "select_account",
+        },
       });
 
       if (res && "error" in res && res.error) {

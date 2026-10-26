@@ -1,21 +1,33 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import { Eyebrow } from "@/components/ui/eyebrow";
 
-export const metadata: Metadata = { title: "Nuestra historia" };
+export const metadata: Metadata = { title: "Nuestra historia · ORÍGEN Café" };
 
 export default function HistoriaPage() {
   return (
     <>
-      <section className="relative isolate h-[420px] grid place-items-center overflow-hidden">
+      <section className="relative isolate h-[440px] grid place-items-center overflow-hidden">
+        <Image
+          src="/img/taza-granos.jpg"
+          alt="Café de especialidad en grano y taza"
+          fill
+          priority
+          sizes="100vw"
+          className="object-cover object-center brightness-[0.45]"
+        />
         <div
           aria-hidden="true"
-          className="absolute inset-0 bg-gradient-to-br from-[#2a1810] via-[#4a2b1c] to-[#7d3d2a]"
+          className="absolute inset-0 bg-gradient-to-t from-background via-black/30 to-black/50"
         />
-        <div className="relative text-center text-white px-6">
+        <div className="relative text-center text-white px-6 max-w-2xl mx-auto space-y-3">
           <Eyebrow className="text-white/80">Desde 2018</Eyebrow>
-          <h1 className="mt-4 font-display text-6xl lg:text-7xl font-semibold tracking-tight">
+          <h1 className="mt-2 font-display text-5xl lg:text-7xl font-semibold tracking-tight">
             Nuestra historia
           </h1>
+          <p className="text-sm sm:text-base text-white/80 max-w-lg mx-auto font-light leading-relaxed">
+            De una pequeña bodega con tostador de 5 kilos en Chapinero a más de 40 familias caficultoras aliadas en toda Colombia.
+          </p>
         </div>
       </section>
 
@@ -31,6 +43,18 @@ export default function HistoriaPage() {
           productor. Pagamos en promedio 60% por encima del precio C de bolsa
           según el lote y el resultado de la cata.
         </p>
+
+        {/* Fotografía editorial real de sacos de café de Colombia */}
+        <div className="relative aspect-[16/9] w-full rounded-2xl overflow-hidden my-8 shadow-md border border-border">
+          <Image
+            src="/img/bulto-colombia.jpg"
+            alt="Saco de café Product of Colombia"
+            fill
+            sizes="(min-width: 768px) 700px, 100vw"
+            className="object-cover hover:scale-[1.02] transition-transform duration-700 ease-out"
+          />
+        </div>
+
         <p className="text-base text-foreground/90 leading-relaxed">
           Creemos en tostar pequeño y enviar fresco. Cada bolsa que sale de
           nuestra tostadora salió del tostador hace menos de cinco días. La fecha

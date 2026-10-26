@@ -1,9 +1,9 @@
 "use server";
 
-import { cookies, headers } from "next/headers";
+import { cookies } from "next/headers";
 import { env } from "../env";
 import { resolveActiveTenantSlug } from "../tenant";
-import { getCurrentCustomer } from "../data/account";
+import { authHeaders } from "../data/account";
 import type { CartItem } from "@/components/storefront/cart-context";
 import type { MpPaymentData } from "@/components/storefront/mercadopago-fields";
 
@@ -55,19 +55,14 @@ export async function placeOrderAction(
       return { error: "Por favor especifica la ciudad de entrega." };
     }
 
-    // Asegurar sincronización de sesión
-    await getCurrentCustomer();
-
+    // Obtener sesión sincronizada del cliente actual
+    const { token: syncedToken, tenantSlug: headerTenantSlug } = await authHeaders();
     const store = await cookies();
-    const hdrs = await headers();
 
-    let token =
-      store.get("customer_token")?.value ??
-      store.get("bestcoffee-session")?.value;
-
+    let token = syncedToken;
     const tenantSlug =
-      hdrs.get("x-tenant-slug") ??
-      (await resolveActiveTenantSlug()) ??
+      headerTenantSlug ||
+      (await resolveActiveTenantSlug()) ||
       env.defaultTenantSlug;
 
     // Si no hay token de autenticación (invitado o primera compra),

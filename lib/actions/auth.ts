@@ -70,6 +70,9 @@ export async function loginAction(
       path: "/",
       maxAge: 60 * 60 * 24 * 30,
     };
+    // Limpiar sesiones previas de Neon Auth para evitar colisiones entre métodos de ingreso
+    clearNeonAndLegacyCookies(store);
+
     // bestcoffee-session: used by middleware (proxy.ts) for customer route protection
     store.set("bestcoffee-session", tokenValue, cookieOpts);
     // customer_token: forwarded verbatim to the backend for cookie-based auth guards
@@ -131,6 +134,39 @@ export async function registerAction(
   };
 }
 
+function clearNeonAndLegacyCookies(store: Awaited<ReturnType<typeof cookies>>) {
+  const secureCookies = [
+    "__Secure-neon-auth.session_token",
+    "__Secure-neon-auth.local.session_data",
+    "__Secure-neon-auth.session_challenge",
+    "__Secure-neon-auth.session_challange",
+  ];
+  for (const name of secureCookies) {
+    store.set(name, "", {
+      maxAge: 0,
+      path: "/",
+      secure: true,
+      httpOnly: true,
+      sameSite: "lax",
+    });
+  }
+
+  const standardCookies = [
+    "customer_email",
+    "customer_name",
+    "neon-auth.session_token",
+    "neon-auth.local.session_data",
+    "neon-auth.session_challenge",
+    "neon-auth.session_challange",
+    "better-auth.session_token",
+    "better-auth.session_data",
+    "better-auth.local.session_data",
+  ];
+  for (const name of standardCookies) {
+    store.set(name, "", { maxAge: 0, path: "/" });
+  }
+}
+
 // ── Logout ────────────────────────────────────────────────────────────────────
 export async function logoutAction(shouldRedirect: boolean | FormData = true) {
   const store = await cookies();
@@ -156,14 +192,9 @@ export async function logoutAction(shouldRedirect: boolean | FormData = true) {
     });
   } catch { /* ignore */ }
 
-  // Clear standard session cookies
   store.set("bestcoffee-session", "", { maxAge: 0, path: "/" });
   store.set("customer_token", "", { maxAge: 0, path: "/" });
-
-  // Clear Neon Auth cookies
-  store.set("__Secure-neon-auth.session_token", "", { maxAge: 0, path: "/" });
-  store.set("neon-auth.session_token", "", { maxAge: 0, path: "/" });
-  store.set("better-auth.session_token", "", { maxAge: 0, path: "/" });
+  clearNeonAndLegacyCookies(store);
 
   if (env.neonAuthUrl) {
     try {

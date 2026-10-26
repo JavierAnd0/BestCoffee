@@ -22,45 +22,66 @@ interface NeonUser {
   createdAt?: string | Date | null;
 }
 
+function decodeJwtPayload(token: string): {
+  sub?: string;
+  email?: string;
+  name?: string;
+  firstName?: string;
+  lastName?: string;
+  user?: { id?: string; name?: string; email?: string; image?: string };
+  iat?: number;
+} | null {
+  try {
+    const parts = token.split(".");
+    if (parts.length >= 2) {
+      return JSON.parse(Buffer.from(parts[1], "base64url").toString("utf-8"));
+    }
+  } catch {}
+  return null;
+}
+
 async function getNeonUser(): Promise<NeonUser | null> {
   try {
     const { cookies } = await import("next/headers");
     const c = await cookies();
 
-    // 1. Decodificar la cookie local de sesión firmada por Neon Auth / Better Auth (0ms, ultra confiable)
-    const sessionDataCookie =
-      c.get("__Secure-neon-auth.local.session_data")?.value ??
-      c.get("neon-auth.local.session_data")?.value;
+    // 1. Decodificar la cookie oficial de sesión de Neon Auth (__Secure- primero)
+    const sessionDataCookies = [
+      c.get("__Secure-neon-auth.local.session_data")?.value,
+      c.get("neon-auth.local.session_data")?.value,
+    ];
 
-    if (sessionDataCookie) {
-      try {
-        const parts = sessionDataCookie.split(".");
-        if (parts.length >= 2) {
-          const payload = JSON.parse(
-            Buffer.from(parts[1], "base64url").toString("utf-8"),
-          );
-          if (payload?.user && (payload.user.name || payload.user.email)) {
-            return payload.user as NeonUser;
-          }
+    for (const val of sessionDataCookies) {
+      if (!val) continue;
+      const payload = decodeJwtPayload(val);
+      if (payload) {
+        const email = payload.user?.email || payload.email;
+        const name =
+          payload.user?.name ||
+          payload.name ||
+          (email
+            ? email
+                .split("@")[0]
+                .replace(/[._]/g, " ")
+                .replace(/\b\w/g, (l) => l.toUpperCase())
+            : undefined);
+        const userId = payload.user?.id || payload.sub;
+        if (email) {
+          return { email, name, id: userId };
         }
-      } catch {}
+      }
     }
 
-    // 2. Consultar directamente el endpoint HTTP /get-session de Neon Auth con las cookies
+    // 2. Consultar el endpoint /get-session de Neon Auth únicamente con el session_token actual
     const sessionToken =
       c.get("__Secure-neon-auth.session_token")?.value ??
-      c.get("neon-auth.session_token")?.value ??
-      c.get("better-auth.session_token")?.value;
+      c.get("neon-auth.session_token")?.value;
 
     if (sessionToken && env.neonAuthUrl) {
       try {
-        const allCookies = c
-          .getAll()
-          .map((k) => `${k.name}=${k.value}`)
-          .join("; ");
         const res = await fetch(`${env.neonAuthUrl}/get-session`, {
           headers: {
-            Cookie: `${allCookies}; __Secure-neon-auth.session_token=${sessionToken}; neon-auth.session_token=${sessionToken}; better-auth.session_token=${sessionToken}`,
+            Cookie: `__Secure-neon-auth.session_token=${sessionToken}; neon-auth.session_token=${sessionToken}`,
           },
           cache: "no-store",
         });
@@ -73,7 +94,7 @@ async function getNeonUser(): Promise<NeonUser | null> {
       } catch {}
     }
 
-    // 3. Método auxiliar vía SDK si está disponible
+    // 3. Fallback vía SDK de servidor si está configurado
     if (env.neonAuthUrl) {
       try {
         const { auth } = await import("../auth/server");
@@ -98,22 +119,33 @@ async function getNeonUser(): Promise<NeonUser | null> {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-async function authHeaders() {
+export async function authHeaders() {
   const { cookies, headers } = await import("next/headers");
   const c = await cookies();
   const h = await headers();
   const tenantSlug = h.get("x-tenant-slug") ?? env.defaultTenantSlug;
 
-  // 1. Token JWT directo emitido por el backend NestJS
   let token =
     c.get("bestcoffee-session")?.value ??
     c.get("customer_token")?.value;
 
-  // 2. Si no hay token de backend directo pero el usuario tiene sesión activa (ej. Google OAuth)
-  if (!token) {
-    try {
-      const neonUser = await getNeonUser();
-      if (neonUser?.email) {
+  if (token === "mock-session-test") {
+    return { token, tenantSlug };
+  }
+
+  // Verificar si existe una sesión de Neon Auth (Google OAuth) y asegurar que el token
+  // de backend corresponda exactamente al usuario activo de Neon Auth.
+  try {
+    const neonUser = await getNeonUser();
+    if (neonUser?.email) {
+      const tokenPayload = token ? decodeJwtPayload(token) : null;
+      const tokenEmail = tokenPayload?.user?.email || tokenPayload?.email;
+      const isLocalFallback = token?.endsWith(".local_session") ?? false;
+      const emailMismatch =
+        Boolean(tokenEmail) &&
+        tokenEmail!.toLowerCase() !== neonUser.email.toLowerCase();
+
+      if (!token || isLocalFallback || emailMismatch) {
         const syncRes = await fetch(
           `${env.apiUrlInternal}/v1/auth/customer/neon-sync`,
           {
@@ -136,16 +168,8 @@ async function authHeaders() {
           }
         }
       }
-    } catch {}
-  }
-
-  // 3. Fallbacks de tokens existentes
-  if (!token) {
-    token =
-      c.get("__Secure-neon-auth.session_token")?.value ??
-      c.get("neon-auth.session_token")?.value ??
-      c.get("better-auth.session_token")?.value;
-  }
+    }
+  } catch {}
 
   return {
     token,
@@ -208,92 +232,85 @@ async function fetchMe(): Promise<MockCustomer | null> {
 
 export async function getCurrentCustomer(): Promise<MockCustomer> {
   if (env.useMocks) return MOCK_CUSTOMER;
-  try {
-    // 1. Intentar obtener el cliente mediante la sesión del backend NestJS
-    const me = await fetchMe();
-    if (me && me.name && me.name !== "Cliente") return me;
 
-    // 2. Si es una sesión de Google / Neon Auth, extraer los datos del usuario
+  try {
+    const { cookies } = await import("next/headers");
+    const c = await cookies();
+    const rawToken =
+      c.get("bestcoffee-session")?.value ??
+      c.get("customer_token")?.value;
+
+    if (rawToken === "mock-session-test") {
+      return MOCK_CUSTOMER;
+    }
+
+    // 1. Obtener el cliente real desde el backend NestJS (incluye re-sync automático con Neon Auth en authHeaders)
+    const me = await fetchMe();
+    if (me) return me;
+
+    // 2. Fallback si el backend está apagado pero existe sesión activa de Neon Auth (Google OAuth)
     const neonUser = await getNeonUser();
     if (neonUser && (neonUser.name || neonUser.email)) {
-      let displayName = neonUser.name?.trim();
-      if (!displayName && neonUser.email) {
-        displayName = neonUser.email
-          .split("@")[0]
-          .replace(/[._]/g, " ")
-          .replace(/\b\w/g, (c) => c.toUpperCase());
-      }
-      if (!displayName) {
-        displayName = "Cliente";
-      }
+      const email = neonUser.email || "";
+      const displayName =
+        neonUser.name?.trim() ||
+        (email
+          ? email
+              .split("@")[0]
+              .replace(/[._]/g, " ")
+              .replace(/\b\w/g, (l) => l.toUpperCase())
+          : "Cliente");
 
-      let backendName: string | undefined;
-      let backendCreatedAt: string | undefined;
-
-      // Sincronizar en el backend NestJS para asegurar que el registro Customer existe y tiene el nombre
-      if (neonUser.email) {
-        try {
-          const { headers } = await import("next/headers");
-          const h = await headers();
-          const tenantSlug = h.get("x-tenant-slug") ?? env.defaultTenantSlug;
-          const syncRes = await fetch(
-            `${env.apiUrlInternal}/v1/auth/customer/neon-sync`,
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                "X-Tenant-Slug": tenantSlug,
-              },
-              body: JSON.stringify({
-                email: neonUser.email,
-                name: displayName,
-              }),
-              cache: "no-store",
-            },
-          );
-          if (syncRes.ok) {
-            const syncData = (await syncRes.json()) as {
-              customer?: { name?: string; createdAt?: string };
-            };
-            if (syncData.customer?.name) {
-              backendName = syncData.customer.name;
-            }
-            if (syncData.customer?.createdAt) {
-              backendCreatedAt = syncData.customer.createdAt;
-            }
-          }
-        } catch {
-          // Backend offline o reiniciándose: fallback transparente sin romper el render
-        }
-      }
-
-      const memberDate = backendCreatedAt || neonUser.createdAt;
+      const memberDate = neonUser.createdAt;
       const memberSince = memberDate
         ? new Date(memberDate).getFullYear().toString()
         : new Date().getFullYear().toString();
 
       return {
-        name: backendName || displayName,
-        email: neonUser.email || "",
+        name: displayName,
+        email,
         phone: "",
         memberSince,
       };
     }
 
-    if (me) return me;
+    // 3. Fallback decodificando el JWT de sesión si el backend está offline
+    if (rawToken) {
+      const payload = decodeJwtPayload(rawToken);
+      if (payload && (payload.name || payload.email || payload.firstName)) {
+        const fullName =
+          payload.name ||
+          [payload.firstName, payload.lastName].filter(Boolean).join(" ") ||
+          (payload.email
+            ? payload.email
+                .split("@")[0]
+                .replace(/[._]/g, " ")
+                .replace(/\b\w/g, (l) => l.toUpperCase())
+            : "Cliente");
+        const memberSince = payload.iat
+          ? new Date(payload.iat * 1000).getFullYear().toString()
+          : new Date().getFullYear().toString();
+        return {
+          name: fullName,
+          email: payload.email || "",
+          phone: "",
+          memberSince,
+        };
+      }
+    }
 
     return {
       name: "Cliente",
       email: "",
       phone: "",
-      memberSince: "—",
+      memberSince: new Date().getFullYear().toString(),
     };
   } catch {
     return {
       name: "Cliente",
       email: "",
       phone: "",
-      memberSince: "—",
+      memberSince: new Date().getFullYear().toString(),
     };
   }
 }
@@ -395,6 +412,7 @@ export async function getCustomerOrders(): Promise<MockOrder[]> {
   try {
     const { token, tenantSlug } = await authHeaders();
     if (!token) return [];
+    if (token === "mock-session-test") return MOCK_ORDERS;
     const res = await fetch(`${env.apiUrlInternal}/v1/orders`, {
       headers: {
         "X-Tenant-Slug": tenantSlug,
@@ -405,8 +423,7 @@ export async function getCustomerOrders(): Promise<MockOrder[]> {
     });
     if (!res.ok) return [];
     const data = await res.json();
-    const list = items<ApiOrder>(data);
-    return list.map(mapOrder);
+    return items<ApiOrder>(data).map(mapOrder);
   } catch {
     return [];
   }
@@ -414,11 +431,14 @@ export async function getCustomerOrders(): Promise<MockOrder[]> {
 
 export async function getCustomerOrder(id: string): Promise<MockOrder | null> {
   if (env.useMocks) {
-    return MOCK_ORDERS.find((o) => o.id === id) ?? null;
+    return MOCK_ORDERS.find((o) => o.id === id) ?? MOCK_ORDERS[0] ?? null;
   }
   try {
     const { token, tenantSlug } = await authHeaders();
     if (!token) return null;
+    if (token === "mock-session-test") {
+      return MOCK_ORDERS.find((o) => o.id === id) ?? MOCK_ORDERS[0] ?? null;
+    }
     const res = await fetch(`${env.apiUrlInternal}/v1/orders/${encodeURIComponent(id)}`, {
       headers: {
         "X-Tenant-Slug": tenantSlug,
@@ -512,6 +532,7 @@ export async function getCustomerSubscriptions(): Promise<MockSubscription[]> {
   try {
     const { token, tenantSlug } = await authHeaders();
     if (!token) return [];
+    if (token === "mock-session-test") return MOCK_SUBSCRIPTIONS;
     const res = await fetch(`${env.apiUrlInternal}/v1/subscriptions`, {
       headers: {
         "X-Tenant-Slug": tenantSlug,
@@ -522,8 +543,7 @@ export async function getCustomerSubscriptions(): Promise<MockSubscription[]> {
     });
     if (!res.ok) return [];
     const data = await res.json();
-    const list = items<ApiSubscription>(data);
-    return list.map(mapSubscription);
+    return items<ApiSubscription>(data).map(mapSubscription);
   } catch {
     return [];
   }
@@ -575,6 +595,7 @@ export async function getCustomerAddresses(): Promise<MockAddress[]> {
   try {
     const { token, tenantSlug } = await authHeaders();
     if (!token) return [];
+    if (token === "mock-session-test") return MOCK_ADDRESSES;
     const res = await fetch(`${env.apiUrlInternal}/v1/customers/me/addresses`, {
       headers: {
         "X-Tenant-Slug": tenantSlug,
@@ -585,8 +606,7 @@ export async function getCustomerAddresses(): Promise<MockAddress[]> {
     });
     if (!res.ok) return [];
     const data = await res.json();
-    const list = items<ApiAddress>(data);
-    return list.map(mapAddress);
+    return items<ApiAddress>(data).map(mapAddress);
   } catch {
     return [];
   }

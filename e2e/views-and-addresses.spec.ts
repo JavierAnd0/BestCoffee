@@ -98,5 +98,23 @@ test.describe("Storefront Views & Customer Address Management", () => {
     await page.getByRole("button", { name: /Cancelar/i }).click();
     await expect(page.locator("#addr-line1")).not.toBeVisible();
   });
+
+  test("7. Página de Tiendas (/tiendas) carga con mapa interactivo y listado de sedes", async ({
+    page,
+  }) => {
+    const res = await page.goto("/tiendas");
+    expect(res?.status()).toBe(200);
+
+    await expect(page.locator("h1")).toContainText(/Nuestras tiendas en Bogotá/i);
+    await expect(page.locator("body")).toContainText("ORÍGEN Chapinero");
+    await expect(page.locator("body")).toContainText("ORÍGEN Usaquén");
+    await expect(page.locator("body")).toContainText("ORÍGEN La Candelaria");
+
+    // Mapa embebido
+    await expect(page.locator("iframe")).toBeVisible();
+
+    // Botones de acción
+    await expect(page.getByRole("link", { name: /Cómo llegar/i }).first()).toBeVisible();
+  });
 });
 

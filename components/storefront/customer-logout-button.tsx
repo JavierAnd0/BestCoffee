@@ -40,6 +40,8 @@ export function CustomerLogoutButton({
       try {
         localStorage.clear();
         sessionStorage.clear();
+        document.cookie = "customer_email=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;";
+        document.cookie = "customer_name=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;";
       } catch (err) {
         console.warn("Browser storage clear notice:", err);
       }

@@ -4,7 +4,7 @@ import { useState, useActionState } from "react";
 import Link from "next/link";
 import { Eye, EyeOff, ArrowLeft, Loader2, Check } from "lucide-react";
 import { Logo } from "@/components/storefront/logo";
-import { registerAction, type RegisterState } from "@/lib/actions/auth";
+import { registerAction, logoutAction, type RegisterState } from "@/lib/actions/auth";
 import { authClient } from "@/lib/auth/client";
 
 const PASSWORD_RULES = [
@@ -28,9 +28,22 @@ export default function RegistroPage() {
       setGoogleLoading(true);
       setGoogleError(null);
 
-      const res = await authClient.signIn.social({
+      // Limpiar cualquier sesión previa en cookies y cliente antes de iniciar OAuth
+      await logoutAction(false).catch(() => {});
+      await authClient.signOut().catch(() => {});
+
+      const res = await (authClient.signIn.social as unknown as (opts: {
+        provider: "google";
+        callbackURL?: string;
+        prompt?: string;
+        authParams?: Record<string, string>;
+      }) => Promise<{ error?: { message?: string } } | undefined>)({
         provider: "google",
         callbackURL: "/cuenta",
+        prompt: "select_account",
+        authParams: {
+          prompt: "select_account",
+        },
       });
 
       if (res && "error" in res && res.error) {

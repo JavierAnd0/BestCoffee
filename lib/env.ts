@@ -54,6 +54,17 @@ export const env = {
     "dev-neon-auth-cookie-secret-min-32-chars-long!",
   ),
 
+  // Resend (Transactional Email & Magic Links)
+  resendApiKey: optional("RESEND_API_KEY", ""),
+  resendFromEmail: optional(
+    "RESEND_FROM_EMAIL",
+    "BestCoffee <onboarding@resend.dev>",
+  ),
+  platformOwnerEmail: optional(
+    "PLATFORM_OWNER_EMAIL",
+    "logijavier@gmail.com",
+  ),
+
   isDev: process.env.NODE_ENV !== "production",
 };
 

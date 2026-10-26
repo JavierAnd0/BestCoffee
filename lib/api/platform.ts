@@ -15,21 +15,57 @@ function buildHeaders(token: string | null, extra?: Record<string, string>) {
   return { ...h, ...extra };
 }
 
+function decodeLocalOperatorToken(token: string | null): {
+  email?: string;
+  isPlatformOwner?: boolean;
+} | null {
+  if (!token || !token.endsWith(".local_operator_session")) return null;
+  try {
+    const parts = token.split(".");
+    if (parts.length >= 2) {
+      return JSON.parse(Buffer.from(parts[1], "base64url").toString("utf-8"));
+    }
+  } catch {}
+  return null;
+}
+
 export async function platformFetch<T>(
   path: string,
   options?: RequestInit,
 ): Promise<T> {
   const token = await getToken();
-  const res = await fetch(`${env.apiUrlInternal}${path}`, {
-    ...options,
-    headers: buildHeaders(token, options?.headers as Record<string, string>),
-    cache: "no-store",
-  });
-  if (!res.ok) {
+  try {
+    const res = await fetch(`${env.apiUrlInternal}${path}`, {
+      ...options,
+      headers: buildHeaders(token, options?.headers as Record<string, string>),
+      cache: "no-store",
+    });
+    if (res.ok) {
+      return (await res.json()) as T;
+    }
+    const localOp = decodeLocalOperatorToken(token);
+    if (localOp) {
+      if (path === "/v1/auth/me") {
+        return { email: localOp.email, isPlatformOwner: localOp.isPlatformOwner } as unknown as T;
+      }
+      if (path === "/v1/platform/tenants") {
+        return [] as unknown as T;
+      }
+    }
     const body = await res.text().catch(() => "");
     throw new Error(`Platform API ${res.status}: ${body}`);
+  } catch (err) {
+    const localOp = decodeLocalOperatorToken(token);
+    if (localOp) {
+      if (path === "/v1/auth/me") {
+        return { email: localOp.email, isPlatformOwner: localOp.isPlatformOwner } as unknown as T;
+      }
+      if (path === "/v1/platform/tenants") {
+        return [] as unknown as T;
+      }
+    }
+    throw err;
   }
-  return res.json() as Promise<T>;
 }
 
 // Nota: las mutaciones del panel (crear tenant, impersonar) NO usan un cliente
