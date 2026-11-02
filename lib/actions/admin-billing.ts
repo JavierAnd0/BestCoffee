@@ -1,50 +1,20 @@
 "use server";
 
-import { cookies, headers } from "next/headers";
 import { revalidatePath } from "next/cache";
-import { env } from "../env";
+import { operatorFetch } from "../api/gateway";
 
 // Server actions del panel del operador para responder a una propuesta de cambio
-// de comisión. Usan la cookie httpOnly `bestcoffee-operator-session` (token de operador) +
-// el slug del tenant resuelto por el middleware.
-
-async function adminHeaders(): Promise<Record<string, string>> {
-  const c = await cookies();
-  const h = await headers();
-  const token =
-    c.get("bestcoffee-impersonation")?.value ??
-    c.get("bestcoffee-operator-session")?.value;
-  const tenantSlug =
-    h.get("x-tenant-slug") ?? env.defaultTenantSlug;
-  return {
-    "Content-Type": "application/json",
-    "X-Tenant-Slug": tenantSlug,
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  };
-}
+// de comisión. Usan la cookie httpOnly `bestcoffee-operator-session` (token de operador),
+// vía el gateway `operatorFetch` que centraliza headers y manejo de errores.
 
 export type CommissionDecision = { ok: true } | { ok: false; error: string };
 
 async function postCommission(action: "accept" | "reject"): Promise<CommissionDecision> {
-  let res: Response;
-  try {
-    res = await fetch(`${env.apiUrlInternal}/v1/admin/billing/commission/${action}`, {
-      method: "POST",
-      headers: await adminHeaders(),
-      cache: "no-store",
-    });
-  } catch {
-    return { ok: false, error: "No se pudo conectar con el servidor." };
-  }
+  const res = await operatorFetch(`/v1/admin/billing/commission/${action}`, {
+    method: "POST",
+  });
   if (!res.ok) {
-    let message = "No se pudo procesar la solicitud.";
-    try {
-      const body = (await res.json()) as { message?: string };
-      if (typeof body?.message === "string") message = body.message;
-    } catch {
-      /* ignore */
-    }
-    return { ok: false, error: message };
+    return { ok: false, error: res.error || "No se pudo procesar la solicitud." };
   }
   revalidatePath("/admin");
   return { ok: true };
