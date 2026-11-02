@@ -40,9 +40,10 @@ export const env = {
   revalidateSecret: optional("REVALIDATE_SECRET", "dev-revalidate-secret"),
 
   // Used by NextAuth and to verify JWTs issued by the backend. Same value
-  // must be set in the API service. In production override with a real
-  // 32-byte random secret.
-  authSecret: optional("AUTH_SECRET", "dev-auth-secret-replace-in-prod"),
+  // must be set in the API service. REQUIRED in production — no insecure
+  // default is allowed outside explicit local development; requiredEnv()
+  // below only falls back to a dev-only value when NODE_ENV !== "production".
+  authSecret: requiredEnv("AUTH_SECRET"),
 
   // Neon Auth (Managed Better Auth)
   neonAuthUrl: optional(
@@ -60,10 +61,10 @@ export const env = {
     "RESEND_FROM_EMAIL",
     "BestCoffee <onboarding@resend.dev>",
   ),
-  platformOwnerEmail: optional(
-    "PLATFORM_OWNER_EMAIL",
-    "logijavier@gmail.com",
-  ),
+  // No hardcoded real email default — REQUIRED in production so a stray
+  // deploy never grants platform-owner rights to whoever owns the fallback
+  // address. Dev falls back to a clearly-fake placeholder.
+  platformOwnerEmail: requiredEnv("PLATFORM_OWNER_EMAIL"),
 
   isDev: process.env.NODE_ENV !== "production",
 };
