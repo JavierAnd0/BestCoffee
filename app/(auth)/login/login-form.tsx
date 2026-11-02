@@ -17,6 +17,8 @@ const OAUTH_ERROR_MESSAGES: Record<string, string> = {
     "No se pudo obtener la información de tu perfil de Google.",
   invalid_code:
     "El código de autorización expiró o ya fue utilizado. Intenta de nuevo.",
+  session_sync_failed:
+    "No pudimos sincronizar tu sesión con el servidor. Verifica tu conexión e intenta de nuevo; si el problema persiste, contacta soporte.",
 };
 
 export function LoginForm({

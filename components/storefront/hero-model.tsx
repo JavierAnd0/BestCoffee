@@ -1281,7 +1281,7 @@ export function HeroModel({ scrollProgress }: HeroModelProps = {}) {
     <div className="relative w-full h-full">
       <Canvas
         shadows
-        dpr={[1, 2]}
+        dpr={[1, 1.5]}
         camera={{ position: [6.6, 0.5, 0], fov: 35, near: 0.1, far: 80 }}
         gl={{
           antialias: true,
@@ -1343,7 +1343,10 @@ export function HeroModel({ scrollProgress }: HeroModelProps = {}) {
         <CameraAndSceneRig scrollProgress={activeProgress} />
 
         <Suspense fallback={null}>
-          <Environment preset="city" environmentIntensity={0.85} />
+          <Environment
+            files="/hdri/potsdamer_platz_1k.hdr"
+            environmentIntensity={0.85}
+          />
         </Suspense>
 
         <Suspense fallback={null}>
