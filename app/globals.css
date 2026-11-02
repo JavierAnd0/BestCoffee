@@ -136,3 +136,74 @@ html {
 :root {
   --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.72' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E");
 }
+
+/* ─── Editorial Block Selection Animations ("The Smashing Machine" style) ─── */
+.editorial-select-row {
+  position: relative;
+  overflow: hidden;
+  transition: color 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.editorial-select-row::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-color: var(--foreground);
+  transform: scaleY(0);
+  transform-origin: bottom;
+  transition: transform 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 0;
+}
+
+.editorial-select-row:hover::before,
+.editorial-select-row[data-active="true"]::before {
+  transform: scaleY(1);
+  transform-origin: top;
+}
+
+.editorial-select-row:hover,
+.editorial-select-row[data-active="true"] {
+  color: var(--background) !important;
+}
+
+.editorial-select-row > * {
+  position: relative;
+  z-index: 1;
+}
+
+.editorial-nav-link {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.65rem;
+  overflow: hidden;
+  transition: color 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.editorial-nav-link::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-color: var(--foreground);
+  transform: scaleX(0);
+  transform-origin: right;
+  transition: transform 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 0;
+}
+
+.editorial-nav-link:hover::before,
+.editorial-nav-link[data-active="true"]::before {
+  transform: scaleX(1);
+  transform-origin: left;
+}
+
+.editorial-nav-link:hover,
+.editorial-nav-link[data-active="true"] {
+  color: var(--background) !important;
+}
+
+.editorial-nav-link > * {
+  position: relative;
+  z-index: 1;
+}
+

@@ -667,6 +667,134 @@ export async function listDiscountCodes(): Promise<AdminDiscountCode[]> {
   }
 }
 
+export interface AdminOrderDetailData {
+  id: string;
+  createdAt: string;
+  status: "RECEIVED" | "PREPARING" | "SHIPPED" | "DELIVERED" | "CANCELLED";
+  fromSubscription: boolean;
+  customerName: string;
+  customerEmail: string;
+  customerPhone: string;
+  shippingLine: string;
+  shippingCity: string;
+  trackingNumber: string;
+  internalNotes: string;
+  subtotalCents: number;
+  shippingCents: number;
+  discountCents: number;
+  totalCents: number;
+  items: Array<{
+    name: string;
+    variant: string;
+    qty: number;
+    totalCents: number;
+  }>;
+}
+
+export async function getAdminOrderDetail(id: string): Promise<AdminOrderDetailData> {
+  if (!env.useMocks) {
+    try {
+      const raw = await adminFetch<Record<string, unknown>>(
+        `/v1/admin/orders/${encodeURIComponent(id)}`,
+      );
+      if (raw && typeof raw.id === "string") {
+        const customer = (raw.customer ?? {}) as {
+          name?: string;
+          firstName?: string;
+          lastName?: string;
+          email?: string;
+          phone?: string;
+        };
+        const addr = (raw.shippingAddress ?? {}) as {
+          line1?: string;
+          address?: string;
+          city?: string;
+          state?: string;
+          region?: string;
+          phone?: string;
+        };
+        const rawItems = Array.isArray(raw.items) ? raw.items : [];
+        const mappedItems = rawItems.map((it: Record<string, unknown>) => {
+          const qty = Number(it.qty ?? it.quantity ?? 1);
+          const unitCents = Number(
+            it.priceCents ?? it.unitCents ?? it.unitPrice ?? it.price ?? 0,
+          );
+          const lineCents = Number(it.lineCents ?? unitCents * qty);
+          return {
+            name: String(it.productName ?? "Café"),
+            variant: String(it.variantLabel ?? it.variantName ?? it.variant ?? ""),
+            qty,
+            totalCents: lineCents,
+          };
+        });
+        const totalCents = Number(raw.totalCents ?? raw.total ?? 0);
+        const subtotalCents = Number(raw.subtotalCents ?? totalCents);
+        const shippingCents = Number(raw.shippingCents ?? 0);
+        const discountCents = Number(raw.discountCents ?? 0);
+        const rawStatus = String(raw.status ?? "RECEIVED").toUpperCase();
+        const status = (
+          ["RECEIVED", "PREPARING", "SHIPPED", "DELIVERED", "CANCELLED"].includes(
+            rawStatus,
+          )
+            ? rawStatus
+            : "RECEIVED"
+        ) as AdminOrderDetailData["status"];
+
+        return {
+          id: String(raw.id),
+          createdAt: ago(typeof raw.createdAt === "string" ? raw.createdAt : undefined),
+          status,
+          fromSubscription: Boolean(raw.fromSubscription || raw.subscriptionId),
+          customerName:
+            [customer.firstName, customer.lastName].filter(Boolean).join(" ").trim() ||
+            customer.name ||
+            customer.email ||
+            "Cliente",
+          customerEmail: customer.email ?? "—",
+          customerPhone: customer.phone ?? addr.phone ?? "—",
+          shippingLine: addr.line1 ?? addr.address ?? "—",
+          shippingCity: [addr.city, addr.state ?? addr.region]
+            .filter(Boolean)
+            .join(", ") || "Colombia",
+          trackingNumber: String(raw.trackingNumber ?? ""),
+          internalNotes: String(raw.internalNotes ?? ""),
+          subtotalCents,
+          shippingCents,
+          discountCents,
+          totalCents,
+          items: mappedItems,
+        };
+      }
+    } catch {}
+  }
+
+  return {
+    id,
+    createdAt: "Reciente",
+    status: "PREPARING",
+    fromSubscription: false,
+    customerName: "Cliente Registrado",
+    customerEmail: "cliente@bestcoffee.io",
+    customerPhone: "—",
+    shippingLine: "Dirección registrada en el pedido",
+    shippingCity: "Bogotá, Colombia",
+    trackingNumber: "",
+    internalNotes: "",
+    subtotalCents: 116_000_00,
+    shippingCents: 0,
+    discountCents: 0,
+    totalCents: 116_000_00,
+    items: [
+      {
+        name: "Mezcla del alba",
+        variant: "250 g · Molido filtro",
+        qty: 2,
+        totalCents: 116_000_00,
+      },
+    ],
+  };
+}
+
 export async function listAuditEntries(): Promise<AdminAuditEntry[]> {
   if (env.useMocks) return ADMIN_AUDIT;
   try {

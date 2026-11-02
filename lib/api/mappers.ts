@@ -171,6 +171,7 @@ export function mapTenant(t: ApiTenant): Tenant {
 
 export function mapAnnouncements(arr: ApiAnnouncement[]): AnnounceMessage[] {
   return (arr ?? [])
+    .filter((a) => Boolean(a?.data?.text))
     .slice()
     .sort((a, b) => a.position - b.position)
     .map((a) => ({ id: a.id, text: a.data.text, href: a.data.cta?.href }));

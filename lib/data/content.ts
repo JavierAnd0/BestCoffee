@@ -45,13 +45,14 @@ export async function getAnnounceMessages(): Promise<AnnounceMessage[]> {
   if (env.useMocks) return ANNOUNCE_MESSAGES;
   const home = await fetchHome();
   if (!home) return ANNOUNCE_MESSAGES;
-  return mapAnnouncements(home.announcements);
+  const mapped = mapAnnouncements(home.announcements);
+  return mapped.length > 0 ? mapped : ANNOUNCE_MESSAGES;
 }
 
 export async function getHomeHero(): Promise<HeroContent> {
   if (env.useMocks) return HERO_HOME;
   const home = await fetchHome();
-  if (!home) return HERO_HOME;
+  if (!home || !home.hero?.data?.title) return HERO_HOME;
   return mapHero(home.hero);
 }
 

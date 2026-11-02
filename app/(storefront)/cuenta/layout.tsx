@@ -1,15 +1,7 @@
-import Link from "next/link";
 import { getCurrentCustomer } from "@/lib/data/account";
 import { requireFeature } from "@/lib/data/feature-guard";
 import { CustomerLogoutButton } from "@/components/storefront/customer-logout-button";
-
-const NAV = [
-  { href: "/cuenta", label: "Resumen" },
-  { href: "/cuenta/pedidos", label: "Pedidos" },
-  { href: "/cuenta/suscripciones", label: "Suscripciones" },
-  { href: "/cuenta/direcciones", label: "Direcciones" },
-  { href: "/cuenta/datos", label: "Mis datos" },
-];
+import { AccountNav } from "@/components/storefront/account-nav";
 
 export default async function AccountLayout({ children }: { children: React.ReactNode }) {
   // Las cuentas de cliente son una capacidad de plan (PRO+).
@@ -33,16 +25,8 @@ export default async function AccountLayout({ children }: { children: React.Reac
             </div>
           </div>
         </div>
-        <nav className="flex flex-col gap-1">
-          {NAV.map((n) => (
-            <Link
-              key={n.href}
-              href={n.href}
-              className="rounded-md px-3 py-2 text-sm text-foreground/80 hover:bg-muted hover:text-foreground transition-colors"
-            >
-              {n.label}
-            </Link>
-          ))}
+        <nav className="flex flex-col gap-3">
+          <AccountNav />
           <CustomerLogoutButton />
         </nav>
       </aside>

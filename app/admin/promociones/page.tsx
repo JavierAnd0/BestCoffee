@@ -1,9 +1,8 @@
 import type { Metadata } from "next";
-import { Plus } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/admin/page-header";
 import { listDiscountCodes } from "@/lib/data/admin";
+import { PromoCreateDialog } from "./promo-create-dialog";
 
 export const metadata: Metadata = { title: "Promociones · Admin" };
 
@@ -20,12 +19,7 @@ export default async function AdminPromosPage() {
       <PageHeader
         title="Promociones"
         description={`${discounts.filter((d) => d.active).length} activas · ${discounts.length} totales`}
-        actions={
-          <Button>
-            <Plus className="size-4" />
-            Nuevo código
-          </Button>
-        }
+        actions={<PromoCreateDialog />}
       />
 
       <div className="rounded-lg border border-border bg-background overflow-hidden">

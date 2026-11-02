@@ -9,10 +9,27 @@ import { requireFeature } from "@/lib/data/feature-guard";
 
 export const metadata: Metadata = { title: "Blog · Café y comunidad" };
 
-export default async function BlogIndex() {
+export default async function BlogIndex({
+  searchParams,
+}: {
+  searchParams?: Promise<{ categoria?: string }>;
+}) {
   await requireFeature("blog");
+  const { categoria } = (await searchParams) ?? {};
+  const activeCategory = categoria || "Todos";
   const [featured, all] = await Promise.all([getFeaturedPost(), listBlogPosts()]);
-  const rest = featured ? all.filter((p) => p.slug !== featured.slug) : all;
+
+  const filtered =
+    activeCategory === "Todos"
+      ? all
+      : all.filter(
+          (p) => p.category.toLowerCase() === activeCategory.toLowerCase(),
+        );
+
+  const showFeatured = activeCategory === "Todos" ? featured : filtered[0] ?? null;
+  const rest = showFeatured
+    ? filtered.filter((p) => p.slug !== showFeatured.slug)
+    : filtered;
 
   return (
     <>
@@ -36,57 +53,61 @@ export default async function BlogIndex() {
 
       <div className="border-b border-border">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 flex flex-wrap justify-center gap-2">
-          {BLOG_CATEGORIES.map((c, i) => (
-            <button
-              key={c}
-              className={
-                "rounded-full border px-4 py-1.5 text-sm transition-colors " +
-                (i === 0
-                  ? "bg-foreground text-background border-foreground"
-                  : "border-border text-muted-foreground hover:text-foreground hover:border-foreground/40")
-              }
-            >
-              {c}
-            </button>
-          ))}
+          {BLOG_CATEGORIES.map((c) => {
+            const isActive = activeCategory.toLowerCase() === c.toLowerCase();
+            const href =
+              c === "Todos"
+                ? "/blog"
+                : `/blog?categoria=${encodeURIComponent(c)}`;
+            return (
+              <Link
+                key={c}
+                href={href}
+                data-active={isActive}
+                className="editorial-select-row border border-border px-4 py-1.5 text-sm font-medium"
+              >
+                <span>{c}</span>
+              </Link>
+            );
+          })}
         </div>
       </div>
 
-      {featured && (
+      {showFeatured && (
         <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-16">
           <Eyebrow>Artículo destacado</Eyebrow>
           <article className="mt-6 grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
             <Link
-              href={`/blog/${featured.slug}`}
+              href={`/blog/${showFeatured.slug}`}
               className="aspect-[4/3] rounded-lg bg-muted grid place-items-center text-sm text-muted-foreground"
             >
-              {featured.title}
+              {showFeatured.title}
             </Link>
             <div>
               <div className="flex items-center gap-3">
                 <Badge variant="outline" className="uppercase tracking-[0.12em] font-normal">
-                  {featured.category}
+                  {showFeatured.category}
                 </Badge>
                 <span className="text-xs text-muted-foreground">
-                  {featured.publishedAt} · {featured.readMinutes} min de lectura
+                  {showFeatured.publishedAt} · {showFeatured.readMinutes} min de lectura
                 </span>
               </div>
               <h2 className="mt-4 font-display text-4xl lg:text-5xl font-semibold tracking-tight">
-                {featured.title}
+                {showFeatured.title}
               </h2>
               <p className="mt-4 text-base text-muted-foreground leading-relaxed">
-                {featured.excerpt}
+                {showFeatured.excerpt}
               </p>
               <div className="mt-6 flex items-center gap-3">
                 <span className="size-9 rounded-full bg-foreground/10" aria-hidden />
                 <span className="text-xs text-muted-foreground">
-                  Por {featured.author.name} · {featured.author.role}
+                  Por {showFeatured.author.name} · {showFeatured.author.role}
                 </span>
               </div>
               <Button
                 variant="outline"
                 className="mt-6"
-                render={<Link href={`/blog/${featured.slug}`}>Leer la historia →</Link>}
+                render={<Link href={`/blog/${showFeatured.slug}`}>Leer la historia →</Link>}
               />
             </div>
           </article>

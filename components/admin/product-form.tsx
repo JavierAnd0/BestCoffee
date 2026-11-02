@@ -1,12 +1,14 @@
 "use client";
 
-import { useState } from "react";
-import { Trash2, Plus, Check } from "lucide-react";
+import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { Trash2, Plus, Check, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Roast } from "@/components/ui/roast";
-import type { GrindFormat, Product, ProductImage } from "@/lib/types";
+import type { GrindFormat, Product, ProductImage, ProductStatus } from "@/lib/types";
 import { GRIND_OPTIONS, sortGrinds } from "@/lib/grind";
+import { saveProductAction } from "@/lib/actions/admin-mutations";
 import { ProductImages } from "./product-images";
 
 /** Presentación (tamaño) con su precio. Se replica para cada molienda ofrecida. */
@@ -58,6 +60,7 @@ const BADGE_LABEL: Record<string, string> = {
 };
 
 export function ProductForm({ product }: { product?: Product }) {
+  const router = useRouter();
   const [name, setName] = useState(product?.name ?? "");
   const [shortDesc, setShortDesc] = useState(product?.shortDescription ?? "");
   const [longDesc, setLongDesc] = useState(product?.longDescription ?? "");
@@ -69,12 +72,14 @@ export function ProductForm({ product }: { product?: Product }) {
     product?.flavorNotes.join(", ") ?? "",
   );
   const [badges, setBadges] = useState<string[]>(product?.badges ?? []);
-  const [status, setStatus] = useState(product?.status ?? "DRAFT");
+  const [status, setStatus] = useState<ProductStatus>(product?.status ?? "DRAFT");
   const [subAvail, setSubAvail] = useState(product?.subscriptionAvailability ?? "YES");
   const [sizes, setSizes] = useState<DraftSize[]>(sizesFromProduct(product));
   const [grinds, setGrinds] = useState<GrindFormat[]>(grindsFromProduct(product));
   // Producto nuevo: URLs ya subidas a Blob, pendientes de registrar al crear.
-  const [, setImages] = useState<ProductImage[]>(product?.images ?? []);
+  const [images, setImages] = useState<ProductImage[]>(product?.images ?? []);
+  const [feedback, setFeedback] = useState<{ ok: boolean; text: string } | null>(null);
+  const [isPending, startTransition] = useTransition();
 
   const toggleBadge = (b: string) =>
     setBadges((arr) => (arr.includes(b) ? arr.filter((x) => x !== b) : [...arr, b]));
@@ -90,8 +95,63 @@ export function ProductForm({ product }: { product?: Product }) {
 
   const variantCount = expandVariants(sizes, grinds).length;
 
+  const submitForm = (overrideStatus?: ProductStatus) => {
+    setFeedback(null);
+    const finalStatus = overrideStatus ?? status;
+    if (overrideStatus) setStatus(overrideStatus);
+
+    startTransition(async () => {
+      const res = await saveProductAction({
+        id: product?.id,
+        name,
+        shortDescription: shortDesc,
+        longDescription: longDesc,
+        type,
+        origin,
+        producerStory: story,
+        roastLevel: roast,
+        flavorNotes: flavors
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean),
+        badges,
+        status: finalStatus,
+        subscriptionAvailability: subAvail,
+        variants: expandVariants(sizes, grinds),
+        pendingImages: product?.id ? undefined : images,
+      });
+
+      if (res.ok) {
+        setFeedback({ ok: true, text: res.message });
+        if (!product?.id) {
+          router.push("/admin/productos");
+        }
+      } else {
+        setFeedback({ ok: false, text: res.error });
+      }
+    });
+  };
+
   return (
-    <form className="space-y-8">
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        submitForm();
+      }}
+      className="space-y-8"
+    >
+      {feedback && (
+        <div
+          className={
+            "rounded-md border px-4 py-3 text-sm " +
+            (feedback.ok
+              ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-800"
+              : "border-red-300/60 bg-red-50 text-red-800")
+          }
+        >
+          {feedback.text}
+        </div>
+      )}
       <Section title="Identificación">
         <Field label="Nombre del producto" value={name} onChange={setName} placeholder="Mezcla del alba" />
         <Field
@@ -310,10 +370,18 @@ export function ProductForm({ product }: { product?: Product }) {
       </Section>
 
       <div className="flex justify-end gap-3 sticky bottom-0 bg-muted/30 -mx-8 px-8 py-4 border-t border-border">
-        <Button type="button" variant="outline">
+        <Button
+          type="button"
+          variant="outline"
+          disabled={isPending}
+          onClick={() => submitForm("DRAFT")}
+        >
           Guardar como borrador
         </Button>
-        <Button type="submit">Guardar producto</Button>
+        <Button type="submit" disabled={isPending}>
+          {isPending && <Loader2 className="size-4 animate-spin mr-1.5" />}
+          {isPending ? "Guardando…" : "Guardar producto"}
+        </Button>
       </div>
     </form>
   );

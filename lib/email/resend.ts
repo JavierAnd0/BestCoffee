@@ -297,3 +297,51 @@ export async function sendOrderConfirmationEmail({
   }
 }
 
+// ── 4. Recuperación de Contraseña de Cliente ───────────────────────────────────
+export async function sendPasswordResetEmail({
+  to,
+  resetLink,
+}: {
+  to: string;
+  resetLink: string;
+}): Promise<{ success: boolean; error?: string }> {
+  if (!resend) {
+    console.info(
+      `[Resend notice] RESEND_API_KEY no configurada. Enlace de recuperación para ${to}: ${resetLink}`,
+    );
+    return { success: false, error: "RESEND_API_KEY no configurada." };
+  }
+
+  const html = baseTemplate(`
+    <h2 style="font-size: 22px; font-weight: 600; margin: 0 0 16px; color: ${brandColors.text};">
+      Restablece tu contraseña
+    </h2>
+    <p>Hola,</p>
+    <p>
+      Recibimos una solicitud para restablecer la contraseña de tu cuenta en <strong>BestCoffee</strong>.
+      Haz clic en el siguiente botón para continuar:
+    </p>
+    <div style="text-align: center;">
+      <a href="${resetLink}" class="button">Restablecer contraseña →</a>
+    </div>
+    <p style="font-size: 13px; color: ${brandColors.muted}; margin-top: 20px;">
+      Si no solicitaste este cambio, puedes ignorar este correo de forma segura; tu contraseña actual seguirá funcionando.
+    </p>
+  `);
+
+  try {
+    const { error } = await resend.emails.send({
+      from: env.resendFromEmail,
+      to,
+      subject: "Recuperación de contraseña - BestCoffee",
+      html,
+    });
+    if (error) return { success: false, error: error.message };
+    return { success: true };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    return { success: false, error: message };
+  }
+}
+
+

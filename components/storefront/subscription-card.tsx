@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { Coffee, PauseCircle, SkipForward, Pin } from "lucide-react";
+import { useState, useTransition } from "react";
+import Link from "next/link";
+import { Coffee, PauseCircle, SkipForward, Pin, Check } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -10,6 +11,10 @@ import {
   SUB_STATUS_LABEL,
 } from "@/lib/mocks/account";
 import { formatCop } from "@/lib/format";
+import {
+  updateSubscriptionAction,
+  type SubscriptionActionInput,
+} from "@/lib/actions/customer-account";
 import { CancelModal } from "./cancel-modal";
 
 const STATUS_TONE: Record<SubStatus, string> = {
@@ -23,9 +28,25 @@ const FREQS = [7, 14, 21, 28, 42, 56];
 
 export function SubscriptionCard({ sub }: { sub: MockSubscription }) {
   const [freq, setFreq] = useState(sub.frequencyDays);
+  const [status, setStatus] = useState<SubStatus>(sub.status);
   const [showCancel, setShowCancel] = useState(false);
+  const [feedback, setFeedback] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
 
-  const active = sub.status === "ACTIVE";
+  const active = status === "ACTIVE";
+
+  const runAction = (input: SubscriptionActionInput) => {
+    setFeedback(null);
+    if (input.action === "CHANGE_FREQUENCY") setFreq(input.frequencyDays);
+    if (input.action === "PAUSE") setStatus("PAUSED");
+    if (input.action === "RESUME") setStatus("ACTIVE");
+    if (input.action === "CANCEL") setStatus("CANCELLED");
+
+    startTransition(async () => {
+      const res = await updateSubscriptionAction(sub.id, input);
+      setFeedback(res.message);
+    });
+  };
 
   return (
     <>
@@ -34,8 +55,8 @@ export function SubscriptionCard({ sub }: { sub: MockSubscription }) {
           <div className="size-16 rounded-md bg-muted flex-shrink-0" aria-hidden />
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
-              <Badge variant="outline" className={STATUS_TONE[sub.status]}>
-                {SUB_STATUS_LABEL[sub.status]}
+              <Badge variant="outline" className={STATUS_TONE[status]}>
+                {SUB_STATUS_LABEL[status]}
               </Badge>
               <Badge variant="outline" className="font-normal">
                 {sub.variantLabel}
@@ -47,6 +68,12 @@ export function SubscriptionCard({ sub }: { sub: MockSubscription }) {
             <p className="text-xs text-muted-foreground mt-1">
               {formatCop(sub.unitPriceCents)} cada entrega · –15% suscriptor
             </p>
+            {feedback && (
+              <p className="mt-2 inline-flex items-center gap-1.5 text-xs text-emerald-700 font-medium">
+                <Check className="size-3.5" />
+                {feedback}
+              </p>
+            )}
           </div>
           {active ? (
             <div className="text-right flex-shrink-0">
@@ -60,9 +87,15 @@ export function SubscriptionCard({ sub }: { sub: MockSubscription }) {
                 en {sub.daysUntilNext} días
               </div>
             </div>
-          ) : (
-            <Button size="sm">Reactivar</Button>
-          )}
+          ) : status !== "CANCELLED" ? (
+            <Button
+              size="sm"
+              disabled={isPending}
+              onClick={() => runAction({ action: "RESUME" })}
+            >
+              Reactivar
+            </Button>
+          ) : null}
         </div>
 
         {active && (
@@ -75,7 +108,11 @@ export function SubscriptionCard({ sub }: { sub: MockSubscription }) {
                 {FREQS.map((d) => (
                   <button
                     key={d}
-                    onClick={() => setFreq(d)}
+                    type="button"
+                    disabled={isPending}
+                    onClick={() =>
+                      runAction({ action: "CHANGE_FREQUENCY", frequencyDays: d })
+                    }
                     className={
                       "rounded-full border px-3 py-1 text-xs transition-colors " +
                       (d === freq
@@ -90,23 +127,47 @@ export function SubscriptionCard({ sub }: { sub: MockSubscription }) {
             </div>
 
             <div className="border-t border-border bg-muted/30 px-5 py-3 flex flex-wrap gap-2 items-center">
-              <Button variant="outline" size="sm">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={isPending}
+                onClick={() => runAction({ action: "SKIP_NEXT" })}
+              >
                 <SkipForward className="size-3.5" />
                 Saltar este envío
               </Button>
-              <Button variant="outline" size="sm">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={isPending}
+                onClick={() => runAction({ action: "PAUSE" })}
+              >
                 <PauseCircle className="size-3.5" />
                 Pausar
               </Button>
-              <Button variant="outline" size="sm">
-                <Coffee className="size-3.5" />
-                Cambiar producto
-              </Button>
-              <Button variant="outline" size="sm">
-                <Pin className="size-3.5" />
-                Cambiar dirección
-              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                render={
+                  <Link href="/catalogo">
+                    <Coffee className="size-3.5" />
+                    Cambiar producto
+                  </Link>
+                }
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                render={
+                  <Link href="/cuenta/direcciones">
+                    <Pin className="size-3.5" />
+                    Cambiar dirección
+                  </Link>
+                }
+              />
               <button
+                type="button"
+                disabled={isPending}
                 onClick={() => setShowCancel(true)}
                 className="ml-auto text-xs text-destructive hover:underline underline-offset-2"
               >
@@ -117,7 +178,18 @@ export function SubscriptionCard({ sub }: { sub: MockSubscription }) {
         )}
       </article>
 
-      <CancelModal open={showCancel} onOpenChange={setShowCancel} productName={sub.productName} />
+      <CancelModal
+        open={showCancel}
+        onOpenChange={setShowCancel}
+        productName={sub.productName}
+        pending={isPending}
+        onSkipNext={() => runAction({ action: "SKIP_NEXT" })}
+        onPause={() => runAction({ action: "PAUSE" })}
+        onReduceFrequency={() =>
+          runAction({ action: "CHANGE_FREQUENCY", frequencyDays: 56 })
+        }
+        onConfirmCancel={() => runAction({ action: "CANCEL" })}
+      />
     </>
   );
 }

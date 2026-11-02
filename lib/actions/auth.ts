@@ -1,12 +1,19 @@
 "use server";
 
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { env } from "../env";
 import { resolveActiveTenantSlug } from "../tenant";
+import {
+  clearCustomerSessionCookies,
+  clearNeonAndLegacyCookies,
+  setCustomerSessionCookies,
+} from "../auth/session-store";
+import { sendPasswordResetEmail } from "../email/resend";
 
 export type AuthState = { error: string } | null;
 export type RegisterState = null | { error: string } | { success: true; message: string };
+export type PasswordResetState = null | { error: string } | { sent: true };
 
 // ── Login ─────────────────────────────────────────────────────────────────────
 export async function loginAction(
@@ -63,20 +70,9 @@ export async function loginAction(
 
   if (tokenValue) {
     const store = await cookies();
-    const cookieOpts = {
-      httpOnly: true,
-      secure: !env.isDev,
-      sameSite: "lax" as const,
-      path: "/",
-      maxAge: 60 * 60 * 24 * 30,
-    };
     // Limpiar sesiones previas de Neon Auth para evitar colisiones entre métodos de ingreso
     clearNeonAndLegacyCookies(store);
-
-    // bestcoffee-session: used by middleware (proxy.ts) for customer route protection
-    store.set("bestcoffee-session", tokenValue, cookieOpts);
-    // customer_token: forwarded verbatim to the backend for cookie-based auth guards
-    store.set("customer_token", tokenValue, cookieOpts);
+    setCustomerSessionCookies(store, tokenValue);
   }
 
   const isSafeRelative = next.startsWith("/") && !next.startsWith("//") && !next.startsWith("/\\");
@@ -134,37 +130,46 @@ export async function registerAction(
   };
 }
 
-function clearNeonAndLegacyCookies(store: Awaited<ReturnType<typeof cookies>>) {
-  const secureCookies = [
-    "__Secure-neon-auth.session_token",
-    "__Secure-neon-auth.local.session_data",
-    "__Secure-neon-auth.session_challenge",
-    "__Secure-neon-auth.session_challange",
-  ];
-  for (const name of secureCookies) {
-    store.set(name, "", {
-      maxAge: 0,
-      path: "/",
-      secure: true,
-      httpOnly: true,
-      sameSite: "lax",
+// ── Password Recovery ─────────────────────────────────────────────────────────
+export async function requestPasswordResetAction(
+  _prev: PasswordResetState,
+  formData: FormData,
+): Promise<PasswordResetState> {
+  const email = String(formData.get("email") ?? "").trim();
+  if (!email || !email.includes("@")) {
+    return { error: "Por favor ingresa un correo electrónico válido." };
+  }
+
+  const tenantSlug = await resolveActiveTenantSlug();
+  const h = await headers();
+  const host = h.get("x-forwarded-host") || h.get("host") || "localhost:3000";
+  const proto = h.get("x-forwarded-proto") || (host.includes("localhost") ? "http" : "https");
+  const origin = `${proto}://${host}`;
+
+  let backendHandled = false;
+  try {
+    const res = await fetch(`${env.apiUrlInternal}/v1/auth/customer/forgot-password`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Tenant-Slug": tenantSlug,
+      },
+      body: JSON.stringify({ email }),
+      cache: "no-store",
+    });
+    if (res.ok) backendHandled = true;
+  } catch {
+    // Fallback a envío por Resend
+  }
+
+  if (!backendHandled) {
+    await sendPasswordResetEmail({
+      to: email,
+      resetLink: `${origin}/login?email=${encodeURIComponent(email)}`,
     });
   }
 
-  const standardCookies = [
-    "customer_email",
-    "customer_name",
-    "neon-auth.session_token",
-    "neon-auth.local.session_data",
-    "neon-auth.session_challenge",
-    "neon-auth.session_challange",
-    "better-auth.session_token",
-    "better-auth.session_data",
-    "better-auth.local.session_data",
-  ];
-  for (const name of standardCookies) {
-    store.set(name, "", { maxAge: 0, path: "/" });
-  }
+  return { sent: true };
 }
 
 // ── Logout ────────────────────────────────────────────────────────────────────
@@ -192,9 +197,7 @@ export async function logoutAction(shouldRedirect: boolean | FormData = true) {
     });
   } catch { /* ignore */ }
 
-  store.set("bestcoffee-session", "", { maxAge: 0, path: "/" });
-  store.set("customer_token", "", { maxAge: 0, path: "/" });
-  clearNeonAndLegacyCookies(store);
+  clearCustomerSessionCookies(store);
 
   if (env.neonAuthUrl) {
     try {

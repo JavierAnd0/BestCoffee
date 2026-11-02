@@ -1,4 +1,10 @@
 import { env } from "../env";
+import { customerFetch } from "../api/gateway";
+import {
+  decodeJwtClaims,
+  formatNameFromEmail,
+  getCustomerSession,
+} from "../auth/session-store";
 import {
   MOCK_CUSTOMER,
   MOCK_ADDRESSES,
@@ -12,169 +18,11 @@ import {
   type SubStatus,
 } from "../mocks/account";
 
-// ── Neon User Extraction ───────────────────────────────────────────────────
-
-interface NeonUser {
-  id?: string;
-  name?: string | null;
-  email?: string | null;
-  image?: string | null;
-  createdAt?: string | Date | null;
-}
-
-function decodeJwtPayload(token: string): {
-  sub?: string;
-  email?: string;
-  name?: string;
-  firstName?: string;
-  lastName?: string;
-  user?: { id?: string; name?: string; email?: string; image?: string };
-  iat?: number;
-} | null {
-  try {
-    const parts = token.split(".");
-    if (parts.length >= 2) {
-      return JSON.parse(Buffer.from(parts[1], "base64url").toString("utf-8"));
-    }
-  } catch {}
-  return null;
-}
-
-async function getNeonUser(): Promise<NeonUser | null> {
-  try {
-    const { cookies } = await import("next/headers");
-    const c = await cookies();
-
-    // 1. Decodificar la cookie oficial de sesión de Neon Auth (__Secure- primero)
-    const sessionDataCookies = [
-      c.get("__Secure-neon-auth.local.session_data")?.value,
-      c.get("neon-auth.local.session_data")?.value,
-    ];
-
-    for (const val of sessionDataCookies) {
-      if (!val) continue;
-      const payload = decodeJwtPayload(val);
-      if (payload) {
-        const email = payload.user?.email || payload.email;
-        const name =
-          payload.user?.name ||
-          payload.name ||
-          (email
-            ? email
-                .split("@")[0]
-                .replace(/[._]/g, " ")
-                .replace(/\b\w/g, (l) => l.toUpperCase())
-            : undefined);
-        const userId = payload.user?.id || payload.sub;
-        if (email) {
-          return { email, name, id: userId };
-        }
-      }
-    }
-
-    // 2. Consultar el endpoint /get-session de Neon Auth únicamente con el session_token actual
-    const sessionToken =
-      c.get("__Secure-neon-auth.session_token")?.value ??
-      c.get("neon-auth.session_token")?.value;
-
-    if (sessionToken && env.neonAuthUrl) {
-      try {
-        const res = await fetch(`${env.neonAuthUrl}/get-session`, {
-          headers: {
-            Cookie: `__Secure-neon-auth.session_token=${sessionToken}; neon-auth.session_token=${sessionToken}`,
-          },
-          cache: "no-store",
-        });
-        if (res.ok) {
-          const data = (await res.json()) as { user?: NeonUser } | null;
-          if (data?.user && (data.user.name || data.user.email)) {
-            return data.user;
-          }
-        }
-      } catch {}
-    }
-
-    // 3. Fallback vía SDK de servidor si está configurado
-    if (env.neonAuthUrl) {
-      try {
-        const { auth } = await import("../auth/server");
-        const sessionRes = (await auth.getSession()) as {
-          data?: { user?: NeonUser };
-          user?: NeonUser;
-          session?: { user?: NeonUser };
-        } | null;
-        const u =
-          sessionRes?.data?.user ??
-          sessionRes?.user ??
-          sessionRes?.session?.user;
-        if (u && (u.name || u.email)) {
-          return u as NeonUser;
-        }
-      } catch {}
-    }
-  } catch {}
-
-  return null;
-}
-
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 export async function authHeaders() {
-  const { cookies, headers } = await import("next/headers");
-  const c = await cookies();
-  const h = await headers();
-  const tenantSlug = h.get("x-tenant-slug") ?? env.defaultTenantSlug;
-
-  let token =
-    c.get("bestcoffee-session")?.value ??
-    c.get("customer_token")?.value;
-
-  if (token === "mock-session-test") {
-    return { token, tenantSlug };
-  }
-
-  // Verificar si existe una sesión de Neon Auth (Google OAuth) y asegurar que el token
-  // de backend corresponda exactamente al usuario activo de Neon Auth.
-  try {
-    const neonUser = await getNeonUser();
-    if (neonUser?.email) {
-      const tokenPayload = token ? decodeJwtPayload(token) : null;
-      const tokenEmail = tokenPayload?.user?.email || tokenPayload?.email;
-      const isLocalFallback = token?.endsWith(".local_session") ?? false;
-      const emailMismatch =
-        Boolean(tokenEmail) &&
-        tokenEmail!.toLowerCase() !== neonUser.email.toLowerCase();
-
-      if (!token || isLocalFallback || emailMismatch) {
-        const syncRes = await fetch(
-          `${env.apiUrlInternal}/v1/auth/customer/neon-sync`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "X-Tenant-Slug": tenantSlug,
-            },
-            body: JSON.stringify({
-              email: neonUser.email,
-              name: neonUser.name,
-            }),
-            cache: "no-store",
-          },
-        );
-        if (syncRes.ok) {
-          const syncData = (await syncRes.json()) as { accessToken?: string };
-          if (syncData.accessToken) {
-            token = syncData.accessToken;
-          }
-        }
-      }
-    }
-  } catch {}
-
-  return {
-    token,
-    tenantSlug,
-  };
+  const { token, tenantSlug } = await getCustomerSession();
+  return { token, tenantSlug };
 }
 
 function items<T>(payload: unknown): T[] {
@@ -199,12 +47,7 @@ function mapCustomer(c: ApiCustomer): MockCustomer {
   const fullName =
     [c.firstName, c.lastName].filter(Boolean).join(" ").trim() ||
     c.name?.trim() ||
-    (c.email
-      ? c.email
-          .split("@")[0]
-          .replace(/[._]/g, " ")
-          .replace(/\b\w/g, (l) => l.toUpperCase())
-      : "Cliente");
+    formatNameFromEmail(c.email);
   return {
     name: fullName,
     email: c.email,
@@ -216,51 +59,29 @@ function mapCustomer(c: ApiCustomer): MockCustomer {
 }
 
 async function fetchMe(): Promise<MockCustomer | null> {
-  const { token, tenantSlug } = await authHeaders();
-  if (!token) return null;
-  const res = await fetch(`${env.apiUrlInternal}/v1/customers/me`, {
-    headers: {
-      "X-Tenant-Slug": tenantSlug,
-      Authorization: `Bearer ${token}`,
-      Cookie: `customer_token=${token}`,
-    },
-    cache: "no-store",
-  });
-  if (!res.ok) return null;
-  return mapCustomer((await res.json()) as ApiCustomer);
+  const res = await customerFetch<ApiCustomer>("/v1/customers/me");
+  if (!res.ok || !res.data) return null;
+  return mapCustomer(res.data);
 }
 
 export async function getCurrentCustomer(): Promise<MockCustomer> {
   if (env.useMocks) return MOCK_CUSTOMER;
 
   try {
-    const { cookies } = await import("next/headers");
-    const c = await cookies();
-    const rawToken =
-      c.get("bestcoffee-session")?.value ??
-      c.get("customer_token")?.value;
+    const { token, isMockSession, neonUser } = await getCustomerSession();
 
-    if (rawToken === "mock-session-test") {
+    if (isMockSession) {
       return MOCK_CUSTOMER;
     }
 
-    // 1. Obtener el cliente real desde el backend NestJS (incluye re-sync automático con Neon Auth en authHeaders)
+    // 1. Obtener el cliente real desde el backend NestJS (incluye re-sync automático con Neon Auth)
     const me = await fetchMe();
     if (me) return me;
 
     // 2. Fallback si el backend está apagado pero existe sesión activa de Neon Auth (Google OAuth)
-    const neonUser = await getNeonUser();
     if (neonUser && (neonUser.name || neonUser.email)) {
       const email = neonUser.email || "";
-      const displayName =
-        neonUser.name?.trim() ||
-        (email
-          ? email
-              .split("@")[0]
-              .replace(/[._]/g, " ")
-              .replace(/\b\w/g, (l) => l.toUpperCase())
-          : "Cliente");
-
+      const displayName = neonUser.name?.trim() || formatNameFromEmail(email);
       const memberDate = neonUser.createdAt;
       const memberSince = memberDate
         ? new Date(memberDate).getFullYear().toString()
@@ -275,18 +96,13 @@ export async function getCurrentCustomer(): Promise<MockCustomer> {
     }
 
     // 3. Fallback decodificando el JWT de sesión si el backend está offline
-    if (rawToken) {
-      const payload = decodeJwtPayload(rawToken);
+    if (token) {
+      const payload = decodeJwtClaims(token);
       if (payload && (payload.name || payload.email || payload.firstName)) {
         const fullName =
           payload.name ||
           [payload.firstName, payload.lastName].filter(Boolean).join(" ") ||
-          (payload.email
-            ? payload.email
-                .split("@")[0]
-                .replace(/[._]/g, " ")
-                .replace(/\b\w/g, (l) => l.toUpperCase())
-            : "Cliente");
+          formatNameFromEmail(payload.email);
         const memberSince = payload.iat
           ? new Date(payload.iat * 1000).getFullYear().toString()
           : new Date().getFullYear().toString();
@@ -409,49 +225,26 @@ function mapOrder(o: ApiOrder): MockOrder {
 
 export async function getCustomerOrders(): Promise<MockOrder[]> {
   if (env.useMocks) return MOCK_ORDERS;
-  try {
-    const { token, tenantSlug } = await authHeaders();
-    if (!token) return [];
-    if (token === "mock-session-test") return MOCK_ORDERS;
-    const res = await fetch(`${env.apiUrlInternal}/v1/orders`, {
-      headers: {
-        "X-Tenant-Slug": tenantSlug,
-        Authorization: `Bearer ${token}`,
-        Cookie: `customer_token=${token}`,
-      },
-      cache: "no-store",
-    });
-    if (!res.ok) return [];
-    const data = await res.json();
-    return items<ApiOrder>(data).map(mapOrder);
-  } catch {
-    return [];
-  }
+  const { token, isMockSession } = await getCustomerSession();
+  if (!token) return [];
+  if (isMockSession) return MOCK_ORDERS;
+  const res = await customerFetch<unknown>("/v1/orders");
+  if (!res.ok) return [];
+  return items<ApiOrder>(res.data).map(mapOrder);
 }
 
 export async function getCustomerOrder(id: string): Promise<MockOrder | null> {
   if (env.useMocks) {
     return MOCK_ORDERS.find((o) => o.id === id) ?? MOCK_ORDERS[0] ?? null;
   }
-  try {
-    const { token, tenantSlug } = await authHeaders();
-    if (!token) return null;
-    if (token === "mock-session-test") {
-      return MOCK_ORDERS.find((o) => o.id === id) ?? MOCK_ORDERS[0] ?? null;
-    }
-    const res = await fetch(`${env.apiUrlInternal}/v1/orders/${encodeURIComponent(id)}`, {
-      headers: {
-        "X-Tenant-Slug": tenantSlug,
-        Authorization: `Bearer ${token}`,
-        Cookie: `customer_token=${token}`,
-      },
-      cache: "no-store",
-    });
-    if (!res.ok) return null;
-    return mapOrder((await res.json()) as ApiOrder);
-  } catch {
-    return null;
+  const { token, isMockSession } = await getCustomerSession();
+  if (!token) return null;
+  if (isMockSession) {
+    return MOCK_ORDERS.find((o) => o.id === id) ?? MOCK_ORDERS[0] ?? null;
   }
+  const res = await customerFetch<ApiOrder>(`/v1/orders/${encodeURIComponent(id)}`);
+  if (!res.ok || !res.data) return null;
+  return mapOrder(res.data);
 }
 
 // ── Subscriptions ─────────────────────────────────────────────────────────────
@@ -529,24 +322,12 @@ function mapSubscription(s: ApiSubscription): MockSubscription {
 
 export async function getCustomerSubscriptions(): Promise<MockSubscription[]> {
   if (env.useMocks) return MOCK_SUBSCRIPTIONS;
-  try {
-    const { token, tenantSlug } = await authHeaders();
-    if (!token) return [];
-    if (token === "mock-session-test") return MOCK_SUBSCRIPTIONS;
-    const res = await fetch(`${env.apiUrlInternal}/v1/subscriptions`, {
-      headers: {
-        "X-Tenant-Slug": tenantSlug,
-        Authorization: `Bearer ${token}`,
-        Cookie: `customer_token=${token}`,
-      },
-      cache: "no-store",
-    });
-    if (!res.ok) return [];
-    const data = await res.json();
-    return items<ApiSubscription>(data).map(mapSubscription);
-  } catch {
-    return [];
-  }
+  const { token, isMockSession } = await getCustomerSession();
+  if (!token) return [];
+  if (isMockSession) return MOCK_SUBSCRIPTIONS;
+  const res = await customerFetch<unknown>("/v1/subscriptions");
+  if (!res.ok) return [];
+  return items<ApiSubscription>(res.data).map(mapSubscription);
 }
 
 // ── Addresses ─────────────────────────────────────────────────────────────────
@@ -592,22 +373,10 @@ function mapAddress(a: ApiAddress): MockAddress {
 
 export async function getCustomerAddresses(): Promise<MockAddress[]> {
   if (env.useMocks) return MOCK_ADDRESSES;
-  try {
-    const { token, tenantSlug } = await authHeaders();
-    if (!token) return [];
-    if (token === "mock-session-test") return MOCK_ADDRESSES;
-    const res = await fetch(`${env.apiUrlInternal}/v1/customers/me/addresses`, {
-      headers: {
-        "X-Tenant-Slug": tenantSlug,
-        Authorization: `Bearer ${token}`,
-        Cookie: `customer_token=${token}`,
-      },
-      cache: "no-store",
-    });
-    if (!res.ok) return [];
-    const data = await res.json();
-    return items<ApiAddress>(data).map(mapAddress);
-  } catch {
-    return [];
-  }
+  const { token, isMockSession } = await getCustomerSession();
+  if (!token) return [];
+  if (isMockSession) return MOCK_ADDRESSES;
+  const res = await customerFetch<unknown>("/v1/customers/me/addresses");
+  if (!res.ok) return [];
+  return items<ApiAddress>(res.data).map(mapAddress);
 }
