@@ -173,6 +173,8 @@ export default async function middleware(req: NextRequest) {
             headers: {
               "Content-Type": "application/json",
               "X-Tenant-Slug": tenantSlug,
+              "x-internal-secret":
+                process.env.REVALIDATE_SECRET || "dev-revalidate-secret",
             },
             body: JSON.stringify({ email, name }),
             cache: "no-store",

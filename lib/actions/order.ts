@@ -87,6 +87,7 @@ export async function placeOrderAction(
           headers: {
             "Content-Type": "application/json",
             "X-Tenant-Slug": tenantSlug,
+            "x-internal-secret": env.revalidateSecret,
           },
           body: JSON.stringify({
             email: input.contact.email,

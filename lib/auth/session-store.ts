@@ -172,6 +172,7 @@ export async function getCustomerSession(): Promise<{
             headers: {
               "Content-Type": "application/json",
               "X-Tenant-Slug": tenantSlug,
+              "x-internal-secret": env.revalidateSecret,
             },
             body: JSON.stringify({
               email: neonUser.email,
