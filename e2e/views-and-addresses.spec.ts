@@ -113,8 +113,11 @@ test.describe("Storefront Views & Customer Address Management", () => {
     // Mapa embebido
     await expect(page.locator("iframe")).toBeVisible();
 
-    // Botones de acción
-    await expect(page.getByRole("link", { name: /Cómo llegar/i }).first()).toBeVisible();
+    // Botones de acción — el componente Button de la UI expone role="button"
+    // incluso cuando se renderiza como <a> (comportamiento deliberado de la
+    // librería para mantener semántica/estilo de botón), por eso se verifica
+    // por rol "button", no "link".
+    await expect(page.getByRole("button", { name: /Cómo llegar/i }).first()).toBeVisible();
   });
 });
 
