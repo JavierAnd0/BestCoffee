@@ -94,13 +94,6 @@ export async function placeOrderAction(
               sameSite: "lax",
               maxAge: 60 * 60 * 24 * 30,
             });
-            store.set("bestcoffee-session", syncData.accessToken, {
-              path: "/",
-              httpOnly: true,
-              secure: !env.isDev,
-              sameSite: "lax",
-              maxAge: 60 * 60 * 24 * 30,
-            });
           }
         }
       } catch {
@@ -192,20 +185,15 @@ export async function placeOrderAction(
         body: JSON.stringify(body),
         cache: "no-store",
       });
-    } catch {
-      // Si la conexión falla en desarrollo, generamos fallback limpio
-      const fallbackId = `ORG-${Math.floor(10000 + Math.random() * 90000)}`;
-      return { success: true, orderId: fallbackId };
+    } catch (err) {
+      console.error("placeOrderAction: fetch al backend falló:", err);
+      return {
+        error:
+          "No se pudo conectar con el servidor de pagos. Intenta de nuevo en unos minutos.",
+      };
     }
 
     if (!res.ok) {
-      // Si el backend responde 500 por credenciales de pasarela externa no configuradas en dev (ej. Stripe / MercadoPago),
-      // generamos un pedido de prueba exitoso para no bloquear el flujo de compra.
-      if (res.status >= 500) {
-        const fallbackId = `ORG-${Math.floor(10000 + Math.random() * 90000)}`;
-        return { success: true, orderId: fallbackId };
-      }
-
       let message = "No se pudo procesar el pedido. Verifica los datos e intenta de nuevo.";
       try {
         const data = (await res.json()) as { message?: string | string[] };
@@ -217,6 +205,9 @@ export async function placeOrderAction(
       } catch {
         /* ignore */
       }
+      // Nunca simular una orden exitosa ante un error del backend (incluyendo
+      // 5xx / BadGatewayException del gateway de pago): el usuario debe ver
+      // el error real y poder reintentar, nunca un orderId falso.
       return { error: message };
     }
 
@@ -225,8 +216,14 @@ export async function placeOrderAction(
       id?: string;
     };
 
-    const finalOrderId =
-      data.orderId ?? data.id ?? `ORG-${Math.floor(10000 + Math.random() * 90000)}`;
+    if (!data.orderId && !data.id) {
+      console.error("placeOrderAction: respuesta OK sin orderId del backend", data);
+      return {
+        error: "El pedido no se pudo confirmar. Contacta soporte si el cargo se realizó.",
+      };
+    }
+
+    const finalOrderId = data.orderId ?? data.id!;
 
     return { success: true, orderId: finalOrderId };
   } catch (err) {
