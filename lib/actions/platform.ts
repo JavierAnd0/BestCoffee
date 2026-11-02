@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { env } from "../env";
 
 // Server actions para el panel de superadmin. Corren en el servidor, leen la
-// cookie httpOnly `bestcoffee-session` y la reenvían como `Authorization: Bearer`
+// cookie httpOnly `bestcoffee-operator-session` y la reenvían como `Authorization: Bearer`
 // — que es lo único que lee el PlatformGuard del backend. El token nunca se
 // expone al JavaScript del navegador.
 

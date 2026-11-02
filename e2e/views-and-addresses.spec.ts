@@ -71,7 +71,7 @@ test.describe("Storefront Views & Customer Address Management", () => {
     // Autenticar la sesión del cliente con cookie válida según middleware
     await page.context().addCookies([
       {
-        name: "bestcoffee-session",
+        name: "customer_token",
         value: "mock-session-test",
         domain: "localhost",
         path: "/",

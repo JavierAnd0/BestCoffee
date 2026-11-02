@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { env } from "../env";
 
 // Server actions del panel del operador para responder a una propuesta de cambio
-// de comisión. Usan la cookie httpOnly `bestcoffee-session` (token de operador) +
+// de comisión. Usan la cookie httpOnly `bestcoffee-operator-session` (token de operador) +
 // el slug del tenant resuelto por el middleware.
 
 async function adminHeaders(): Promise<Record<string, string>> {

@@ -175,9 +175,7 @@ export async function requestPasswordResetAction(
 // ── Logout ────────────────────────────────────────────────────────────────────
 export async function logoutAction(shouldRedirect: boolean | FormData = true) {
   const store = await cookies();
-  const token =
-    store.get("bestcoffee-session")?.value ??
-    store.get("customer_token")?.value;
+  const token = store.get("customer_token")?.value;
   const tenantSlug = await resolveActiveTenantSlug();
 
   // Notify the backend (best effort — clear cookies regardless)

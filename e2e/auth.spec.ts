@@ -65,7 +65,7 @@ test.describe("E2E — Auth & Route Protection Guard", () => {
     // 1. Simular sesión autenticada
     await page.context().addCookies([
       {
-        name: "bestcoffee-session",
+        name: "customer_token",
         value: "mock-session-test",
         domain: "localhost",
         path: "/",

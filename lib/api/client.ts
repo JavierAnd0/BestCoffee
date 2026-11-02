@@ -65,10 +65,7 @@ export async function apiServer() {
     c.get("bestcoffee-impersonation")?.value ??
     c.get("bestcoffee-operator-session")?.value ??
     null;
-  const customerToken =
-    c.get("bestcoffee-session")?.value ??
-    c.get("customer_token")?.value ??
-    null;
+  const customerToken = c.get("customer_token")?.value ?? null;
 
   // Prefer the internal URL when the front is colocated with the API in a
   // VPC; the public URL works everywhere.
@@ -105,13 +102,14 @@ export function apiClient() {
           env.defaultTenantSlug
         );
       },
-      // Token from a non-HttpOnly cookie mirror; in production we may move this
-      // to an Authorization header set by middleware on every request.
-      () => {
-        if (typeof document === "undefined") return null;
-        const m = document.cookie.match(/(?:^|;\s*)bestcoffee-token=([^;]+)/);
-        return m ? decodeURIComponent(m[1]) : null;
-      },
+      // Token: customer_token is httpOnly by design (set by the backend /
+      // middleware), so it is NEVER readable from document.cookie here.
+      // apiClient() must not attempt to read a session token from JS.
+      // Client components needing an authenticated call must go through a
+      // BFF route handler (app/api/.../route.ts) that reads the httpOnly
+      // cookie server-side and forwards the request — never read tokens
+      // from the browser's JS-visible cookie jar.
+      () => null,
     ),
   );
   return client;
