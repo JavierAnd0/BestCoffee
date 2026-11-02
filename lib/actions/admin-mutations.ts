@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { z } from "zod";
 import { env } from "../env";
 import { operatorFetch } from "../api/gateway";
 import type {
@@ -34,6 +35,35 @@ export interface SaveProductInput {
   pendingImages?: ProductImage[];
 }
 
+// Esquema mínimo que coincide con el DTO real de creación/edición de
+// productos del backend (nombre + al menos una variante con precio válido).
+const saveProductSchema = z.object({
+  id: z.string().optional(),
+  name: z.string().trim().min(1, "El nombre del producto es obligatorio."),
+  shortDescription: z.string().optional().default(""),
+  longDescription: z.string().optional().default(""),
+  type: z.string(),
+  origin: z.string().optional().default(""),
+  producerStory: z.string().optional().default(""),
+  roastLevel: z.number(),
+  flavorNotes: z.array(z.string()).default([]),
+  badges: z.array(z.string()).default([]),
+  status: z.string(),
+  subscriptionAvailability: z.unknown(),
+  variants: z
+    .array(
+      z.object({
+        sizeGrams: z.number().positive(),
+        grind: z.string(),
+        priceOneTime: z.number().nonnegative(),
+        priceSubscription: z.number().nonnegative(),
+        stock: z.number().nonnegative(),
+      }),
+    )
+    .min(1, "El producto necesita al menos una variante válida."),
+  pendingImages: z.array(z.unknown()).optional(),
+});
+
 export type AdminMutationResult<T = undefined> =
   | { ok: true; message: string; data?: T }
   | { ok: false; error: string };
@@ -41,8 +71,9 @@ export type AdminMutationResult<T = undefined> =
 export async function saveProductAction(
   input: SaveProductInput,
 ): Promise<AdminMutationResult<{ id: string }>> {
-  if (!input.name.trim()) {
-    return { ok: false, error: "El nombre del producto es obligatorio." };
+  const parsed = saveProductSchema.safeParse(input);
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.issues[0]?.message ?? "Datos de producto inválidos." };
   }
 
   if (env.useMocks) {

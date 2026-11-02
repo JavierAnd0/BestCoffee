@@ -1,6 +1,7 @@
 "use server";
 
 import { cookies } from "next/headers";
+import { z } from "zod";
 import { env } from "../env";
 import { resolveActiveTenantSlug } from "../tenant";
 import { authHeaders } from "../data/account";
@@ -35,24 +36,35 @@ export type PlaceOrderResult =
   | { success: true; orderId: string }
   | { error: string };
 
+// Esquema mínimo que coincide con el DTO real `CreateOrderDto` del backend
+// (contacto + dirección de envío + al menos un item).
+const placeOrderSchema = z.object({
+  contact: z.object({
+    email: z.string().trim().min(1, "Por favor ingresa un correo electrónico válido.").email("Por favor ingresa un correo electrónico válido."),
+    phone: z.string().optional().default(""),
+  }),
+  shipping: z.object({
+    firstName: z.string().optional().default(""),
+    lastName: z.string().optional().default(""),
+    address: z.string().trim().min(3, "Por favor ingresa una dirección de entrega válida."),
+    line2: z.string().optional(),
+    city: z.string().trim().min(2, "Por favor especifica la ciudad de entrega."),
+    region: z.string().optional().default(""),
+    zip: z.string().optional(),
+  }),
+  items: z.array(z.record(z.string(), z.unknown())).min(1, "El carrito está vacío. Agrega productos antes de pagar."),
+  payment: z.record(z.string(), z.unknown()).optional(),
+  discountCode: z.string().optional(),
+  paymentMethod: z.enum(["card", "pse", "cash_on_delivery"]).optional(),
+});
+
 export async function placeOrderAction(
   input: PlaceOrderInput,
 ): Promise<PlaceOrderResult> {
   try {
-    if (!input.items || input.items.length === 0) {
-      return { error: "El carrito está vacío. Agrega productos antes de pagar." };
-    }
-
-    if (!input.contact.email || !input.contact.email.includes("@")) {
-      return { error: "Por favor ingresa un correo electrónico válido." };
-    }
-
-    if (!input.shipping.address || input.shipping.address.trim().length < 3) {
-      return { error: "Por favor ingresa una dirección de entrega válida." };
-    }
-
-    if (!input.shipping.city || input.shipping.city.trim().length < 2) {
-      return { error: "Por favor especifica la ciudad de entrega." };
+    const parsed = placeOrderSchema.safeParse(input);
+    if (!parsed.success) {
+      return { error: parsed.error.issues[0]?.message ?? "Datos de pedido inválidos." };
     }
 
     // Obtener sesión sincronizada del cliente actual

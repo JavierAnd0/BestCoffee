@@ -2,6 +2,7 @@
 
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { z } from "zod";
 import { env } from "../env";
 import { resolveActiveTenantSlug } from "../tenant";
 import {
@@ -15,16 +16,43 @@ export type AuthState = { error: string } | null;
 export type RegisterState = null | { error: string } | { success: true; message: string };
 export type PasswordResetState = null | { error: string } | { sent: true };
 
+// Esquemas mínimos que coinciden con los DTOs reales del backend
+// (CustomerLoginDto / CustomerRegisterDto / ForgotPasswordDto).
+const loginSchema = z.object({
+  email: z.string().trim().min(1, "El correo es requerido.").email("Correo inválido."),
+  password: z.string().min(1, "La contraseña es requerida."),
+  next: z.string().trim().optional(),
+});
+
+const registerSchema = z.object({
+  email: z.string().trim().min(1, "El correo es requerido.").email("Correo inválido."),
+  password: z.string().min(8, "La contraseña debe tener al menos 8 caracteres."),
+  firstName: z.string().trim().optional(),
+  lastName: z.string().trim().optional(),
+  terms: z.string().min(1, "Debes aceptar los Términos de uso y la Política de privacidad."),
+});
+
+const forgotPasswordSchema = z.object({
+  email: z.string().trim().min(1).email("Correo inválido."),
+});
+
 // ── Login ─────────────────────────────────────────────────────────────────────
 export async function loginAction(
   _prev: AuthState,
   formData: FormData,
 ): Promise<AuthState> {
-  const email = String(formData.get("email") ?? "").trim();
-  const password = String(formData.get("password") ?? "");
-  const next = String(formData.get("next") ?? "/cuenta").trim();
+  const parsed = loginSchema.safeParse({
+    email: String(formData.get("email") ?? ""),
+    password: String(formData.get("password") ?? ""),
+    next: String(formData.get("next") ?? "/cuenta"),
+  });
 
-  if (!email) return { error: "El correo es requerido." };
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Datos de ingreso inválidos." };
+  }
+
+  const { email, password } = parsed.data;
+  const next = parsed.data.next ?? "/cuenta";
 
   const tenantSlug = await resolveActiveTenantSlug();
 
@@ -85,14 +113,19 @@ export async function registerAction(
   _prev: RegisterState,
   formData: FormData,
 ): Promise<RegisterState> {
-  const email = String(formData.get("email") ?? "").trim();
-  const password = String(formData.get("password") ?? "");
-  const firstName = String(formData.get("firstName") ?? "").trim() || undefined;
-  const lastName = String(formData.get("lastName") ?? "").trim() || undefined;
+  const parsed = registerSchema.safeParse({
+    email: String(formData.get("email") ?? ""),
+    password: String(formData.get("password") ?? ""),
+    firstName: String(formData.get("firstName") ?? "") || undefined,
+    lastName: String(formData.get("lastName") ?? "") || undefined,
+    terms: formData.get("terms") ? "on" : "",
+  });
 
-  const terms = formData.get("terms");
-  if (!terms) return { error: "Debes aceptar los Términos de uso y la Política de privacidad." };
-  if (!email || !password) return { error: "El correo y la contraseña son requeridos." };
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Datos de registro inválidos." };
+  }
+
+  const { email, password, firstName, lastName } = parsed.data;
 
   const tenantSlug = await resolveActiveTenantSlug();
 
@@ -135,10 +168,13 @@ export async function requestPasswordResetAction(
   _prev: PasswordResetState,
   formData: FormData,
 ): Promise<PasswordResetState> {
-  const email = String(formData.get("email") ?? "").trim();
-  if (!email || !email.includes("@")) {
+  const parsed = forgotPasswordSchema.safeParse({
+    email: String(formData.get("email") ?? ""),
+  });
+  if (!parsed.success) {
     return { error: "Por favor ingresa un correo electrónico válido." };
   }
+  const { email } = parsed.data;
 
   const tenantSlug = await resolveActiveTenantSlug();
   const h = await headers();
