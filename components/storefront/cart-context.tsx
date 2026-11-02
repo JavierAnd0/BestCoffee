@@ -28,6 +28,9 @@ interface CartContextValue {
   items: CartItem[];
   count: number;
   subtotalCents: number;
+  /** Umbral de envío gratis de la tienda actual (centavos). */
+  freeShippingThresholdCents: number;
+  shippingFlatCents: number;
   isOpen: boolean;
   open: () => void;
   close: () => void;
@@ -54,9 +57,13 @@ function resolveStorageKey(tenantSlug?: string): string {
 
 export function CartProvider({
   tenantSlug,
+  freeShippingThresholdCents,
+  shippingFlatCents,
   children,
 }: {
   tenantSlug?: string;
+  freeShippingThresholdCents?: number;
+  shippingFlatCents?: number;
   children: React.ReactNode;
 }) {
   const [items, setItems] = useState<CartItem[]>([]);
@@ -135,6 +142,8 @@ export function CartProvider({
       items,
       count: items.reduce((n, i) => n + i.qty, 0),
       subtotalCents: items.reduce((n, i) => n + i.qty * i.unitPriceCents, 0),
+      freeShippingThresholdCents: freeShippingThresholdCents ?? 150_000_00,
+      shippingFlatCents: shippingFlatCents ?? 12_000_00,
       isOpen,
       open: () => setOpen(true),
       close: () => setOpen(false),
@@ -143,7 +152,7 @@ export function CartProvider({
       updateQty,
       clear,
     }),
-    [items, isOpen, addItem, removeItem, updateQty, clear],
+    [items, isOpen, addItem, removeItem, updateQty, clear, freeShippingThresholdCents, shippingFlatCents],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

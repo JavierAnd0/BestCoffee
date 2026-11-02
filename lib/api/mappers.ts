@@ -53,6 +53,10 @@ export interface ApiTenant {
   branding?: { accent?: string; primary?: string; font?: string };
   paymentProvider?: string | null;
   mpPublicKey?: string | null;
+  newsletter?: {
+    popupEnabled?: boolean;
+    welcomeOffer?: { code?: string; label?: string } | null;
+  };
 }
 
 interface ApiCta {
@@ -159,9 +163,20 @@ export function mapTenant(t: ApiTenant): Tenant {
     tagline: "Tostadores de café de especialidad",
     tier,
     features: resolveFeatures(tier, features),
+    newsletter: {
+      popupEnabled: t.newsletter?.popupEnabled ?? true,
+      welcomeOffer:
+        t.newsletter?.welcomeOffer?.code && t.newsletter.welcomeOffer.label
+          ? {
+              code: t.newsletter.welcomeOffer.code,
+              label: t.newsletter.welcomeOffer.label,
+            }
+          : null,
+    },
     // These may move into the API settings endpoint later; sensible defaults
     // matching the seeded tenant for now.
     freeShippingThresholdCents: num("freeShippingThresholdCents", 150_000_00),
+    shippingFlatCents: num("shippingFlatCents", 12_000_00),
     subscriptionDiscountPct: num("subscriptionDiscountPct", 10),
     currency: "COP",
     paymentProvider: (t.paymentProvider as Tenant["paymentProvider"]) ?? null,

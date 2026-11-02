@@ -77,28 +77,29 @@ export function ProfileForm({ customer }: { customer: MockCustomer }) {
           />
         </label>
 
-        <section className="pt-4 border-t border-border">
+        <section id="preferencias" className="pt-4 border-t border-border scroll-mt-24">
           <h2 className="font-display text-xl font-semibold mb-3">
             Preferencias de correo
           </h2>
-          <div className="space-y-2 text-sm">
-            {[
-              { id: "pref_reminders", label: "Recordatorios de próximo envío" },
-              { id: "pref_releases", label: "Novedades y nuevos lanzamientos" },
-              { id: "pref_promos", label: "Promociones y descuentos" },
-              { id: "pref_blog", label: "Boletín del blog" },
-            ].map((p, i) => (
-              <label key={p.id} className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  name={p.id}
-                  defaultChecked={i < 2}
-                  className="size-4 accent-foreground"
-                />
-                <span>{p.label}</span>
-              </label>
-            ))}
-          </div>
+          <label className="flex items-start gap-3 cursor-pointer text-sm">
+            <input
+              type="checkbox"
+              name="newsletterOptIn"
+              defaultChecked={customer.newsletterOptIn}
+              className="mt-0.5 size-4 accent-foreground"
+            />
+            <span>
+              <span className="block font-medium">Novedades, promociones y guías</span>
+              <span className="block text-muted-foreground">
+                Recibe lanzamientos, recetas y ofertas por correo. Por tener una cuenta
+                quedas suscrito, y puedes desactivarlo aquí cuando quieras.
+              </span>
+            </span>
+          </label>
+          <p className="mt-3 text-xs text-muted-foreground">
+            Los correos sobre tus pedidos, envíos y suscripciones siempre se envían,
+            porque son necesarios para el servicio.
+          </p>
         </section>
 
         <div className="pt-2">

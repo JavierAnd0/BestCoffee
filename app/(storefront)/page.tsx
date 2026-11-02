@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { ScrollStory } from "@/components/storefront/scroll-story";
 import { FeaturedPack } from "@/components/storefront/featured-pack";
@@ -5,8 +6,14 @@ import { QuizBand } from "@/components/storefront/quiz-band";
 import { Spotlight } from "@/components/storefront/spotlight";
 import { ProductCard } from "@/components/storefront/product-card";
 import { getHomeHero, getHomeSpotlight, getFeaturedPack } from "@/lib/data/content";
+import { getCurrentTenant } from "@/lib/data/tenant";
 import { listBestsellers } from "@/lib/data/products";
 import { CatalogHeader } from "@/components/storefront/catalog-header";
+
+export async function generateMetadata(): Promise<Metadata> {
+  const tenant = await getCurrentTenant();
+  return { title: { absolute: `${tenant.brand} — Café de especialidad` } };
+}
 
 export default async function StorefrontHome() {
   const [hero, spotlight, featuredPack, bestsellers] = await Promise.all([
@@ -19,15 +26,16 @@ export default async function StorefrontHome() {
 
   return (
     <>
-      <ScrollStory content={hero} />
+      {hero && <ScrollStory content={hero} />}
 
-      <FeaturedPack content={featuredPack} />
+      {featuredPack && <FeaturedPack content={featuredPack} />}
 
-      <QuizBand />
+      {featured.length > 0 && <QuizBand />}
 
-      <Spotlight content={spotlight} />
+      {spotlight && <Spotlight content={spotlight} />}
 
       {/* ── Catalog — magazine asymmetric grid ── */}
+      {featured.length > 0 ? (
       <section className="mx-auto max-w-7xl px-6 sm:px-10 lg:px-16 xl:px-24 py-24 lg:py-32">
 
         <CatalogHeader />
@@ -57,6 +65,14 @@ export default async function StorefrontHome() {
           </Link>
         </div>
       </section>
+      ) : (
+        <section className="mx-auto max-w-2xl px-6 py-32 text-center">
+          <h1 className="font-display text-3xl font-semibold">Estamos preparando la tienda</h1>
+          <p className="mt-3 text-muted-foreground">
+            Muy pronto encontrarás aquí nuestros productos. ¡Vuelve a visitarnos!
+          </p>
+        </section>
+      )}
     </>
   );
 }

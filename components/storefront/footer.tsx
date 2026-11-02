@@ -5,6 +5,8 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/toast";
 import { Logo } from "./logo";
+import { subscribeNewsletterAction } from "@/lib/actions/newsletter";
+import type { TenantNewsletter } from "@/lib/types";
 
 interface FooterLink {
   label: string;
@@ -48,20 +50,32 @@ const COLUMNS: { title: string; links: FooterLink[] }[] = [
   },
 ];
 
-export function Footer({ brand = "ORÍGEN" }: { brand?: string }) {
+interface FooterProps {
+  brand?: string;
+  /** Con sesión iniciada ya se recibe el boletín (se gestiona en "Mis datos"). */
+  isLoggedIn?: boolean;
+  welcomeOffer?: TenantNewsletter["welcomeOffer"];
+}
+
+export function Footer({ brand = "ORÍGEN", isLoggedIn = false, welcomeOffer = null }: FooterProps) {
   const [email, setEmail] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [subscribed, setSubscribed] = useState(false);
 
-  function handleNewsletterSubmit(e: React.FormEvent<HTMLFormElement>) {
+  async function handleNewsletterSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (!email || !email.includes("@")) return;
-
+    setError(null);
+    setBusy(true);
+    const res = await subscribeNewsletterAction({ email, source: "footer" });
+    setBusy(false);
+    if (!res.ok) {
+      setError(res.error);
+      return;
+    }
     setSubscribed(true);
-    toast({
-      title: "¡Bienvenido al club!",
-      description: "Te hemos suscrito a nuestro boletín de café especial.",
-    });
     setEmail("");
+    toast({ title: "¡Gracias por suscribirte!", description: res.message });
   }
 
   return (
@@ -72,45 +86,60 @@ export function Footer({ brand = "ORÍGEN" }: { brand?: string }) {
       {/* Newsletter + links */}
       <div className="mx-auto max-w-7xl px-6 sm:px-10 lg:px-16 xl:px-24 py-20 grid gap-14 lg:grid-cols-[1fr_2fr]">
         <div className="max-w-sm">
-          <button
-            type="button"
-            onClick={() => {
-              if (typeof window !== "undefined") {
-                window.dispatchEvent(new CustomEvent("open-newsletter-modal"));
-              }
-            }}
-            className="text-left group cursor-pointer focus:outline-none"
-          >
-            <h3 className="font-display font-light text-[1.75rem] text-white leading-tight tracking-tight group-hover:text-amber-200/90 transition-colors">
-              Únete al club
-            </h3>
-          </button>
+          <h3 className="font-display font-light text-[1.75rem] text-white leading-tight tracking-tight">
+            Únete al club
+          </h3>
           <p className="mt-3 text-sm text-white/44 font-light leading-relaxed">
-            Historias de café, lanzamientos y un descuento de bienvenida.
+            {isLoggedIn
+              ? "Ya recibes nuestras novedades por correo. Puedes cambiarlo cuando quieras."
+              : welcomeOffer
+                ? `Historias de café, lanzamientos y ${welcomeOffer.label} en tu primera compra.`
+                : "Historias de café, lanzamientos y novedades de la tienda."}
           </p>
 
-          {subscribed ? (
-            <p className="mt-6 text-xs text-white/70 bg-white/5 border border-white/10 p-3 rounded">
-              ✓ Gracias por suscribirte. Revisa tu correo pronto.
+          {isLoggedIn ? (
+            <Link
+              href="/cuenta/datos#preferencias"
+              className="mt-6 inline-block text-xs text-white/70 underline underline-offset-4 hover:text-white"
+            >
+              Administrar mis preferencias de correo
+            </Link>
+          ) : subscribed ? (
+            <p role="status" className="mt-6 text-xs text-white/70 bg-white/5 border border-white/10 p-3 rounded">
+              ✓ Gracias por suscribirte.
+              {welcomeOffer ? ` Usa el código ${welcomeOffer.code} en el pago.` : ""}
             </p>
           ) : (
-            <form onSubmit={handleNewsletterSubmit} className="mt-6 flex items-center gap-2 border-b border-white/18 pb-2">
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="tu@correo.com"
-                className="flex-1 bg-transparent text-sm outline-none placeholder:text-white/25 text-white font-light"
-              />
-              <Button
-                type="submit"
-                size="sm"
-                className="bg-white! text-foreground! hover:bg-white/90! border-transparent! text-xs! rounded-sm!"
-              >
-                →
-              </Button>
-            </form>
+            <>
+              <form onSubmit={handleNewsletterSubmit} className="mt-6 flex items-center gap-2 border-b border-white/18 pb-2" noValidate>
+                <label htmlFor="footer-newsletter-email" className="sr-only">
+                  Correo electrónico
+                </label>
+                <input
+                  id="footer-newsletter-email"
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="tu@correo.com"
+                  className="flex-1 bg-transparent text-sm outline-none placeholder:text-white/25 text-white font-light"
+                />
+                <Button
+                  type="submit"
+                  size="sm"
+                  disabled={busy}
+                  aria-label="Suscribirme al boletín"
+                  className="bg-white! text-foreground! hover:bg-white/90! border-transparent! text-xs! rounded-sm!"
+                >
+                  {busy ? "…" : "→"}
+                </Button>
+              </form>
+              {error && (
+                <p role="alert" className="mt-2 text-xs text-red-300">
+                  {error}
+                </p>
+              )}
+            </>
           )}
         </div>
 

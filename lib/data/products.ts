@@ -13,21 +13,12 @@ export async function listProducts(): Promise<Product[]> {
   try {
     const api = await apiServer();
     const { data, error } = await api.GET("/v1/products");
-    if (error || !data) return PRODUCTS;
+    if (error || !data) return [];
     const items = (data as unknown as { items?: ApiProduct[]; data?: ApiProduct[] }).items ??
                   (data as unknown as { items?: ApiProduct[]; data?: ApiProduct[] }).data ?? [];
-    if (!items.length) return PRODUCTS;
-    const backendProducts = items.map(mapProduct);
-    // Si el backend aún no almacena accesorios (tipo ACCESSORY),
-    // incluimos los accesorios para que la tienda y catálogo cuenten con su sección de equipos.
-    const hasAccessories = backendProducts.some((p) => p.type === "ACCESSORY");
-    if (!hasAccessories) {
-      const mockAccessories = PRODUCTS.filter((p) => p.type === "ACCESSORY");
-      return [...backendProducts, ...mockAccessories];
-    }
-    return backendProducts;
+    return items.map(mapProduct);
   } catch {
-    return PRODUCTS;
+    return [];
   }
 }
 
@@ -38,10 +29,10 @@ export async function getProductBySlug(slug: string): Promise<Product | undefine
     const { data, error } = await api.GET("/v1/products/{slug}", {
       params: { path: { slug } },
     });
-    if (error || !data) return findMock(slug);
+    if (error || !data) return undefined;
     return mapProduct(data as unknown as ApiProduct);
   } catch {
-    return findMock(slug);
+    return undefined;
   }
 }
 

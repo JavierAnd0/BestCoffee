@@ -54,6 +54,8 @@ export interface MockCustomer {
   email: string;
   phone: string;
   memberSince: string;
+  /** Recibe novedades/promociones por correo (por defecto sí; se puede desactivar). */
+  newsletterOptIn: boolean;
 }
 
 export const MOCK_CUSTOMER: MockCustomer = {
@@ -61,6 +63,7 @@ export const MOCK_CUSTOMER: MockCustomer = {
   email: "maria@correo.com",
   phone: "+57 300 123 4567",
   memberSince: "2024",
+  newsletterOptIn: true,
 };
 
 export const MOCK_ADDRESSES: MockAddress[] = [

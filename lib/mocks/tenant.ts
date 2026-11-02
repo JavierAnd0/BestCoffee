@@ -19,7 +19,12 @@ export const TENANT_ORIGEN: Tenant = {
     accessories: true,
     maxProducts: 50,
   },
-  freeShippingThresholdCents: 45_000_00, // $45.000 COP
+  newsletter: {
+    popupEnabled: true,
+    welcomeOffer: { code: "BIENVENIDO10", label: "10% de descuento" },
+  },
+  freeShippingThresholdCents: 45_000_00,
+  shippingFlatCents: 12_000_00, // $45.000 COP
   subscriptionDiscountPct: 15,
   currency: "COP",
 };

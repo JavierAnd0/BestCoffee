@@ -5,12 +5,13 @@ import { Truck, Tag, X, Check } from "lucide-react";
 import { useCart } from "./cart-context";
 import { Button } from "@/components/ui/button";
 import { formatCop } from "@/lib/format";
-import { TENANT_ORIGEN } from "@/lib/mocks/tenant";
 
 interface OrderSummaryProps {
   compact?: boolean;
   appliedDiscount?: { code: string; percent: number; discountCents: number } | null;
-  onApplyDiscountCode?: (code: string) => { success: boolean; message: string };
+  onApplyDiscountCode?: (
+    code: string,
+  ) => Promise<{ success: boolean; message: string }>;
   onRemoveDiscountCode?: () => void;
 }
 
@@ -20,17 +21,21 @@ export function OrderSummary({
   onApplyDiscountCode,
   onRemoveDiscountCode,
 }: OrderSummaryProps) {
-  const { items, subtotalCents } = useCart();
+  const {
+    items,
+    subtotalCents,
+    freeShippingThresholdCents: threshold,
+    shippingFlatCents,
+  } = useCart();
   const [couponInput, setCouponInput] = useState("");
   const [couponFeedback, setCouponFeedback] = useState<{
     type: "success" | "error";
     message: string;
   } | null>(null);
 
-  const threshold = TENANT_ORIGEN.freeShippingThresholdCents;
   const hasFreeShipping =
-    subtotalCents >= threshold || appliedDiscount?.code === "ENVIOGRATIS";
-  const shippingCents = hasFreeShipping ? 0 : 12_000_00;
+    subtotalCents >= threshold;
+  const shippingCents = hasFreeShipping ? 0 : shippingFlatCents;
 
   // Subscription discount on already-discounted items shows as a saved-line
   const subscriptionSavings = items
@@ -43,13 +48,17 @@ export function OrderSummary({
   const totalCents = Math.max(0, subtotalCents + shippingCents - discountAmountCents);
   const hasSubscription = items.some((i) => i.mode === "SUBSCRIPTION");
 
-  function handleApply() {
+  const [applying, setApplying] = useState(false);
+
+  async function handleApply() {
     setCouponFeedback(null);
     const code = couponInput.trim().toUpperCase();
-    if (!code) return;
+    if (!code || applying) return;
 
     if (onApplyDiscountCode) {
-      const res = onApplyDiscountCode(code);
+      setApplying(true);
+      const res = await onApplyDiscountCode(code);
+      setApplying(false);
       if (res.success) {
         setCouponFeedback({ type: "success", message: res.message });
         setCouponInput("");
@@ -115,7 +124,8 @@ export function OrderSummary({
               <div className="flex items-center gap-2 text-primary font-medium">
                 <Tag className="size-3.5" />
                 <span>
-                  Cupón: <strong>{appliedDiscount.code}</strong> (-{appliedDiscount.percent}%)
+                  Cupón: <strong>{appliedDiscount.code}</strong>
+                  {appliedDiscount.percent > 0 && <> (-{appliedDiscount.percent}%)</>}
                 </span>
               </div>
               <button
@@ -142,7 +152,7 @@ export function OrderSummary({
                     handleApply();
                   }
                 }}
-                placeholder="Código de descuento (ej. BIENVENIDO)"
+                placeholder="Código de descuento"
                 className="flex-1 uppercase rounded-lg border border-input bg-background px-3 py-1.5 text-xs outline-none focus-visible:border-ring placeholder:normal-case placeholder:text-muted-foreground"
               />
               <Button
@@ -150,10 +160,10 @@ export function OrderSummary({
                 variant="outline"
                 size="sm"
                 onClick={handleApply}
-                disabled={!couponInput.trim()}
+                disabled={!couponInput.trim() || applying}
                 className="text-xs h-8 px-3"
               >
-                Aplicar
+                {applying ? "Validando…" : "Aplicar"}
               </Button>
             </div>
           )}

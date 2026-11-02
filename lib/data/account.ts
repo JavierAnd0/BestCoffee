@@ -40,6 +40,7 @@ interface ApiCustomer {
   name?: string | null;
   email: string;
   phone?: string | null;
+  newsletterOptIn?: boolean | null;
   createdAt?: string | null;
 }
 
@@ -52,6 +53,7 @@ function mapCustomer(c: ApiCustomer): MockCustomer {
     name: fullName,
     email: c.email,
     phone: c.phone ?? "",
+    newsletterOptIn: c.newsletterOptIn ?? true,
     memberSince: c.createdAt
       ? new Date(c.createdAt).getFullYear().toString()
       : "—",
@@ -92,6 +94,7 @@ export async function getCurrentCustomer(): Promise<MockCustomer> {
         email,
         phone: "",
         memberSince,
+        newsletterOptIn: true,
       };
     }
 
@@ -111,6 +114,7 @@ export async function getCurrentCustomer(): Promise<MockCustomer> {
           email: payload.email || "",
           phone: "",
           memberSince,
+          newsletterOptIn: true,
         };
       }
     }
@@ -120,6 +124,7 @@ export async function getCurrentCustomer(): Promise<MockCustomer> {
       email: "",
       phone: "",
       memberSince: new Date().getFullYear().toString(),
+      newsletterOptIn: true,
     };
   } catch {
     return {
@@ -127,6 +132,7 @@ export async function getCurrentCustomer(): Promise<MockCustomer> {
       email: "",
       phone: "",
       memberSince: new Date().getFullYear().toString(),
+      newsletterOptIn: true,
     };
   }
 }

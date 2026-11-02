@@ -74,6 +74,14 @@ export interface TenantFeatures {
   maxProducts: number;
 }
 
+/** Invitación a suscribirse al boletín (configurable por tienda). */
+export interface TenantNewsletter {
+  /** Mostrar la invitación discreta a visitantes sin sesión. */
+  popupEnabled: boolean;
+  /** Oferta de bienvenida vigente (cupón real validado por el backend), si hay. */
+  welcomeOffer: { code: string; label: string } | null;
+}
+
 export interface Tenant {
   slug: string;
   name: string;
@@ -81,7 +89,10 @@ export interface Tenant {
   tagline: string;
   tier: "STARTER" | "PRO" | "BUSINESS";
   features: TenantFeatures;
+  newsletter: TenantNewsletter;
   freeShippingThresholdCents: number;
+  /** Tarifa plana de envío cuando no se alcanza el umbral (centavos). */
+  shippingFlatCents: number;
   subscriptionDiscountPct: number;
   currency: "COP";
   paymentProvider?: "mercadopago" | null;

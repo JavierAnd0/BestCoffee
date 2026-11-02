@@ -70,15 +70,14 @@ export async function listStoreLocations(): Promise<StoreLocation[]> {
       headers: { "X-Tenant-Slug": slug },
       next: { revalidate: 3600 },
     });
-    if (!res.ok) return STORE_LOCATIONS;
+    if (!res.ok) return [];
     const data = await res.json();
     const list: ApiLocation[] = Array.isArray(data)
       ? data
       : (data?.items ?? data?.data ?? []);
-    if (!list.length) return STORE_LOCATIONS;
     return list.map(mapLocation);
   } catch {
-    return STORE_LOCATIONS;
+    return [];
   }
 }
 
@@ -133,12 +132,11 @@ async function fetchBrewGuides(): Promise<BrewGuide[]> {
     headers: { "X-Tenant-Slug": slug },
     next: { revalidate: 3600 },
   });
-  if (!res.ok) return BREW_GUIDES;
+  if (!res.ok) return [];
   const data = await res.json();
   const list: ApiBrewGuide[] = Array.isArray(data)
     ? data
     : (data?.items ?? data?.data ?? []);
-  if (!list.length) return BREW_GUIDES;
   return list.map(mapBrewGuide);
 }
 
@@ -146,9 +144,9 @@ export async function listBrewGuides(): Promise<BrewGuide[]> {
   if (env.useMocks) return BREW_GUIDES;
   try {
     const list = await fetchBrewGuides();
-    return list.length ? list : BREW_GUIDES;
+    return list;
   } catch {
-    return BREW_GUIDES;
+    return [];
   }
 }
 

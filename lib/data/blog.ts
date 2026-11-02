@@ -54,15 +54,14 @@ export async function listBlogPosts(): Promise<BlogPost[]> {
   try {
     const api = await apiServer();
     const { data, error } = await api.GET("/v1/blog");
-    if (error || !data) return BLOG_POSTS;
+    if (error || !data) return [];
     const items =
       (data as unknown as { items?: ApiBlogItem[]; data?: ApiBlogItem[] }).items ??
       (data as unknown as { items?: ApiBlogItem[]; data?: ApiBlogItem[] }).data ??
       [];
-    if (!items.length) return BLOG_POSTS;
     return items.map(mapPost);
   } catch {
-    return BLOG_POSTS;
+    return [];
   }
 }
 
@@ -74,13 +73,13 @@ export async function getBlogPost(slug: string): Promise<BlogPost | undefined> {
       params: { path: { slug } },
     });
     if (error || !data) {
-      // Detail endpoint may not exist yet — fall back to the list entry or seed mock.
+      // Detail endpoint may not exist yet — fall back to the tenant's own list.
       const all = await listBlogPosts();
-      return all.find((p) => p.slug === slug) ?? findMock(slug);
+      return all.find((p) => p.slug === slug);
     }
     return mapPost(data as unknown as ApiBlogItem);
   } catch {
-    return findMock(slug);
+    return undefined;
   }
 }
 

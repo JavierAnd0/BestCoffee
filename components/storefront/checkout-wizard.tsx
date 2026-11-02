@@ -24,6 +24,7 @@ import { useCart } from "./cart-context";
 import { MercadoPagoFields, submitMpForm, type MpPaymentData } from "./mercadopago-fields";
 import { ColombiaLocationSelector } from "./colombia-location-selector";
 import { placeOrderAction } from "@/lib/actions/order";
+import { previewDiscountCodeAction } from "@/lib/actions/discount";
 import type { MockAddress, MockCustomer } from "@/lib/mocks/account";
 
 type Step = 1 | 2 | 3;
@@ -217,23 +218,22 @@ export function CheckoutWizard({
     setStep(3);
   }
 
-  // Función de cupones
-  function handleApplyCoupon(code: string) {
-    if (code === "BIENVENIDO") {
-      const discountCents = Math.round(cart.subtotalCents * 0.1);
-      setAppliedDiscount({ code, percent: 10, discountCents });
-      return { success: true, message: "¡Cupón aplicado! 10% de descuento en tu café." };
-    }
-    if (code === "BESTCOFFEE") {
-      const discountCents = Math.round(cart.subtotalCents * 0.15);
-      setAppliedDiscount({ code, percent: 15, discountCents });
-      return { success: true, message: "¡Cupón aplicado! 15% de descuento especial." };
-    }
-    if (code === "ENVIOGRATIS") {
-      setAppliedDiscount({ code, percent: 0, discountCents: 0 });
-      return { success: true, message: "¡Envío gratis aplicado a tu orden!" };
-    }
-    return { success: false, message: "Código no reconocido o expirado." };
+  // Cupones: el backend es la única fuente de verdad (el mismo cálculo que se
+  // cobra al crear la orden). Ya no hay códigos escritos a mano en el cliente.
+  async function handleApplyCoupon(code: string) {
+    const res = await previewDiscountCodeAction({
+      code,
+      items: cart.items.map((i) => ({ variantId: i.variantId, qty: i.qty })),
+      subscription: cart.items.some((i) => i.mode === "SUBSCRIPTION"),
+    });
+    if (!res.ok) return { success: false, message: res.message };
+    setAppliedDiscount(res.preview);
+    return {
+      success: true,
+      message: res.preview.percent
+        ? `¡Cupón aplicado! ${res.preview.percent}% de descuento.`
+        : "¡Cupón aplicado!",
+    };
   }
 
   // Token de MercadoPago

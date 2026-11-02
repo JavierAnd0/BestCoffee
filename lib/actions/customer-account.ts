@@ -22,14 +22,18 @@ export async function updateCustomerProfileAction(
 ): Promise<ProfileActionState> {
   const fullName = String(formData.get("name") ?? "").trim();
   const phone = String(formData.get("phone") ?? "").trim();
+  // Casilla desmarcada = no viene en el FormData.
+  const newsletterOptIn = formData.has("newsletterOptIn");
 
   if (!fullName) {
     return { error: "El nombre completo es obligatorio." };
   }
-
-  const parts = fullName.split(/\s+/);
-  const firstName = parts[0] ?? fullName;
-  const lastName = parts.slice(1).join(" ") || undefined;
+  if (fullName.length > 120) {
+    return { error: "El nombre es demasiado largo (máximo 120 caracteres)." };
+  }
+  if (phone.length > 40) {
+    return { error: "El teléfono es demasiado largo (máximo 40 caracteres)." };
+  }
 
   if (env.useMocks) {
     revalidatePath("/cuenta");
@@ -43,18 +47,16 @@ export async function updateCustomerProfileAction(
   }
 
   if (!isMockSession) {
+    // Solo los campos que el backend acepta (name, phone, newsletterOptIn).
+    // Cualquier fallo se muestra: antes los 404/503 se ignoraban en silencio y
+    // el cliente creía haber guardado cuando no se guardaba nada.
     const res = await customerFetch("/v1/customers/me", {
       method: "PATCH",
       persistSyncedSession: true,
-      body: {
-        name: fullName,
-        firstName,
-        lastName,
-        phone: phone || undefined,
-      },
+      body: { name: fullName, phone, newsletterOptIn },
     });
 
-    if (!res.ok && res.status !== 503 && res.status !== 404) {
+    if (!res.ok) {
       return { error: res.error || "No se pudieron guardar los cambios." };
     }
   }

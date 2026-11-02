@@ -14,6 +14,10 @@ import {
   SPOTLIGHT_HOME,
   FEATURED_PACK_HOME,
 } from "../mocks/site-content";
+
+// Política multi-tenant: el contenido demo (ORÍGEN) solo existe con USE_MOCKS.
+// En modo real, si la tienda no configuró un bloque, devuelve null/[] y la
+// página oculta la sección — nunca se rellena con textos de otra tienda.
 import type {
   AnnounceMessage,
   HeroContent,
@@ -25,9 +29,9 @@ import type {
 // the four content getters below hit the network once total.
 interface HomeContent {
   announcements: ApiAnnouncement[];
-  hero: ApiHeroBlock;
-  spotlight: { data: { title: string; productSlug: string } };
-  featuredBundle: { data: { title: string; productSlugs: string[] } };
+  hero: ApiHeroBlock | null;
+  spotlight: { data: { title: string; productSlug: string } } | null;
+  featuredBundle: { data: { title: string; productSlugs: string[] } } | null;
 }
 
 async function fetchHome(): Promise<HomeContent | null> {
@@ -44,42 +48,42 @@ async function fetchHome(): Promise<HomeContent | null> {
 export async function getAnnounceMessages(): Promise<AnnounceMessage[]> {
   if (env.useMocks) return ANNOUNCE_MESSAGES;
   const home = await fetchHome();
-  if (!home) return ANNOUNCE_MESSAGES;
-  const mapped = mapAnnouncements(home.announcements);
-  return mapped.length > 0 ? mapped : ANNOUNCE_MESSAGES;
+  if (!home) return [];
+  return mapAnnouncements(home.announcements ?? []);
 }
 
-export async function getHomeHero(): Promise<HeroContent> {
+export async function getHomeHero(): Promise<HeroContent | null> {
   if (env.useMocks) return HERO_HOME;
   const home = await fetchHome();
-  if (!home || !home.hero?.data?.title) return HERO_HOME;
+  if (!home?.hero?.data?.title) return null;
   return mapHero(home.hero);
 }
 
-export async function getHomeSpotlight(): Promise<SpotlightContent> {
+export async function getHomeSpotlight(): Promise<SpotlightContent | null> {
   if (env.useMocks) return SPOTLIGHT_HOME;
   const home = await fetchHome();
-  if (!home) return SPOTLIGHT_HOME;
-  const slug = home.spotlight?.data?.productSlug;
-  const product = slug ? await getProductBySlug(slug) : undefined;
-  if (!product) return SPOTLIGHT_HOME;
+  const spot = home?.spotlight?.data;
+  if (!spot?.productSlug) return null;
+  const product = await getProductBySlug(spot.productSlug);
+  if (!product) return null;
   return {
     eyebrow: "Origen único · spotlight",
-    title: home.spotlight.data.title ?? product.name,
+    title: spot.title ?? product.name,
     body: product.shortDescription || product.producerStory || "",
     roastLevel: product.roastLevel,
     flavorNotes: product.flavorNotes,
     priceCents: cheapestPriceCents(product),
-    productSlug: slug,
+    productSlug: spot.productSlug,
     imageAlt: product.images[0]?.alt ?? product.name,
   };
 }
 
-export async function getFeaturedPack(): Promise<FeaturedPackContent> {
+export async function getFeaturedPack(): Promise<FeaturedPackContent | null> {
   if (env.useMocks) return FEATURED_PACK_HOME;
   const home = await fetchHome();
-  if (!home) return FEATURED_PACK_HOME;
-  const slugs = home.featuredBundle?.data?.productSlugs ?? [];
+  const bundle = home?.featuredBundle?.data;
+  const slugs = bundle?.productSlugs ?? [];
+  if (!bundle || slugs.length === 0) return null;
   // Price the bundle as the sum of each product's cheapest variant.
   const products = await Promise.all(slugs.map((s) => getProductBySlug(s)));
   const priceCents = products.reduce(
@@ -88,7 +92,7 @@ export async function getFeaturedPack(): Promise<FeaturedPackContent> {
   );
   return {
     eyebrow: "Paquete destacado",
-    title: home.featuredBundle.data.title,
+    title: bundle.title,
     description:
       "Una selección curada de nuestros orígenes para descubrir tu favorito.",
     priceCents,
