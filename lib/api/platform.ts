@@ -44,26 +44,22 @@ export async function platformFetch<T>(
       return (await res.json()) as T;
     }
     const localOp = decodeLocalOperatorToken(token);
-    if (localOp) {
-      if (path === "/v1/auth/me") {
-        return { email: localOp.email, isPlatformOwner: localOp.isPlatformOwner } as unknown as T;
-      }
-      if (path === "/v1/platform/tenants") {
-        return [] as unknown as T;
-      }
+    if (localOp && path === "/v1/auth/me") {
+      return { email: localOp.email, isPlatformOwner: localOp.isPlatformOwner } as unknown as T;
     }
     const body = await res.text().catch(() => "");
-    throw new Error(`Platform API ${res.status}: ${body}`);
+    const err = new Error(`Platform API ${res.status}: ${body}`);
+    console.error(`platformFetch(${path}) failed:`, err.message);
+    throw err;
   } catch (err) {
     const localOp = decodeLocalOperatorToken(token);
-    if (localOp) {
-      if (path === "/v1/auth/me") {
-        return { email: localOp.email, isPlatformOwner: localOp.isPlatformOwner } as unknown as T;
-      }
-      if (path === "/v1/platform/tenants") {
-        return [] as unknown as T;
-      }
+    if (localOp && path === "/v1/auth/me") {
+      return { email: localOp.email, isPlatformOwner: localOp.isPlatformOwner } as unknown as T;
     }
+    // No ocultar fallos reales del panel de superadmin devolviendo [] en
+    // silencio — el caller debe ver y manejar el error (ej. mostrar un
+    // estado de error en la UI en lugar de una lista vacía engañosa).
+    console.error(`platformFetch(${path}) threw:`, err);
     throw err;
   }
 }
