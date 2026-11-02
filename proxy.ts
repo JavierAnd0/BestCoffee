@@ -184,25 +184,24 @@ export default async function middleware(req: NextRequest) {
               backendToken = syncData.accessToken;
             }
           }
-        } catch {
-          // Backend NestJS offline: usar token de sesión local de respaldo
+        } catch (syncErr) {
+          // Backend NestJS offline or unreachable: NEVER fabricate a session.
+          // An unsigned/fake token would let anyone impersonate any email.
+          console.error("Middleware neon-sync failed, denying session:", syncErr);
         }
 
-        if (!backendToken) {
-          const sessionPayload = {
-            sub: email,
-            email,
-            name,
-            iat: Math.floor(Date.now() / 1000),
-            exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 30,
-          };
-          const headerB64 = Buffer.from(JSON.stringify({ alg: "HS256", typ: "JWT" })).toString("base64url");
-          const payloadB64 = Buffer.from(JSON.stringify(sessionPayload)).toString("base64url");
-          backendToken = `${headerB64}.${payloadB64}.local_session`;
+        // Only a real, backend-issued (signed) token results in a session.
+        // If the backend didn't return one, fail visibly instead of minting
+        // a fake local session.
+        if (backendToken) {
+          res.cookies.set("customer_token", backendToken, { ...cookieOpts, httpOnly: true });
+        } else {
+          const loginUrl = url.clone();
+          loginUrl.pathname = "/login";
+          loginUrl.search = "";
+          loginUrl.searchParams.set("error", "session_sync_failed");
+          return NextResponse.redirect(loginUrl);
         }
-
-        res.cookies.set("customer_token", backendToken, { ...cookieOpts, httpOnly: true });
-        res.cookies.set("bestcoffee-session", backendToken, { ...cookieOpts, httpOnly: true });
       }
     } catch (err) {
       console.warn("Middleware neon-sync notice:", err);
@@ -219,7 +218,6 @@ export default async function middleware(req: NextRequest) {
 
   if (isCustomerRoute) {
     const customerSession =
-      req.cookies.get("bestcoffee-session")?.value ??
       req.cookies.get("customer_token")?.value ??
       req.cookies.get("__Secure-neon-auth.session_token")?.value ??
       req.cookies.get("neon-auth.session_token")?.value ??

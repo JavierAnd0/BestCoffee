@@ -34,6 +34,7 @@ const SECURE_NEON_COOKIES = [
 const STANDARD_LEGACY_COOKIES = [
   "customer_email",
   "customer_name",
+  "bestcoffee-session",
   "neon-auth.session_token",
   "neon-auth.local.session_data",
   "neon-auth.session_challenge",
@@ -147,9 +148,7 @@ export async function getCustomerSession(): Promise<{
     (await resolveActiveTenantSlug()) ??
     env.defaultTenantSlug;
 
-  let token =
-    c.get("bestcoffee-session")?.value ??
-    c.get("customer_token")?.value;
+  let token = c.get("customer_token")?.value;
 
   if (token === "mock-session-test") {
     return { token, tenantSlug, isMockSession: true, neonUser: null };
@@ -161,12 +160,11 @@ export async function getCustomerSession(): Promise<{
     if (neonUser?.email) {
       const tokenPayload = token ? decodeJwtClaims(token) : null;
       const tokenEmail = tokenPayload?.user?.email || tokenPayload?.email;
-      const isLocalFallback = token?.endsWith(".local_session") ?? false;
       const emailMismatch =
         Boolean(tokenEmail) &&
         tokenEmail!.toLowerCase() !== neonUser.email.toLowerCase();
 
-      if (!token || isLocalFallback || emailMismatch) {
+      if (!token || emailMismatch) {
         const syncRes = await fetch(
           `${env.apiUrlInternal}/v1/auth/customer/neon-sync`,
           {
@@ -223,12 +221,10 @@ export function setCustomerSessionCookies(store: CookieStore, token: string) {
     path: "/",
     maxAge: 60 * 60 * 24 * 30,
   };
-  store.set("bestcoffee-session", token, cookieOpts);
   store.set("customer_token", token, cookieOpts);
 }
 
 export function clearCustomerSessionCookies(store: CookieStore) {
-  store.set("bestcoffee-session", "", { maxAge: 0, path: "/" });
   store.set("customer_token", "", { maxAge: 0, path: "/" });
   clearNeonAndLegacyCookies(store);
 }
