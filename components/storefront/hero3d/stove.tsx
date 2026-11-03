@@ -19,7 +19,7 @@ export function Stove({ progress }: P) {
   const glow = useRef<THREE.Sprite>(null);
   const light = useRef<THREE.PointLight>(null);
   const dummy = useMemo(() => new THREE.Object3D(), []);
-  const metal = useMemo(() => new THREE.MeshStandardMaterial({ color: "#2a2623", roughness: 0.55, metalness: 0.8 }), []);
+  const metal = useMemo(() => new THREE.MeshStandardMaterial({ color: "#0f0d0c", roughness: 0.42, metalness: 0.55 }), []);
   const grate = useMemo(() => new THREE.MeshStandardMaterial({ color: "#1a1816", roughness: 0.6, metalness: 0.9 }), []);
   const flameMat = useMemo(
     () => new THREE.MeshBasicMaterial({ color: "#4f9dff", transparent: true, opacity: 0.75, depthWrite: false, toneMapped: false }),
@@ -40,9 +40,9 @@ export function Stove({ progress }: P) {
     const on = smoothstep(0.56, 0.6, p) * (1 - smoothstep(0.73, 0.76, p));
     if (root.current) {
       // Cuando la moka se levanta, la hornilla sale de cuadro.
-      root.current.visible = p > 0.5 && p < 0.86;
+      root.current.visible = p > 0.5 && p < 0.79;
       // se desliza hacia un costado (derecha de pantalla), no atraviesa la taza
-      root.current.position.z = -smoothstep(0.73, 0.8, p) * 7;
+      root.current.position.z = -smoothstep(0.72, 0.77, p) * 7;
     }
     const fl = flameRef.current;
     if (fl) {
@@ -68,7 +68,7 @@ export function Stove({ progress }: P) {
   return (
     <group ref={root} position={[0, STOVE_Y - 0.32, 0]}>
       <mesh position={[0, 0, 0]} material={metal}>
-        <cylinderGeometry args={[1.18, 1.3, 0.16, 48]} />
+        <cylinderGeometry args={[0.92, 0.98, 0.1, 48]} />
       </mesh>
       <mesh position={[0, 0.13, 0]} rotation={[Math.PI / 2, 0, 0]} material={grate}>
         <torusGeometry args={[0.5, 0.07, 10, 36]} />

@@ -43,7 +43,7 @@ def build():
     # válvula de seguridad (latón): base hexagonal, vástago y cúpula; en el hombro de la caldera
     vb = lathe([(0, 0), (0.115, 0), (0.115, 0.035), (0.075, 0.05), (0.075, 0.09), (0.095, 0.10), (0.095, 0.14), (0.05, 0.17), (0, 0.175)], 24, "valve", brass)
     smooth_by_angle(vb, 60); vb.location = (0.0, 0.8, 0.62); vb.rotation_euler = (-math.pi / 2, 0, 0)
-    vb.rotation_euler = (-math.pi / 2 + 0.75, 0, 0); vb.scale = (1.15, 1.15, 1.9); vb.location = (0.0, 0.72, 1.0)
+    vb.rotation_euler = (-math.pi / 2 + 0.75, 0, 0); vb.scale = (0.62, 0.62, 1.0); vb.location = (0.0, 0.72, 1.0)
     # filtro (embudo) — visible cuando se retira la cámara superior
     funnel = lathe([(0.0, 0.7), (0.3, 0.7), (0.7, 1.16), (0.78, 1.21), (0.78, 1.24), (0.7, 1.22), (0.28, 0.78), (0.0, 0.78)], 48, "funnel", alu_dark)
     smooth_by_angle(funnel, 50)
@@ -96,10 +96,10 @@ def build():
     left, right = [], []
     for i, pnt in enumerate(pts):
         a2 = pts[min(i + 1, len(pts) - 1)] - pts[max(i - 1, 0)]; nrm = V((-a2.y, a2.x)).normalized()
-        u = i / (len(pts) - 1); w = 0.075 + 0.085 * math.sin(math.pi * u) ** 0.8
+        u = i / (len(pts) - 1); w = 0.05 + 0.055 * math.sin(math.pi * u) ** 0.8
         left.append(pnt + nrm * w); right.append(pnt - nrm * w)
     outline = [tuple(q) for q in left] + [tuple(q) for q in right[::-1]]
-    handle = prism_from_poly(outline, 0.26, "handle", bak, (0, 0, 0), bev=0.05)
+    handle = prism_from_poly(outline, 0.2, "handle", bak, (0, 0, 0), bev=0.05)
     # soporte metálico entre cámara superior y asa
     brace = prism_from_poly([(-0.80, 2.26), (-0.98, 2.30), (-0.98, 2.46), (-0.80, 2.46)], 0.20, "brace", alu, (0, 0, 0), bev=0.02)
     brace2 = prism_from_poly([(-0.80, 1.36), (-0.96, 1.36), (-0.96, 1.52), (-0.80, 1.52)], 0.20, "brace2", alu, (0, 0, 0), bev=0.02)

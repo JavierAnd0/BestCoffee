@@ -140,19 +140,19 @@ export function HeroScene({ scrollProgress }: HeroSceneProps = {}) {
             {/* Fondo oscuro cálido + "tiras" de luz verticales alrededor: cada faceta de un
                 objeto metálico refleja una tira distinta y se ve brillo/sombra alternados,
                 como el aluminio real bajo luz de estudio. */}
-            <color attach="background" args={["#4a3c31"]} />
+            <color attach="background" args={["#1d140e"]} />
             <Lightformer form="rect" intensity={5} color="#fff4e4" position={[4, 5, 6]} scale={[5, 3, 1]} target={[0, 0, 0]} />
             <Lightformer form="rect" intensity={3} color="#ffa564" position={[-6, 2, -4]} scale={[5, 9, 1]} target={[0, 0, 0]} />
             <Lightformer form="ring" intensity={2} color="#ffe2c0" position={[0, 7, -2]} scale={5} target={[0, 0, 0]} />
             {/* Gran softbox frontal (detrás de la cámara): las caras que miran al espectador nunca quedan negras. */}
-            <Lightformer form="rect" intensity={1.7} color="#efe6da" position={[9, 1, 0]} scale={[10, 8, 1]} target={[0, 0, 0]} />
+            <Lightformer form="rect" intensity={0.9} color="#efe6da" position={[9, 1, 0]} scale={[10, 8, 1]} target={[0, 0, 0]} />
             {Array.from({ length: 8 }, (_, i) => {
               const a = (i / 8) * Math.PI * 2;
               return (
                 <Lightformer
                   key={i}
                   form="rect"
-                  intensity={i % 2 === 0 ? 2.6 : 1.1}
+                  intensity={i % 2 === 0 ? 4.2 : 0.5}
                   color={i % 2 === 0 ? "#f3e8da" : "#cdbfb0"}
                   position={[Math.cos(a) * 9, 0.5, Math.sin(a) * 9]}
                   scale={[1.6, 9, 1]}

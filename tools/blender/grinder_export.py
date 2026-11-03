@@ -51,10 +51,10 @@ def build():
     arm_bm = bmesh.new(); bmesh.ops.create_cube(arm_bm, size=1.0)
     for v in arm_bm.verts:
         k = (v.co.x + 0.5)
-        v.co = (v.co.x * 1.5 + 0.75, v.co.y * (0.17 - 0.07 * k), v.co.z * (0.10 - 0.03 * k))
+        v.co = (v.co.x * 1.1 + 0.55, v.co.y * (0.17 - 0.07 * k), v.co.z * (0.10 - 0.03 * k))
     arm = add(arm_bm, "arm", steel, (0, 0, 0.19)); bevel(arm, 0.025, 3); smooth_by_angle(arm, 50)
-    elbow = lathe([(0, 0), (0.075, 0), (0.08, 0.14), (0.0, 0.14)], 32, "elbow", steel, loc=(1.42, 0, 0.18))
-    knob = lathe([(0, 0), (0.085, 0), (0.12, 0.05), (0.16, 0.2), (0.155, 0.36), (0.12, 0.50), (0.07, 0.56), (0, 0.575)], 64, "knob", wood, loc=(1.42, 0, 0.30))
+    elbow = lathe([(0, 0), (0.075, 0), (0.08, 0.14), (0.0, 0.14)], 32, "elbow", steel, loc=(1.06, 0, 0.18))
+    knob = lathe([(0, 0), (0.085, 0), (0.12, 0.05), (0.16, 0.2), (0.155, 0.36), (0.12, 0.50), (0.07, 0.56), (0, 0.575)], 64, "knob", wood, loc=(1.06, 0, 0.30))
     smooth_by_angle(knob, 70)
     cap = lathe([(0, 0), (0.09, 0), (0.1, 0.04), (0.06, 0.1), (0, 0.11)], 32, "cap", copper, loc=(0, 0, 0.19))
     for o in (hub, arm, elbow, knob, cap): o.parent = piv

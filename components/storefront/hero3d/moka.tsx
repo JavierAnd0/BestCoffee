@@ -45,6 +45,13 @@ export function MokaStation({ progress }: P) {
         m.roughness = 0.3;
         m.envMapIntensity = 1.0;
       }
+      // Baquelita: negro brillante de verdad (el export la deja gris con la luz de estudio).
+      if (m.name === "baquelita") {
+        m.color.set("#0b0908");
+        m.roughness = 0.22;
+        m.metalness = 0;
+        m.envMapIntensity = 0.55;
+      }
       mesh.material = m;
     });
     return c;

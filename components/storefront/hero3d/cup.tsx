@@ -59,7 +59,7 @@ export function CupStation({ progress }: P) {
   useFrame(({ clock }) => {
     const p = progress.get();
     const t = clock.elapsedTime;
-    const appear = smoothstep(0.77, 0.81, p);
+    const appear = smoothstep(0.76, 0.8, p);
     if (outer.current) {
       outer.current.visible = appear > 0.01;
       outer.current.scale.setScalar(lerp(0.9, 1, appear));

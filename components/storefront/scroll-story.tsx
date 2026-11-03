@@ -114,12 +114,12 @@ function StationStepDot({
   );
   const labelColor = useTransform(
     progress,
-    [0.75, 0.88],
+    [0.76, 0.86],
     ["rgba(247, 239, 228, 0.85)", "rgba(23, 13, 4, 0.82)"],
   );
   const trackBg = useTransform(
     progress,
-    [0.75, 0.88],
+    [0.76, 0.86],
     ["rgba(247, 239, 228, 0.16)", "rgba(23, 13, 4, 0.14)"],
   );
 
@@ -175,8 +175,8 @@ export function ScrollStory({ content }: { content: HeroContent }) {
 
   // Seamless transition from Warm Espresso Roast (Stations 1–3)
   // to the storefront's Warm Cream/Ivory palette in Station 4
-  const creamStageOpacity = useTransform(p, [0.74, 0.89], [0, 1]);
-  const darkVignetteOpacity = useTransform(p, [0.72, 0.88], [1, 0]);
+  const creamStageOpacity = useTransform(p, [0.76, 0.86], [0, 1]);
+  const darkVignetteOpacity = useTransform(p, [0.74, 0.84], [1, 0]);
   const scrollCueOpacity = useTransform(p, [0, 0.05], [1, 0]);
 
   return (
@@ -360,7 +360,7 @@ export function ScrollStory({ content }: { content: HeroContent }) {
         {/* ESTACIÓN 4: La Taza / El Resultado (76% hasta el final — sobre crema editorial) */}
         <StationCard
           progress={p}
-          inAt={0.76}
+          inAt={0.85}
           outAt={1.0}
           stayOut
           interactive
