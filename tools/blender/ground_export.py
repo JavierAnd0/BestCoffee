@@ -15,8 +15,8 @@ def mound(res=(140, 70), seed=2):
         r = math.hypot(x, y)
         h = max(0.0, 1.0 - r ** 1.6) ** 0.9 * 0.30                        # perfil de montículo
         big = noise.fractal(Vector((x * 2.6 + ox, y * 2.6, 0)), 0.5, 2.0, 3) * 0.05 * (1 - r)
-        clump = max(0.0, noise.noise(Vector((x * 8 + ox, y * 8, 4)))) ** 2 * 0.12 * (1 - r)
-        grit = noise.fractal(Vector((x * 60 + ox, y * 60, z * 60)), 0.8, 2.4, 3) * 0.05 * (1 - r * 0.4)
+        clump = max(0.0, noise.noise(Vector((x * 8 + ox, y * 8, 4)))) ** 2 * 0.05 * (1 - r)
+        grit = noise.fractal(Vector((x * 40 + ox, y * 40, z * 40)), 0.6, 2.2, 2) * 0.010 * (1 - r * 0.4)
         zz = (h + big + clump + grit) if z >= 0 else 0.0
         if zz < 0.0: zz = 0.0
         ang = math.atan2(y, x); rr = r * (1 + noise.noise(Vector((x * 5, y * 5, ox))) * 0.05)

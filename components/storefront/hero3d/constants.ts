@@ -12,6 +12,7 @@ export const MODEL_URLS = {
   branch: "/models/hero/packed/branch.glb",
   ground: "/models/hero/packed/ground.glb",
   spoon: "/models/hero/packed/spoon.glb",
+  biscuit: "/models/hero/packed/biscuit.glb",
   cup: "/models/taza.opt.glb?v=2",
 } as const;
 

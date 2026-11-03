@@ -37,13 +37,13 @@ export function GrinderStation({ progress }: P) {
 
   useFrame(({ clock }) => {
     const p = progress.get();
-    const grinding = smoothstep(0.37, 0.4, p) * (1 - smoothstep(0.46, 0.5, p));
+    const grinding = smoothstep(0.41, 0.44, p) * (1 - smoothstep(0.48, 0.52, p));
     const l = lid.current;
     if (l) {
       // 1) Con los granos ya dentro, la tapa baja y cierra la tolva.
-      const close = smoothstep(0.29, 0.33, p);
+      const close = smoothstep(0.30, 0.34, p);
       l.nodes.forEach((n, i) => {
-        n.visible = p > 0.285;
+        n.visible = p > 0.295;
         n.position.y = l.y[i] + (1 - close) * 2.4;
         n.rotation.z = (1 - close) * 0.5;
       });
@@ -51,16 +51,17 @@ export function GrinderStation({ progress }: P) {
     const c = crank.current;
     if (c) {
       // 2) Después se acopla la manivela y gira al moler.
-      const settle = smoothstep(0.32, 0.36, p);
-      c.node.visible = p > 0.315;
-      c.node.position.y = c.y + (1 - settle) * 2.4;
-      c.node.rotation.set(0, smoothstep(0.36, 0.48, p) * 30, (1 - settle) * 0.35);
+      const settle = smoothstep(0.365, 0.405, p);
+      c.node.visible = p > 0.36;
+      c.node.position.y = c.y + (1 - settle) * 1.6;
+      c.node.position.x = (1 - settle) * 2.0;
+      c.node.rotation.set(0, smoothstep(0.41, 0.52, p) * 30, (1 - settle) * 0.9);
     }
     if (root.current) {
       const t = clock.elapsedTime;
       root.current.position.x = Math.sin(t * 46) * 0.005 * grinding;
       root.current.position.z = Math.cos(t * 39) * 0.005 * grinding;
-      root.current.visible = p < 0.58;
+      root.current.visible = p > 0.13 && p < 0.6;
     }
   });
 
@@ -101,20 +102,20 @@ export function GroundsFlow({ progress }: P) {
   const steamState = useMemo(
     () => (out: THREE.Vector3) => {
       const p = progress.get();
-      const mokaY = lerp(MOKA_DOSING_Y, MOKA_ASSEMBLED_Y, smoothstep(0.5, 0.57, p));
+      const mokaY = lerp(MOKA_DOSING_Y, MOKA_ASSEMBLED_Y, smoothstep(0.55, 0.61, p));
       out.set(0, mokaY + MOKA_FUNNEL_RIM + 0.1, 0);
-      return smoothstep(0.38, 0.43, p) * (1 - smoothstep(0.46, 0.5, p)) * 0.3;
+      return smoothstep(0.43, 0.47, p) * (1 - smoothstep(0.50, 0.53, p)) * 0.3;
     },
     [progress],
   );
 
   useFrame(({ clock }) => {
     const p = progress.get();
-    const active = smoothstep(0.37, 0.4, p) * (1 - smoothstep(0.465, 0.5, p));
+    const active = smoothstep(0.41, 0.44, p) * (1 - smoothstep(0.50, 0.53, p));
     const t = clock.elapsedTime;
-    const mokaY = lerp(MOKA_DOSING_Y, MOKA_ASSEMBLED_Y, smoothstep(0.5, 0.57, p));
+    const mokaY = lerp(MOKA_DOSING_Y, MOKA_ASSEMBLED_Y, smoothstep(0.55, 0.61, p));
     // el café cae sobre la cima del montículo, que sube mientras muele
-    const dose = smoothstep(0.38, 0.47, p);
+    const dose = smoothstep(0.42, 0.51, p);
     const floorY = mokaY + MOKA_FUNNEL_RIM + 0.05 + dose * 0.2;
     const top = GRINDER_OUTLET_Y - 0.06;
     const fall = top - floorY;

@@ -221,33 +221,6 @@ export function ScrollStory({ content }: { content: HeroContent }) {
                 "radial-gradient(ellipse 46% 62% at 18% 22%, rgba(255,251,240,0.95) 0%, rgba(255,246,228,0.45) 45%, transparent 75%), radial-gradient(ellipse 60% 40% at 82% 8%, rgba(255,236,205,0.55) 0%, transparent 70%)",
             }}
           />
-          {[
-            { l: "58%", t: "13%", s: 74, o: 0.55 },
-            { l: "68%", t: "9%", s: 110, o: 0.4 },
-            { l: "79%", t: "17%", s: 62, o: 0.6 },
-            { l: "88%", t: "11%", s: 96, o: 0.45 },
-            { l: "62%", t: "31%", s: 120, o: 0.34 },
-            { l: "74%", t: "28%", s: 70, o: 0.5 },
-            { l: "92%", t: "30%", s: 84, o: 0.4 },
-            { l: "46%", t: "7%", s: 58, o: 0.4 },
-            { l: "36%", t: "36%", s: 90, o: 0.25 },
-          ].map((b, i) => (
-            <span
-              key={i}
-              className="absolute rounded-full"
-              style={{
-                left: b.l,
-                top: b.t,
-                width: b.s,
-                height: b.s,
-                opacity: b.o,
-                background:
-                  "radial-gradient(circle, rgba(255,226,170,0.95) 0%, rgba(255,214,150,0.55) 55%, rgba(255,214,150,0) 72%)",
-                filter: "blur(1.5px)",
-                mixBlendMode: "soft-light",
-              }}
-            />
-          ))}
         </motion.div>
 
         {/* ── Subtle analog film grain from globals.css ── */}
@@ -426,7 +399,7 @@ export function ScrollStory({ content }: { content: HeroContent }) {
           </h2>
           <p
             className="mt-4 text-base sm:text-lg font-light leading-relaxed max-w-md"
-            style={{ color: "var(--muted)" }}
+            style={{ color: "rgba(46, 26, 12, 0.82)" }}
           >
             {content.subtitle} Tostado esta semana, en tu puerta mañana.
           </p>

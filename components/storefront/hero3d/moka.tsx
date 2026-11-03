@@ -108,13 +108,13 @@ export function MokaStation({ progress }: P) {
     const t = clock.elapsedTime;
 
     // Solo existe mientras le toca: no asoma antes ni se queda después.
-    if (r) r.visible = p > 0.355 && p < 0.975;
+    if (r) r.visible = p > 0.385 && p < 0.975;
     if (!r || !tl || !up || !marker) return;
 
     // 1) Dosificación → armada: la caldera baja a la hornilla.
     // Sube desde abajo hasta quedar bajo la salida del molino (no aparece de golpe).
-    const enter = smoothstep(0.36, 0.41, p);
-    base.set(0, lerp(MOKA_DOSING_Y, MOKA_ASSEMBLED_Y, smoothstep(0.5, 0.57, p)) - (1 - enter) * 3.0, 0);
+    const enter = smoothstep(0.39, 0.44, p);
+    base.set(0, lerp(MOKA_DOSING_Y, MOKA_ASSEMBLED_Y, smoothstep(0.55, 0.61, p)) - (1 - enter) * 3.0, 0);
 
     // 2) Servir: se inclina y su pico queda justo sobre la taza.
     const pourIn = smoothstep(0.72, 0.8, p);
@@ -122,7 +122,7 @@ export function MokaStation({ progress }: P) {
     tl.rotation.z = -POUR_TILT * pour;
     r.rotation.set(0, MOKA_YAW, 0);
     r.position.copy(base);
-    const brewing = smoothstep(0.58, 0.64, p) * (1 - pourIn);
+    const brewing = smoothstep(0.62, 0.67, p) * (1 - pourIn);
     r.position.x += Math.sin(t * 38) * 0.004 * brewing;
 
     r.updateMatrixWorld(true);
@@ -138,8 +138,8 @@ export function MokaStation({ progress }: P) {
     r.updateMatrixWorld(true);
 
     // 3) La cámara superior llega desde un costado y se asienta sobre la caldera.
-    const e = smoothstep(0.48, 0.6, p);
-    up.visible = p > 0.455;
+    const e = smoothstep(0.54, 0.64, p);
+    up.visible = p > 0.53;
     up.position.set(lerp(2.2, 0, e), MOKA_UPPER_Y + lerp(1.7, 0, e) + Math.sin(e * Math.PI) * 0.45, 0);
     up.rotation.z = (1 - e) * 0.5;
 
@@ -147,8 +147,8 @@ export function MokaStation({ progress }: P) {
     const m = moundRef.current;
     if (m) {
       // Cae sobre un punto: primero forma un cono y luego se ensancha hasta llenar el filtro y se empareja.
-      const dose = smoothstep(0.38, 0.47, p);
-      const level = smoothstep(0.47, 0.5, p);
+      const dose = smoothstep(0.42, 0.51, p);
+      const level = smoothstep(0.51, 0.55, p);
       m.visible = dose > 0.01 && p < 0.9;
       const rad = lerp(0.12, 0.45, Math.sqrt(dose)) + level * 0.02;
       m.scale.set(rad, Math.max(lerp(0.3, 0.8, dose) * (1 - level * 0.62), 0.001), rad);

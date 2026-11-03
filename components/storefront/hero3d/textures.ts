@@ -257,3 +257,104 @@ export const makeTableMask = () => {
   tex.needsUpdate = true;
   return tex;
 };
+
+/**
+ * Fondo de cafetería pintado con degradados a baja resolución: al estirarse con filtrado lineal queda
+ * naturalmente desenfocado (como un fondo con poca profundidad de campo). Ventanal a la izquierda,
+ * estantes con tazas a la derecha, barra con máquina de espresso y lámparas colgantes encendidas.
+ */
+export const makeCafeTexture = () => {
+  const W = 512;
+  const H = 256;
+  const canvas = document.createElement("canvas");
+  canvas.width = W;
+  canvas.height = H;
+  const ctx = canvas.getContext("2d")!;
+  const rnd = mulberry32(99);
+  const wall = ctx.createLinearGradient(0, 0, 0, H);
+  wall.addColorStop(0, "#d9c3a0");
+  wall.addColorStop(0.55, "#b98f66");
+  wall.addColorStop(1, "#6a4528");
+  ctx.fillStyle = wall;
+  ctx.fillRect(0, 0, W, H);
+  // ventanal con luz de día
+  const win = ctx.createRadialGradient(95, 70, 8, 95, 70, 120);
+  win.addColorStop(0, "rgba(255,250,232,1)");
+  win.addColorStop(0.5, "rgba(255,238,205,0.85)");
+  win.addColorStop(1, "rgba(255,230,190,0)");
+  ctx.fillStyle = win;
+  ctx.fillRect(0, 0, 260, 200);
+  ctx.fillStyle = "#fff8e6";
+  ctx.fillRect(40, 22, 110, 100);
+  ctx.strokeStyle = "rgba(150,110,70,0.75)";
+  ctx.lineWidth = 3;
+  ctx.strokeRect(40, 22, 110, 100);
+  ctx.beginPath();
+  ctx.moveTo(95, 22); ctx.lineTo(95, 122); ctx.moveTo(40, 72); ctx.lineTo(150, 72);
+  ctx.stroke();
+  // estantes con tazas y frascos
+  for (const sy of [76, 118]) {
+    ctx.fillStyle = "#4a2c18";
+    ctx.fillRect(290, sy, 200, 4);
+    for (let x = 296; x < 484; x += 14 + rnd() * 10) {
+      const h = 10 + rnd() * 14;
+      const w = 8 + rnd() * 8;
+      const tone = rnd();
+      ctx.fillStyle = tone < 0.4 ? "#f1e6d2" : tone < 0.7 ? "#c4764a" : "#3b2315";
+      ctx.beginPath();
+      ctx.roundRect(x, sy - h, w, h, 3);
+      ctx.fill();
+    }
+  }
+  // barra y máquina de espresso
+  const bar = ctx.createLinearGradient(0, 170, 0, H);
+  bar.addColorStop(0, "#7a4b2a");
+  bar.addColorStop(1, "#3a2212");
+  ctx.fillStyle = bar;
+  ctx.fillRect(0, 170, W, H - 170);
+  ctx.fillStyle = "#2a1a10";
+  ctx.fillRect(0, 168, W, 5);
+  ctx.fillStyle = "#cfc7bb";
+  ctx.beginPath();
+  ctx.roundRect(330, 128, 120, 42, 4);
+  ctx.fill();
+  ctx.fillStyle = "#8d857a";
+  ctx.fillRect(330, 150, 120, 4);
+  ctx.fillStyle = "#e9e2d6";
+  ctx.fillRect(352, 134, 18, 10);
+  // lámparas colgantes con halo
+  for (const [x, y] of [[210, 34], [300, 46], [400, 28]] as const) {
+    ctx.strokeStyle = "rgba(40,24,12,0.7)";
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, y); ctx.stroke();
+    const g = ctx.createRadialGradient(x, y + 6, 1, x, y + 6, 34);
+    g.addColorStop(0, "rgba(255,240,200,1)");
+    g.addColorStop(0.3, "rgba(255,206,130,0.75)");
+    g.addColorStop(1, "rgba(255,190,110,0)");
+    ctx.fillStyle = g;
+    ctx.fillRect(x - 40, y - 34, 80, 80);
+  }
+  // destellos (bokeh) y viñeta
+  for (let i = 0; i < 26; i++) {
+    const x = rnd() * W;
+    const y = 20 + rnd() * 150;
+    const r = 4 + rnd() * 9;
+    const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+    g.addColorStop(0, "rgba(255,226,170,0.5)");
+    g.addColorStop(1, "rgba(255,226,170,0)");
+    ctx.fillStyle = g;
+    ctx.fillRect(x - r, y - r, r * 2, r * 2);
+  }
+  const vg = ctx.createRadialGradient(W / 2, H / 2, H * 0.3, W / 2, H / 2, W * 0.62);
+  vg.addColorStop(0, "rgba(40,20,8,0)");
+  vg.addColorStop(1, "rgba(40,20,8,0.45)");
+  ctx.fillStyle = vg;
+  ctx.fillRect(0, 0, W, H);
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.minFilter = THREE.LinearFilter;
+  tex.magFilter = THREE.LinearFilter;
+  tex.generateMipmaps = false;
+  tex.needsUpdate = true;
+  return tex;
+};

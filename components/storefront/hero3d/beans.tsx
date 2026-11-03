@@ -70,7 +70,7 @@ export function BeansStation({ progress }: P) {
         spin: new THREE.Vector3((rnd() - 0.5) * 7, (rnd() - 0.5) * 7, (rnd() - 0.5) * 7),
         scale: BEAN_SCALE * (0.9 + rnd() * 0.2),
         phase: rnd() * 6.28,
-        eat: 0.34 + rnd() * 0.12,
+        eat: 0.41 + rnd() * 0.09,
         shade: 0.85 + rnd() * 0.5,
       };
     });
@@ -90,7 +90,7 @@ export function BeansStation({ progress }: P) {
     const p = progress.get();
     const t = clock.elapsedTime;
 
-    m.visible = p < 0.5;
+    m.visible = p < 0.54;
     if (m.visible) {
       items.forEach((it, i) => {
         const f = clamp01((p - it.te) / FLIGHT);

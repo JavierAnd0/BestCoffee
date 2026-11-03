@@ -12,7 +12,7 @@ import { lerp, mulberry32, smoothstep } from "./math";
 import { liquidLevel, pourActive, pourState } from "./pour";
 import { useQuality } from "./quality";
 import { Steam } from "./steam";
-import { makeCremaTexture, makeShadowTexture, makeTableMask, makeTableTexture } from "./textures";
+import { makeCafeTexture, makeCremaTexture, makeShadowTexture, makeTableTexture } from "./textures";
 
 type P = { progress: MotionValue<number> };
 
@@ -34,10 +34,15 @@ export function CupStation({ progress }: P) {
   const shadowTex = useMemo(() => makeShadowTexture(), []);
   const tableTex = useMemo(() => {
     const t = makeTableTexture();
-    t.repeat.set(7, 7);
+    t.center.set(0.5, 0.5);
+    t.rotation = Math.PI / 2; // la veta corre a lo ancho de la mesa
+    t.repeat.set(2.2, 2.6);
     return t;
   }, []);
-  const tableMask = useMemo(() => makeTableMask(), []);
+  const cafeTex = useMemo(() => makeCafeTexture(), []);
+  const cafe = useRef<THREE.Mesh>(null);
+  const { scene: biscuitScene } = useGLTF(MODEL_URLS.biscuit);
+  const biscuits = useMemo(() => [biscuitScene.clone(true), biscuitScene.clone(true)], [biscuitScene]);
   const cup = useMemo(() => scene.clone(true), [scene]);
   const spoon = useMemo(() => spoonScene.clone(true), [spoonScene]);
   const saucerGeo = useMemo(() => createSaucerGeometry(segments), [segments]);
@@ -53,7 +58,7 @@ export function CupStation({ progress }: P) {
     let guard = 0;
     while (out.length < 9 && guard++ < 200) {
       const a = -0.55 + (rnd() - 0.5) * 2.3; // hacia la cámara y el lado derecho (z<0): lejos del texto
-      const rad = 1.85 + rnd() * 1.15;
+      const rad = 2.15 + rnd() * 1.1;
       const x = Math.cos(a) * rad;
       const z = Math.sin(a) * rad;
       if (out.every((o) => Math.hypot(o.x - x, o.z - z) > 0.34)) out.push({ x, z, r: rnd() * 6.28, flip: rnd() > 0.7 });
@@ -65,6 +70,11 @@ export function CupStation({ progress }: P) {
     const p = progress.get();
     const t = clock.elapsedTime;
     const appear = smoothstep(0.76, 0.8, p);
+    if (cafe.current) {
+      const f = smoothstep(0.78, 0.88, p);
+      cafe.current.visible = f > 0.01;
+      (cafe.current.material as THREE.MeshBasicMaterial).opacity = f;
+    }
     if (outer.current) {
       outer.current.visible = appear > 0.01;
       outer.current.scale.setScalar(lerp(0.9, 1, appear));
@@ -106,17 +116,17 @@ export function CupStation({ progress }: P) {
   return (
     <>
       <group ref={outer} position={[0, CUP_BASE_Y, 0]}>
-        {/* Mesa de nogal: un disco con degradado que se funde con el fondo (sin bordes duros) */}
-        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.002, 0]}>
-          <planeGeometry args={[60, 60]} />
-          <meshStandardMaterial map={tableTex} alphaMap={tableMask} transparent roughness={0.42} metalness={0} depthWrite={false} envMapIntensity={0.7} />
+        {/* Mesa de nogal con grosor y borde (no un piso infinito) */}
+        <mesh position={[-0.1, -0.21, 0]}>
+          <boxGeometry args={[16, 0.42, 22]} />
+          <meshStandardMaterial map={tableTex} roughness={0.38} metalness={0} envMapIntensity={0.8} />
         </mesh>
         {/* Sombra de contacto barata: un plano con degradado, sin sombras en tiempo real */}
         <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.006, 0]}>
           <planeGeometry args={[5.4, 5.4]} />
           <meshBasicMaterial map={shadowTex} transparent depthWrite={false} />
         </mesh>
-        <mesh geometry={saucerGeo} material={porcelain} />
+        <mesh geometry={saucerGeo} material={porcelain} scale={[1.2, 1, 1.2]} />
 
         <group position={[0, SAUCER_H, 0]}>
           <group ref={cupGroup}>
@@ -140,9 +150,15 @@ export function CupStation({ progress }: P) {
           </group>
         </group>
 
-        {/* Cucharita apoyada en el plato, a la derecha de la taza */}
-        <group position={[0.8, SAUCER_H + 0.012, 0.0]} rotation={[0, Math.PI / 2 + 0.2, 0]} scale={1.45}>
+        {/* Cucharita y dos bizcochos sobre el plato */}
+        <group position={[0.95, SAUCER_H + 0.012, 0.55]} rotation={[0, Math.PI / 2 + 0.25, 0]} scale={1.3}>
           <primitive object={spoon} />
+        </group>
+        <group position={[0.9, SAUCER_H + 0.075, -0.55]} rotation={[0, 1.45, 0]} scale={0.72}>
+          <primitive object={biscuits[0]} />
+        </group>
+        <group position={[1.1, SAUCER_H + 0.07, 0.02]} rotation={[0, 1.78, 0]} scale={0.68}>
+          <primitive object={biscuits[1]} />
         </group>
 
         {/* Granos esparcidos sobre la mesa, nunca sobre el borde del plato */}
@@ -157,6 +173,11 @@ export function CupStation({ progress }: P) {
           />
         ))}
       </group>
+      {/* Telón de fondo: cafetería desenfocada, lejos de la mesa, en perspectiva real */}
+      <mesh ref={cafe} position={[-30 * Math.cos(0.4), CUP_BASE_Y + 2.2, -30 * Math.sin(0.4)]} rotation={[0, Math.PI / 2 - 0.4, 0]} visible={false}>
+        <planeGeometry args={[66, 33]} />
+        <meshBasicMaterial map={cafeTex} transparent opacity={0} fog={false} toneMapped={false} depthWrite={false} />
+      </mesh>
       <Steam count={steam} state={steamState} size={0.62} rise={1.8} spread={0.3} />
     </>
   );

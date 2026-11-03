@@ -40,7 +40,7 @@ function CameraRig({ progress }: { progress: MotionValue<number> }) {
     const fitDist = needW / aspect / (2 * Math.tan((fov * Math.PI) / 360));
     // Durante la molienda caben a la vez la salida del molino, el chorro de café y el filtro (~4.4 u),
     // y solo se dispone de ~60 % de la altura (abajo va el texto).
-    const needH = 4.4 * (smoothstep(0.34, 0.4, p) * (1 - smoothstep(0.44, 0.49, p)));
+    const needH = 5.0 * (smoothstep(0.4, 0.45, p) * (1 - smoothstep(0.5, 0.55, p)));
     const fitH = needH / 0.6 / (2 * Math.tan((fov * Math.PI) / 360));
     const baseDist = shot.dist * 1.35;
     const dist = portrait ? Math.max(baseDist, fitDist, fitH) : shot.dist;
