@@ -12,7 +12,7 @@ import { lerp, mulberry32, smoothstep } from "./math";
 import { liquidLevel, pourActive, pourState } from "./pour";
 import { useQuality } from "./quality";
 import { Steam } from "./steam";
-import { makeCremaTexture, makeShadowTexture, makeTableTexture } from "./textures";
+import { makeCremaTexture, makeSoftTexture, makeShadowTexture, makeTableTexture } from "./textures";
 
 type P = { progress: MotionValue<number> };
 
@@ -53,8 +53,25 @@ export function CupStation({ progress }: P) {
     return t;
   }, [cafeSrc]);
   const cafe = useRef<THREE.Mesh>(null);
+  const bokeh = useRef<THREE.Group>(null);
+  const bokehTex = useMemo(() => makeSoftTexture(), []);
+  // Luces cálidas desenfocadas (guirnaldas y lámparas), repartidas en una franja detrás de la mesa
+  const lights = useMemo(() => {
+    const rnd = mulberry32(404);
+    return Array.from({ length: mobile ? 12 : 22 }, () => ({
+      u: (rnd() - 0.5) * 34,
+      y: 1.2 + rnd() * 8.5,
+      size: 0.9 + rnd() * 2.2,
+      base: 0.35 + rnd() * 0.5,
+      phase: rnd() * 6.28,
+      warm: rnd(),
+    }));
+  }, [mobile]);
   const { scene: biscuitScene } = useGLTF(MODEL_URLS.biscuit);
-  const biscuits = useMemo(() => [biscuitScene.clone(true), biscuitScene.clone(true)], [biscuitScene]);
+  const biscuits = useMemo(
+    () => [0, 1, 2].map((k) => biscuitScene.getObjectByName(`biscuit_${k}`)!.clone(true)),
+    [biscuitScene],
+  );
   const cup = useMemo(() => scene.clone(true), [scene]);
   const spoon = useMemo(() => spoonScene.clone(true), [spoonScene]);
   const saucerGeo = useMemo(() => createSaucerGeometry(segments), [segments]);
@@ -86,6 +103,14 @@ export function CupStation({ progress }: P) {
       const f = smoothstep(0.78, 0.88, p);
       cafe.current.visible = f > 0.01;
       (cafe.current.material as THREE.MeshBasicMaterial).opacity = f;
+      const g = bokeh.current;
+      if (g) {
+        g.visible = f > 0.01;
+        g.children.forEach((c, i) => {
+          const l = lights[i];
+          (c as THREE.Sprite).material.opacity = f * l.base * (0.82 + 0.18 * Math.sin(t * 0.9 + l.phase));
+        });
+      }
     }
     if (outer.current) {
       outer.current.visible = appear > 0.01;
@@ -166,11 +191,15 @@ export function CupStation({ progress }: P) {
         <group position={[0.95, SAUCER_H + 0.012, 0.62]} rotation={[0, Math.PI / 2 + 0.25, 0]} scale={1.3}>
           <primitive object={spoon} />
         </group>
-        <group position={[0.98, SAUCER_H + 0.002, -0.42]} rotation={[0, 1.3, 0]} scale={0.95}>
+        {/* Dos bizcochitos abiertos en V y un tercero cruzado encima */}
+        <group position={[1.08, 0.18, -0.62]} rotation={[0, Math.PI / 2 + 0.24, 0]} scale={0.92}>
           <primitive object={biscuits[0]} />
         </group>
-        <group position={[1.12, SAUCER_H + 0.02, 0.08]} rotation={[0, 1.7, 0]} scale={0.9}>
+        <group position={[1.22, 0.18, 0.02]} rotation={[0, Math.PI / 2 - 0.26, 0]} scale={0.92}>
           <primitive object={biscuits[1]} />
+        </group>
+        <group position={[1.15, 0.375, -0.3]} rotation={[0, Math.PI / 2 + 0.95, 0.02]} scale={0.84}>
+          <primitive object={biscuits[2]} />
         </group>
 
         {/* Granos esparcidos sobre la mesa, nunca sobre el borde del plato */}
@@ -190,6 +219,13 @@ export function CupStation({ progress }: P) {
         <sphereGeometry args={[46, 48, 28]} />
         <meshBasicMaterial map={cafeTex} side={THREE.BackSide} transparent opacity={0} fog={false} toneMapped={false} depthWrite={false} />
       </mesh>
+      <group ref={bokeh} visible={false} position={[-0.92 * 25, CUP_BASE_Y, -0.39 * 25]}>
+        {lights.map((l, i) => (
+          <sprite key={i} position={[-0.39 * l.u, l.y, 0.92 * l.u]} scale={[l.size, l.size, 1]} renderOrder={-5}>
+            <spriteMaterial map={bokehTex} color={l.warm > 0.35 ? "#ffc47a" : "#ffe3b0"} transparent opacity={0} depthWrite={false} blending={THREE.AdditiveBlending} fog={false} toneMapped={false} />
+          </sprite>
+        ))}
+      </group>
       <Steam count={steam} state={steamState} size={0.62} rise={1.8} spread={0.3} />
     </>
   );
