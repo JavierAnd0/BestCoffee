@@ -71,7 +71,7 @@ export function BeansStation({ progress }: P) {
         scale: BEAN_SCALE * (0.9 + rnd() * 0.2),
         phase: rnd() * 6.28,
         eat: 0.34 + rnd() * 0.12,
-        shade: 0.82 + rnd() * 0.4,
+        shade: 0.85 + rnd() * 0.5,
       };
     });
   }, [beans]);
@@ -131,9 +131,9 @@ export function BeansStation({ progress }: P) {
     if (b) {
       const fade = 1 - smoothstep(0.08, 0.17, p);
       b.visible = fade > 0.01;
-      b.position.set(0.05, 0.05 + (1 - fade) * 1.4, -0.55);
+      b.position.set(0.2, -0.1 + (1 - fade) * 1.4, -1.2);
       b.rotation.y = Math.PI / 2 + Math.sin(t * 0.3) * 0.04;
-      b.scale.setScalar(Math.max(fade, 0.0001) * 1.15);
+      b.scale.setScalar(Math.max(fade, 0.0001) * 0.82);
     }
   });
 

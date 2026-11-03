@@ -53,6 +53,23 @@ function CameraRig({ progress }: { progress: MotionValue<number> }) {
   return null;
 }
 
+/** Contraluz cálido que sigue a la cámara: separa los objetos del fondo (look de estudio). */
+function RimLight({ progress }: { progress: MotionValue<number> }) {
+  const light = useRef<THREE.SpotLight>(null);
+  useFrame((state) => {
+    const l = light.current;
+    if (!l) return;
+    const shot = cameraAt(progress.get());
+    l.position.set(-4.5, shot.focusY + 3.2, -5.5);
+    l.target.position.set(0, shot.focusY, 0);
+    l.target.updateMatrixWorld();
+    // al final (fondo crema) el contraluz baja para no lavar la taza
+    l.intensity = 38 * (1 - smoothstep(0.82, 1, progress.get()) * 0.55);
+    void state;
+  });
+  return <spotLight ref={light} color="#ffb070" angle={0.55} penumbra={0.9} distance={26} decay={1.6} />;
+}
+
 /* ═══════════════════════════ ESCENA ═══════════════════════════ */
 
 export interface HeroSceneProps {
@@ -145,6 +162,8 @@ export function HeroScene({ scrollProgress }: HeroSceneProps = {}) {
             })}
           </Environment>
 
+          <fog attach="fog" args={["#1c0d06", 14, 38]} />
+          <RimLight progress={progress} />
           <CameraRig progress={progress} />
           <Suspense fallback={null}>
             <BeansStation progress={progress} />

@@ -33,28 +33,33 @@ def build():
     parts = []
     parts.append(knurled_body(mat=black))
     # franjas tricolor sutiles, grabadas en un anillo sobre el agarre
-    for k, (m, z) in enumerate([(yel, 0.28), (blu, 0.34), (red, 0.40)]):
-        o = lathe([(0.5, z - 0.027), (0.512, z - 0.027), (0.512, z + 0.027), (0.5, z + 0.027)], 96, f"band{k}", m); parts.append(o)
-    # carcasa de acero superior
-    parts.append(lathe([(0.0, 0.2), (0.485, 0.2), (0.485, 0.26), (0.5, 0.265), (0.5, 0.9), (0.47, 0.92), (0.0, 0.92)], 96, "housing", steel))
-    # tolva de cobre abierta (los granos caen dentro)
-    hop = lathe([(0.47, 0.9), (0.52, 0.93), (0.58, 1.1), (0.68, 1.36), (0.675, 1.38), (0.55, 1.14), (0.48, 1.0), (0.0, 0.96)], 96, "hopper", copper); parts.append(hop)
-    # boca de salida
-    parts.append(lathe([(0.0, -1.5), (0.5, -1.5), (0.5, -1.56), (0.42, -1.6), (0.40, -1.7), (0.0, -1.7)], 96, "outlet", steel))
-    for p in parts: smooth_by_angle(p, 45) if p.name in ("housing", "outlet") else None
-    # manivela (pivote en el eje: se gira desde la web)
-    piv = bpy.data.objects.new("crank", None); bpy.context.collection.objects.link(piv); piv.location = (0, 0, 1.5)
-    shaft = lathe([(0, 0), (0.06, 0), (0.06, 0.55), (0, 0.55)], 24, "shaft", steel); 
+    for k, (m, z) in enumerate([(yel, 0.26), (blu, 0.31), (red, 0.36)]):
+        o = lathe([(0.5, z - 0.02), (0.508, z - 0.02), (0.508, z + 0.02), (0.5, z + 0.02)], 96, f"band{k}", m); parts.append(o)
+    # ── carcasa de acero con anillos, tolva de cobre con borde enrollado, cuello y tuerca ──
+    housing = lathe([(0.0, 0.2), (0.485, 0.2), (0.485, 0.26), (0.5, 0.265), (0.5, 0.40), (0.52, 0.42), (0.52, 0.46), (0.5, 0.48), (0.5, 0.9), (0.47, 0.92), (0.0, 0.92)], 128, "housing", steel)
+    bevel(housing, 0.012, 3, 40); smooth_by_angle(housing, 60); parts.append(housing)
+    collar = lathe([(0.47, 0.88), (0.53, 0.88), (0.55, 0.92), (0.55, 0.98), (0.53, 1.0), (0.47, 1.0)], 128, "collar", copper)
+    bevel(collar, 0.01, 3, 40); smooth_by_angle(collar, 60); parts.append(collar)
+    hop = lathe([(0.50, 0.98), (0.52, 1.0), (0.585, 1.14), (0.66, 1.30), (0.705, 1.39), (0.72, 1.42), (0.705, 1.445), (0.68, 1.43), (0.66, 1.40), (0.60, 1.26), (0.535, 1.12), (0.47, 1.02), (0.0, 1.0)], 160, "hopper", copper)
+    bevel(hop, 0.006, 3, 40); smooth_by_angle(hop, 70); parts.append(hop)
+    outlet = lathe([(0.0, -1.5), (0.5, -1.5), (0.5, -1.56), (0.43, -1.60), (0.42, -1.66), (0.0, -1.66)], 128, "outlet", steel)
+    bevel(outlet, 0.01, 3, 40); smooth_by_angle(outlet, 60); parts.append(outlet)
+    parts.append(lathe([(0.495, -1.5), (0.52, -1.5), (0.52, -1.44), (0.495, -1.44)], 128, "bottom_ring", copper))
+    # ── manivela acodada: eje corto, brazo cónico, codo y perilla de nogal ──
+    piv = bpy.data.objects.new("crank", None); bpy.context.collection.objects.link(piv); piv.location = (0, 0, 1.46)
+    hub = lathe([(0, 0), (0.10, 0), (0.10, 0.07), (0.075, 0.13), (0.075, 0.2), (0, 0.2)], 48, "hub", steel)
     arm_bm = bmesh.new(); bmesh.ops.create_cube(arm_bm, size=1.0)
-    for v in arm_bm.verts: v.co = (v.co.x * 1.45 + 0.7, v.co.y * 0.16, v.co.z * 0.11)
-    arm = add(arm_bm, "arm", steel, (0, 0, 0.58)); bevel(arm, 0.03, 3); smooth_by_angle(arm, 40)
-    knob = lathe([(0, 0), (0.1, 0), (0.13, 0.1), (0.15, 0.26), (0.13, 0.42), (0.09, 0.5), (0, 0.52)], 40, "knob", wood, loc=(1.38, 0, 0.58))
-    pin = lathe([(0, 0), (0.05, 0), (0.05, -0.02), (0, -0.02)], 16, "pin", steel)
-    cap = lathe([(0, 0), (0.1, 0), (0.12, 0.05), (0, 0.09)], 24, "cap", copper, loc=(0, 0, 0.55))
-    for o in (shaft, arm, knob, cap):
-        o.parent = piv
-    return parts, piv, [shaft, arm, knob, cap]
-
+    for v in arm_bm.verts:
+        k = (v.co.x + 0.5)
+        v.co = (v.co.x * 1.5 + 0.75, v.co.y * (0.17 - 0.07 * k), v.co.z * (0.10 - 0.03 * k))
+    arm = add(arm_bm, "arm", steel, (0, 0, 0.19)); bevel(arm, 0.025, 3); smooth_by_angle(arm, 50)
+    elbow = lathe([(0, 0), (0.075, 0), (0.08, 0.14), (0.0, 0.14)], 32, "elbow", steel, loc=(1.42, 0, 0.18))
+    knob = lathe([(0, 0), (0.085, 0), (0.12, 0.05), (0.16, 0.2), (0.155, 0.36), (0.12, 0.50), (0.07, 0.56), (0, 0.575)], 64, "knob", wood, loc=(1.42, 0, 0.30))
+    smooth_by_angle(knob, 70)
+    cap = lathe([(0, 0), (0.09, 0), (0.1, 0.04), (0.06, 0.1), (0, 0.11)], 32, "cap", copper, loc=(0, 0, 0.19))
+    for o in (hub, arm, elbow, knob, cap): o.parent = piv
+    cp = [hub, arm, elbow, knob, cap]
+    return parts, piv, cp
 if __name__ == "__main__":
     out = sys.argv[sys.argv.index("--") + 1]
     reset(); parts, piv, cp = build()

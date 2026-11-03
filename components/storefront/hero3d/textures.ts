@@ -196,3 +196,36 @@ export const makePanelaTexture = () =>
       ctx.fillRect(rnd() * s, rnd() * s, 1 + rnd() * 5, 1 + rnd() * 3);
     }
   });
+
+/** Mesa de nogal: veta horizontal y degradado radial a transparente (se funde con el fondo). */
+export const makeTableTexture = () => {
+  const size = 512;
+  const canvas = document.createElement("canvas");
+  canvas.width = canvas.height = size;
+  const ctx = canvas.getContext("2d")!;
+  ctx.fillStyle = "#5a3820";
+  ctx.fillRect(0, 0, size, size);
+  const rnd = mulberry32(31);
+  for (let i = 0; i < 160; i++) {
+    const y = rnd() * size;
+    ctx.strokeStyle = `rgba(${rnd() > 0.5 ? "30,16,8" : "140,96,56"},${0.05 + rnd() * 0.14})`;
+    ctx.lineWidth = 1 + rnd() * 3;
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    for (let x = 0; x <= size; x += 32) ctx.lineTo(x, y + Math.sin(x * 0.02 + i) * 3);
+    ctx.stroke();
+  }
+  // máscara radial: sólido al centro, transparente hacia el borde
+  ctx.globalCompositeOperation = "destination-in";
+  const g = ctx.createRadialGradient(size / 2, size / 2, size * 0.12, size / 2, size / 2, size / 2);
+  g.addColorStop(0, "rgba(0,0,0,1)");
+  g.addColorStop(0.35, "rgba(0,0,0,0.95)");
+  g.addColorStop(0.7, "rgba(0,0,0,0.5)");
+  g.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, size, size);
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.needsUpdate = true;
+  return tex;
+};

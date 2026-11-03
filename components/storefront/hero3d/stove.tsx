@@ -68,7 +68,7 @@ export function Stove({ progress }: P) {
   return (
     <group ref={root} position={[0, STOVE_Y - 0.32, 0]}>
       <mesh position={[0, 0, 0]} material={metal}>
-        <cylinderGeometry args={[1.5, 1.6, 0.22, 40]} />
+        <cylinderGeometry args={[1.18, 1.3, 0.16, 48]} />
       </mesh>
       <mesh position={[0, 0.13, 0]} rotation={[Math.PI / 2, 0, 0]} material={grate}>
         <torusGeometry args={[0.5, 0.07, 10, 36]} />

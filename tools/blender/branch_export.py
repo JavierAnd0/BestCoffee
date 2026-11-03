@@ -15,7 +15,7 @@ def cherry(seed, color_t):
     random.seed(seed)
     bm = bmesh.new(); bmesh.ops.create_uvsphere(bm, u_segments=40, v_segments=28, radius=1.0)
     lay = bm.verts.layers.color.new("Col")
-    ripe = Vector((0.52, 0.015, 0.03)); orange = Vector((0.80, 0.30, 0.03)); green = Vector((0.18, 0.30, 0.04)); navel = Vector((0.06, 0.012, 0.01))
+    ripe = Vector((0.40, 0.018, 0.03)); orange = Vector((0.70, 0.27, 0.035)); green = Vector((0.18, 0.30, 0.04)); navel = Vector((0.06, 0.012, 0.01))
     base = ripe.lerp(orange, color_t) if color_t < 1 else orange.lerp(green, color_t - 1)
     for v in bm.verts:
         x, y, z = v.co
@@ -65,7 +65,7 @@ def stem(points, radius=0.025, name="stem", mat=None):
     return ob
 
 def build():
-    cher_m = vcol_material("cereza", 0.22, 0.7); leaf_m = vcol_material("hoja", 0.32, 0.5)
+    cher_m = vcol_material("cereza", 0.34, 0.3); leaf_m = vcol_material("hoja", 0.32, 0.5)
     wood = principled("rama", (0.20, 0.12, 0.06), rough=0.7)
     objs = []
     # rama principal que sube y se curva

@@ -25,13 +25,13 @@ def build_bean(seed, res):
         v.co = Vector((x * r, y2 * r, z2 * r))
     bm.normal_update()
     lay = bm.verts.layers.color.new("Col") if hasattr(bm.verts.layers, "color") else None
-    dark, light = Vector((0.055, 0.02, 0.008)), Vector((0.30, 0.15, 0.065))
+    dark, light = Vector((0.15, 0.058, 0.02)), Vector((0.46, 0.25, 0.10))
     for v in bm.verts:
         x, y, z = v.co
         d = (y / 0.72) - 0.07 * math.sin(x * 2.6 + seed)
         g = math.exp(-(d * d) / 0.03) * max(0.0, 1 - abs(x) ** 3) if z > 0 else 0.0
         st = noise.fractal(Vector((x * 4 + ox, y * 4, z * 4 + oy)), 0.6, 2.2, 4) * 0.5 + 0.5
-        t = min(1.0, g * 0.9 + st * 0.22)
+        t = min(1.0, g * 0.9 + st * 0.30)
         c = dark.lerp(light, t) * (0.9 + 0.2 * random.random() * 0)
         v[lay] = (c.x, c.y, c.z, 1)
     return bm
@@ -42,8 +42,8 @@ def bean_material():
     b = N["Principled BSDF"]
     a = N.new("ShaderNodeVertexColor"); a.layer_name = "Col"
     L.new(a.outputs["Color"], b.inputs["Base Color"])
-    b.inputs["Roughness"].default_value = 0.42
-    b.inputs["Coat Weight"].default_value = 0.3; b.inputs["Coat Roughness"].default_value = 0.3
+    b.inputs["Roughness"].default_value = 0.52
+    b.inputs["Coat Weight"].default_value = 0.12; b.inputs["Coat Roughness"].default_value = 0.4
     return m
 
 if __name__ == "__main__":

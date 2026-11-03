@@ -223,9 +223,10 @@ export function createSackGeometry() {
   return g;
 }
 
-/** Plato de loza. */
+/** Plato de loza: pozo central donde apoya la taza, ala suave y borde fino. */
 export function createSaucerGeometry(segments: number) {
-  const out = smooth([[0, 0], [0.55, 0], [0.9, 0.02], [1.2, 0.08], [1.34, 0.12]], 4);
-  const inn = smooth([[1.33, 0.13], [1.2, 0.1], [0.85, 0.06], [0.55, 0.05], [0, 0.05]], 4);
-  return lathe([...out, ...v2([[1.36, 0.125]]), ...inn], segments);
+  const out = smooth([[0, 0.0], [0.5, 0.0], [0.9, 0.012], [1.2, 0.05], [1.34, 0.105]], 4);
+  const rim: [number, number][] = [[1.36, 0.115], [1.345, 0.125]];
+  const inn = smooth([[1.32, 0.115], [1.15, 0.075], [0.8, 0.052], [0.5, 0.045], [0, 0.045]], 4);
+  return lathe([...out, ...v2(rim), ...inn], segments);
 }

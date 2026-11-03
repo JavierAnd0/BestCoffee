@@ -11,13 +11,14 @@ export const MODEL_URLS = {
   moka: "/models/hero/packed/moka.glb",
   branch: "/models/hero/packed/branch.glb",
   ground: "/models/hero/packed/ground.glb",
+  spoon: "/models/hero/packed/spoon.glb",
   cup: "/models/taza.opt.glb?v=2",
 } as const;
 
 // ── Molino (el origen del modelo está a 1.7 sobre la boca de salida) ──
 export const GRINDER_Y = -4.9;
 export const GRINDER_OUTLET_Y = GRINDER_Y - 1.7; // salida del café molido
-export const GRINDER_TOP_Y = GRINDER_Y + 1.38; // borde de la tolva
+export const GRINDER_TOP_Y = GRINDER_Y + 1.44; // borde de la tolva
 export const GRINDER_PILE_Y = GRINDER_Y + 1.0; // piso de la tolva (donde se apilan los granos)
 export const CRANK_PIVOT_Y = 1.5; // altura del eje de la manivela dentro del modelo
 

@@ -8,21 +8,21 @@ import type { MotionValue } from "motion/react";
 import { CUP_BASE_Y, CUP_INNER_R, CUP_ROT_Y, CUP_SCALE, LIQUID_MAX, MODEL_URLS, SAUCER_H } from "./constants";
 import { createSaucerGeometry } from "./geometries";
 import { useBean } from "./assets";
-import { lerp, smoothstep } from "./math";
+import { lerp, mulberry32, smoothstep } from "./math";
 import { liquidLevel, pourActive, pourState } from "./pour";
 import { useQuality } from "./quality";
 import { Steam } from "./steam";
-import { makeBurlapTexture, makeCremaTexture, makeShadowTexture } from "./textures";
+import { makeCremaTexture, makeShadowTexture, makeTableTexture } from "./textures";
 
 type P = { progress: MotionValue<number> };
 
-// Modelo original de la taza ("CAFÉ DE COLOMBIA"), comprimido: 2.5 MB → ~140 KB.
 const CUP_URL = MODEL_URLS.cup;
 
-/** Presentación final: taza sobre plato con cucharita, granos y un trozo de panela. */
+/** Presentación final: taza y plato de loza sobre una mesa de nogal, con cucharita y granos esparcidos. */
 export function CupStation({ progress }: P) {
   const { steam, segments } = useQuality();
   const { scene } = useGLTF(CUP_URL);
+  const { scene: spoonScene } = useGLTF(MODEL_URLS.spoon);
   const outer = useRef<THREE.Group>(null);
   const cupGroup = useRef<THREE.Group>(null);
   const liquidGroup = useRef<THREE.Group>(null);
@@ -32,20 +32,30 @@ export function CupStation({ progress }: P) {
 
   const cremaTex = useMemo(() => makeCremaTexture(), []);
   const shadowTex = useMemo(() => makeShadowTexture(), []);
+  const tableTex = useMemo(() => makeTableTexture(), []);
   const cup = useMemo(() => scene.clone(true), [scene]);
+  const spoon = useMemo(() => spoonScene.clone(true), [spoonScene]);
   const saucerGeo = useMemo(() => createSaucerGeometry(segments), [segments]);
   const { geometry: beanGeo, material: beanMat } = useBean();
-  const burlap = useMemo(() => {
-    const map = makeBurlapTexture();
-    map.wrapS = map.wrapT = THREE.RepeatWrapping;
-    map.repeat.set(7, 6);
-    return new THREE.MeshStandardMaterial({ map, bumpMap: map, bumpScale: 1.2, roughness: 0.95, side: THREE.DoubleSide });
-  }, []);
   const porcelain = useMemo(
-    () => new THREE.MeshPhysicalMaterial({ color: "#f8f4df", roughness: 0.2, clearcoat: 0.8, clearcoatRoughness: 0.15 }),
+    () => new THREE.MeshPhysicalMaterial({ color: "#f6f1e2", roughness: 0.22, clearcoat: 0.7, clearcoatRoughness: 0.18 }),
     [],
   );
-  const steel = useMemo(() => new THREE.MeshStandardMaterial({ color: "#d0d4d9", metalness: 1, roughness: 0.22 }), []);
+  // Granos esparcidos sobre la mesa, fuera del plato (radio del plato ≈ 1.36)
+  const scattered = useMemo(() => {
+    const rnd = mulberry32(5);
+    const out: { x: number; z: number; r: number; flip: boolean }[] = [];
+    let guard = 0;
+    while (out.length < 9 && guard++ < 200) {
+      const a = -0.55 + (rnd() - 0.5) * 2.3; // hacia la cámara y el lado derecho (z<0): lejos del texto
+      const rad = 1.85 + rnd() * 1.15;
+      const x = Math.cos(a) * rad;
+      const z = Math.sin(a) * rad;
+      if (out.every((o) => Math.hypot(o.x - x, o.z - z) > 0.34)) out.push({ x, z, r: rnd() * 6.28, flip: rnd() > 0.7 });
+    }
+    return out;
+  }, []);
+
   useFrame(({ clock }) => {
     const p = progress.get();
     const t = clock.elapsedTime;
@@ -54,7 +64,6 @@ export function CupStation({ progress }: P) {
       outer.current.visible = appear > 0.01;
       outer.current.scale.setScalar(lerp(0.9, 1, appear));
     }
-    // En la presentación final la taza gira despacio para mostrar el asa y el logo.
     if (cupGroup.current) cupGroup.current.rotation.y = CUP_ROT_Y + smoothstep(0.92, 1, p) * 0.45 + Math.sin(t * 0.4) * 0.02;
 
     const fill = smoothstep(0.84, 0.92, p);
@@ -92,8 +101,13 @@ export function CupStation({ progress }: P) {
   return (
     <>
       <group ref={outer} position={[0, CUP_BASE_Y, 0]}>
+        {/* Mesa de nogal: un disco con degradado que se funde con el fondo (sin bordes duros) */}
+        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.002, 0]}>
+          <circleGeometry args={[16, 64]} />
+          <meshStandardMaterial map={tableTex} transparent roughness={0.55} metalness={0} depthWrite={false} />
+        </mesh>
         {/* Sombra de contacto barata: un plano con degradado, sin sombras en tiempo real */}
-        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.004, 0]}>
+        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.006, 0]}>
           <planeGeometry args={[5.4, 5.4]} />
           <meshBasicMaterial map={shadowTex} transparent depthWrite={false} />
         </mesh>
@@ -121,28 +135,24 @@ export function CupStation({ progress }: P) {
           </group>
         </group>
 
-        {/* Tela de fique bajo el plato, cucharita y granos esparcidos (como la foto de referencia) */}
-        <mesh rotation={[-Math.PI / 2, 0, 0.3]} position={[0.4, 0.012, 0.2]} material={burlap}>
-          <circleGeometry args={[7.5, 56]} />
-        </mesh>
-        <group position={[0.2, SAUCER_H + 0.02, 0.95]} rotation={[0, 0.5, 0]}>
-          <mesh position={[0.34, 0.02, 0]} scale={[0.17, 0.045, 0.1]} material={steel}>
-            <sphereGeometry args={[1, 20, 12]} />
-          </mesh>
-          <mesh position={[-0.3, 0.005, 0]} material={steel}>
-            <boxGeometry args={[0.62, 0.018, 0.05]} />
-          </mesh>
+        {/* Cucharita apoyada en el plato, a la derecha de la taza */}
+        <group position={[0.92, SAUCER_H + 0.012, 0.08]} rotation={[0, Math.PI / 2 + 0.14, 0]} scale={1.72}>
+          <primitive object={spoon} />
         </group>
-        {[
-          [1.15, -0.55, 0.6, 0.0], [1.35, -0.2, 2.1, 0.0], [1.0, -0.85, 4.0, 0.0], [1.6, -0.7, 5.0, 0.0],
-          [1.45, 0.35, 1.2, 0.0], [1.75, -0.05, 3.3, 0.0], [1.25, 0.65, 2.6, 0.0], [1.9, 0.5, 0.2, 0.0],
-        ].map(([x, z, r], i) => (
-          <mesh key={i} geometry={beanGeo} material={beanMat} position={[x, 0.07, z]} rotation={[0.1, r, 0.0]} scale={0.125} />
+
+        {/* Granos esparcidos sobre la mesa, nunca sobre el borde del plato */}
+        {scattered.map((b, i) => (
+          <mesh
+            key={i}
+            geometry={beanGeo}
+            material={beanMat}
+            position={[b.x, 0.07, b.z]}
+            rotation={[b.flip ? Math.PI : 0.0, b.r, 0]}
+            scale={0.125}
+          />
         ))}
       </group>
       <Steam count={steam} state={steamState} size={0.62} rise={1.8} spread={0.3} />
     </>
   );
 }
-
-

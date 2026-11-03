@@ -33,7 +33,14 @@ export function GrinderStation({ progress }: P) {
   useFrame(({ clock }) => {
     const p = progress.get();
     const grinding = smoothstep(0.3, 0.36, p) * (1 - smoothstep(0.46, 0.5, p));
-    if (crank.current) crank.current.rotation.y = smoothstep(0.3, 0.48, p) * 30;
+    const c = crank.current;
+    if (c) {
+      // La manivela se retira para echar los granos y se coloca justo antes de moler.
+      const settle = smoothstep(0.27, 0.33, p);
+      c.visible = p > 0.26;
+      c.position.y = 1.46 + (1 - settle) * 2.2;
+      c.rotation.set(0, smoothstep(0.31, 0.48, p) * 30, (1 - settle) * 0.35);
+    }
     if (root.current) {
       const t = clock.elapsedTime;
       root.current.position.x = Math.sin(t * 46) * 0.006 * grinding;
