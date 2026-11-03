@@ -6,6 +6,7 @@ import * as THREE from "three";
 import type { MotionValue } from "motion/react";
 import {
   CUP_BASE_Y,
+  SAUCER_H,
   MOKA_ASSEMBLED_Y,
   MOKA_DOSING_Y,
   MOKA_FUNNEL_RIM,
@@ -22,11 +23,15 @@ import {
   createMokaSpoutGeometry,
   createMokaUpperGeometry,
 } from "./geometries";
-import { lerp, smoothstep } from "./math";
-import { liquidLevel, pourActive } from "./pour";
+import { lerp, mulberry32, smoothstep } from "./math";
+import { liquidLevel, pourActive, pourState, setPourAmount, setPourImpact } from "./pour";
 import { Steam } from "./steam";
+import { makeNoiseTexture } from "./textures";
 
 type P = { progress: MotionValue<number> };
+
+const RINGS = 22;
+const SIDES = 8;
 
 /** Moka de aluminio: se arma por piezas, hierve y se inclina para servir en la taza. */
 export function MokaStation({ progress }: P) {
@@ -36,6 +41,7 @@ export function MokaStation({ progress }: P) {
   const mound = useRef<THREE.Mesh>(null);
   const spout = useRef<THREE.Object3D>(null);
   const stream = useRef<THREE.Mesh>(null);
+  const drops = useRef<THREE.InstancedMesh>(null);
 
   const geo = useMemo(
     () => ({
@@ -48,26 +54,54 @@ export function MokaStation({ progress }: P) {
     }),
     [],
   );
-  // Aluminio cepillado: la anisotropía estira el reflejo en vertical, como las vetas del metal real.
-  const metal = useMemo(
-    () =>
-      new THREE.MeshPhysicalMaterial({
-        color: "#c2c7ce",
-        metalness: 1,
-        roughness: 0.3,
-        anisotropy: 0.75,
-        anisotropyRotation: Math.PI / 2,
-        flatShading: true,
-        side: THREE.DoubleSide,
-      }),
-    [],
-  );
+  // Aluminio: caras planas (como la moka real) + microtextura de rugosidad para que no parezca papel.
+  const metal = useMemo(() => {
+    const noise = makeNoiseTexture(256, 17);
+    noise.wrapS = noise.wrapT = THREE.RepeatWrapping;
+    noise.repeat.set(5, 3);
+    return new THREE.MeshStandardMaterial({
+      color: "#d3d7dd",
+      metalness: 0.82,
+      roughness: 0.45,
+      roughnessMap: noise,
+      bumpMap: noise,
+      bumpScale: 0.25,
+      envMapIntensity: 1.5,
+      flatShading: true,
+      side: THREE.DoubleSide,
+    });
+  }, []);
   const bakelite = useMemo(
     () => new THREE.MeshPhysicalMaterial({ color: "#161111", roughness: 0.3, clearcoat: 0.8, clearcoatRoughness: 0.2 }),
     [],
   );
   const coffee = useMemo(() => new THREE.MeshStandardMaterial({ color: "#2b1509", roughness: 0.95 }), []);
-  const liquid = useMemo(() => new THREE.MeshStandardMaterial({ color: "#2a1208", roughness: 0.12, metalness: 0.1 }), []);
+  const liquid = useMemo(
+    () => new THREE.MeshPhysicalMaterial({ color: "#1c0b04", roughness: 0.06, metalness: 0, clearcoat: 1, clearcoatRoughness: 0.05 }),
+    [],
+  );
+  const dummyObj = useMemo(() => new THREE.Object3D(), []);
+  const dropSeeds = useMemo(() => {
+    const rnd = mulberry32(88);
+    return Array.from({ length: 12 }, () => ({ phase: rnd(), a: rnd() * 6.28, r: 0.1 + rnd() * 0.22, h: 0.12 + rnd() * 0.2 }));
+  }, []);
+  // Cinta del chorro: RINGS anillos de SIDES vértices; se reposiciona en cada fotograma.
+  const streamGeo = useMemo(() => {
+    const g = new THREE.BufferGeometry();
+    g.setAttribute("position", new THREE.BufferAttribute(new Float32Array((RINGS + 1) * SIDES * 3), 3));
+    const idx: number[] = [];
+    for (let i = 0; i < RINGS; i++) {
+      for (let j = 0; j < SIDES; j++) {
+        const a = i * SIDES + j;
+        const b = i * SIDES + ((j + 1) % SIDES);
+        const c = (i + 1) * SIDES + j;
+        const d = (i + 1) * SIDES + ((j + 1) % SIDES);
+        idx.push(a, c, b, b, c, d);
+      }
+    }
+    g.setIndex(idx);
+    return g;
+  }, []);
   const tmp = useMemo(() => new THREE.Vector3(), []);
   const base = useMemo(() => new THREE.Vector3(), []);
 
@@ -81,7 +115,7 @@ export function MokaStation({ progress }: P) {
 
     // Ya sirvió: sale de cuadro y deja de dibujarse.
     // Solo existe mientras le toca: no asoma por debajo antes de su estación.
-    r.visible = p > 0.2 && p < 0.945;
+    r.visible = p > 0.34 && p < 0.975;
 
     // 1) Dosificación → armada: la caldera baja a su estación.
     base.set(0, lerp(MOKA_DOSING_Y, MOKA_ASSEMBLED_Y, smoothstep(0.5, 0.57, p)), 0);
@@ -108,9 +142,9 @@ export function MokaStation({ progress }: P) {
     r.updateMatrixWorld(true);
 
     // 3) La cámara superior llega desde un costado y se asienta sobre la caldera.
-    const e = smoothstep(0.49, 0.58, p);
-    up.visible = p > 0.47;
-    up.position.set(lerp(2.8, 0, e), lerp(2.2, 0.95, e) + Math.sin(e * Math.PI) * 0.5, 0);
+    const e = smoothstep(0.48, 0.6, p);
+    up.visible = p > 0.455;
+    up.position.set(lerp(2.2, 0, e), lerp(1.7, 0.95, e) + Math.sin(e * Math.PI) * 0.45, 0);
     up.rotation.z = (1 - e) * -0.5;
 
     // 4) El café molido va llenando el filtro mientras muele.
@@ -120,16 +154,60 @@ export function MokaStation({ progress }: P) {
       mound.current.visible = dose > 0.01;
     }
 
-    // 5) Chorro: de la punta del pico a la superficie del café en la taza.
-    if (stream.current) {
-      spout.current.getWorldPosition(tmp);
-      const surface = CUP_BASE_Y + liquidLevel(p);
-      const amt = pourActive(p) > 0.02 ? smoothstep(0.82, 0.835, p) * (1 - smoothstep(0.9, 0.915, p)) : 0;
-      const len = Math.max(tmp.y - surface, 0.001);
-      stream.current.visible = amt > 0.01 && len > 0.02;
-      const w = amt * (0.9 + Math.sin(t * 24) * 0.08);
-      stream.current.position.set(tmp.x, surface + len / 2, tmp.z);
-      stream.current.scale.set(w, len, w);
+    // 5) Chorro: parábola desde la punta del pico hasta la superficie del café.
+    spout.current.getWorldPosition(tmp);
+    const surface = CUP_BASE_Y + SAUCER_H + liquidLevel(p);
+    const amt = pourActive(p);
+    setPourAmount(amt);
+    const mesh = stream.current;
+    if (mesh) {
+      mesh.visible = amt > 0.02 && tmp.y - surface > 0.05;
+      if (mesh.visible) {
+        const G = 7;
+        const H = tmp.y - surface;
+        const T = Math.sqrt((2 * H) / G);
+        const vh = 0.9 * amt; // velocidad horizontal: el chorro sale del pico con un arco
+        const sg = mesh.geometry;
+        const pos = sg.attributes.position as THREE.BufferAttribute;
+        for (let i = 0; i <= RINGS; i++) {
+          const sN = i / RINGS;
+          const tt = sN * T;
+          const cx = tmp.x;
+          const cy = tmp.y - 0.5 * G * tt * tt;
+          const cz = tmp.z + vh * tt;
+          // más grueso en el pico, se afina al acelerar; ondula hacia abajo
+          const wobble = 1 + 0.1 * Math.sin(sN * 16 - t * 14);
+          const r = Math.max(0.012, 0.052 * (1 - 0.5 * sN) * Math.sqrt(amt)) * wobble;
+          for (let j = 0; j < SIDES; j++) {
+            const a = (j / SIDES) * Math.PI * 2;
+            pos.setXYZ(i * SIDES + j, cx + Math.cos(a) * r, cy, cz + Math.sin(a) * r);
+          }
+        }
+        pos.needsUpdate = true;
+        sg.computeVertexNormals();
+        sg.computeBoundingSphere();
+        setPourImpact(tmp.x, surface, tmp.z + vh * T);
+      }
+    }
+    // Gotas que saltan al caer el chorro
+    const dr = drops.current;
+    if (dr) {
+      dr.visible = amt > 0.05;
+      if (dr.visible) {
+        dropSeeds.forEach((d, i) => {
+          const life = (t * 1.7 + d.phase) % 1;
+          const arc = 4 * life * (1 - life);
+          dummyObj.position.set(
+            pourState.impact.x + Math.cos(d.a) * d.r * life,
+            pourState.impact.y + arc * d.h,
+            pourState.impact.z + Math.sin(d.a) * d.r * life,
+          );
+          dummyObj.scale.setScalar(0.022 * amt * (1 - life * 0.4));
+          dummyObj.updateMatrix();
+          dr.setMatrixAt(i, dummyObj.matrix);
+        });
+        dr.instanceMatrix.needsUpdate = true;
+      }
     }
   });
 
@@ -162,14 +240,15 @@ export function MokaStation({ progress }: P) {
               <cylinderGeometry args={[0.04, 0.05, 0.14, 10]} />
             </mesh>
             <mesh geometry={geo.handle} material={bakelite} />
-            <mesh geometry={geo.spout} position={[0.84, 1.05, 0]} material={metal} />
+            <mesh geometry={geo.spout} position={[0.78, 1.05, 0]} material={metal} />
           </group>
-          <object3D ref={spout} position={[1.1, 2.0, 0]} />
+          <object3D ref={spout} position={[1.3, 1.92, 0]} />
         </group>
       </group>
-      <mesh ref={stream} material={liquid} visible={false}>
-        <cylinderGeometry args={[0.04, 0.04, 1, 10, 1, true]} />
-      </mesh>
+      <mesh ref={stream} geometry={streamGeo} material={liquid} visible={false} frustumCulled={false} />
+      <instancedMesh ref={drops} args={[undefined, liquid, 12]} frustumCulled={false} visible={false}>
+        <sphereGeometry args={[1, 8, 6]} />
+      </instancedMesh>
       <Steam count={6} state={steamState} size={0.34} rise={1.0} spread={0.1} />
     </>
   );

@@ -5,13 +5,9 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Environment, Lightformer, PerformanceMonitor } from "@react-three/drei";
 import * as THREE from "three";
 import { useMotionValue, type MotionValue } from "motion/react";
-import {
-  CUP_BASE_Y,
-  GRINDER_OUTLET_Y,
-  MOKA_DOSING_Y,
-  STATION_Y,
-} from "./hero3d/constants";
+import { cameraAt } from "./hero3d/shots";
 import { lerp, smoothstep } from "./hero3d/math";
+import { Stove } from "./hero3d/stove";
 import {
   DESKTOP_QUALITY,
   MOBILE_QUALITY,
@@ -23,58 +19,35 @@ import { GrinderStation, GroundsFlow } from "./hero3d/grinder";
 import { MokaStation } from "./hero3d/moka";
 
 /* ═══════════════════════════ CÁMARA ═══════════════════════════
-   La cámara baja por el "riel" de estaciones siguiendo el scroll.
-   getCameraFocusY devuelve la altura (Y) a la que mira en cada punto.   */
-
-const TRANSFER_FOCUS_Y = (GRINDER_OUTLET_Y + MOKA_DOSING_Y + 0.3) / 2;
-
-function getCameraFocusY(p: number): number {
-  if (p <= 0.04) return STATION_Y.BEANS;
-  if (p <= 0.22) return lerp(STATION_Y.BEANS, STATION_Y.GRINDER + 0.35, smoothstep(0.04, 0.22, p));
-  // Molienda: se encuadra el molino COMPLETO (manivela arriba) para ver entrar los granos.
-  if (p <= 0.3) return lerp(STATION_Y.GRINDER + 0.35, STATION_Y.GRINDER + 0.7, smoothstep(0.22, 0.3, p));
-  if (p <= 0.36) return lerp(STATION_Y.GRINDER + 0.7, TRANSFER_FOCUS_Y, smoothstep(0.3, 0.36, p));
-  if (p <= 0.49) return TRANSFER_FOCUS_Y;
-  if (p <= 0.57) return lerp(TRANSFER_FOCUS_Y, STATION_Y.MOKA + 0.1, smoothstep(0.49, 0.57, p));
-  if (p <= 0.72) return STATION_Y.MOKA + 0.1;
-  if (p <= 0.8) return lerp(STATION_Y.MOKA + 0.1, CUP_BASE_Y + 1.2, smoothstep(0.72, 0.8, p));
-  if (p <= 0.93) return CUP_BASE_Y + 1.2;
-  return lerp(CUP_BASE_Y + 1.2, CUP_BASE_Y + 0.85, smoothstep(0.93, 1, p));
-}
+   La cámara sigue el guion de hero3d/shots.ts (planos clave por scroll).   */
 
 function CameraRig({ progress }: { progress: MotionValue<number> }) {
-  const { camera, size } = useThree();
+  const size = useThree((st) => st.size);
   const aspect = size.width / size.height;
   const portrait = aspect < 0.9;
 
   useFrame((state) => {
     const p = progress.get();
     const t = state.clock.elapsedTime;
-    const focusY = getCameraFocusY(p);
-    const azimuth = Math.sin(p * Math.PI * 2) * 0.1 + Math.sin(t * 0.35) * 0.012;
+    const shot = cameraAt(p);
+    const cam = state.camera as THREE.PerspectiveCamera;
 
-    // En vertical (móvil) el ancho útil es pequeño: se aleja la cámara según la proporción.
-    const fov = (camera as THREE.PerspectiveCamera).fov;
-    const fitWidth = (3.1 / aspect) / (2 * Math.tan((fov * Math.PI) / 360));
-    const baseDist = portrait ? THREE.MathUtils.clamp(fitWidth, 7.8, 11.5) : 7.4;
-    // Toma macro sobre los granos y las cerezas: la cámara se aleja al empezar a bajar.
-    const macro = (1 - smoothstep(0.0, 0.14, p)) * 2.4;
-    // Se aleja un poco para la toma del molino→moka y para el servido.
-    const grindWide = smoothstep(0.14, 0.24, p) * (1 - smoothstep(0.3, 0.38, p)) * 1.3;
-    const wide =
-      grindWide +
-      smoothstep(0.3, 0.36, p) * (1 - smoothstep(0.49, 0.56, p)) * 0.8 +
-      smoothstep(0.72, 0.8, p) * (1 - smoothstep(0.93, 1, p)) * (portrait ? 2.7 : 1.9);
-    const dist = baseDist + wide - macro;
+    // En vertical (móvil) hay poco ancho: se aleja y se abre el campo para que todo quepa.
+    const fov = shot.fov + (portrait ? 5 : 0);
+    // Ancho de escena que debe caber: el costal y el servido son anchos; el molino y la moka, angostos.
+    const needW = lerp(3.4, 2.3, smoothstep(0.08, 0.3, p)) + smoothstep(0.7, 0.8, p) * 1.2;
+    const fitDist = needW / aspect / (2 * Math.tan((fov * Math.PI) / 360));
+    const dist = portrait ? Math.max(shot.dist * 1.35, fitDist) : shot.dist;
+    cam.fov = fov;
+    cam.updateProjectionMatrix();
 
-    const elevation =
-      smoothstep(0.06, 0.2, p) * (1 - smoothstep(0.62, 0.72, p)) * 0.7 +
-      smoothstep(0.74, 0.84, p) * 0.55;
-
-    camera.position.set(Math.cos(azimuth) * dist, focusY + 0.5 + elevation, Math.sin(azimuth) * dist);
+    // Respiración de "cámara en mano": movimiento mínimo para dar vida.
+    const sway = Math.sin(t * 0.35) * 0.012;
+    const azim = shot.azim + sway;
+    cam.position.set(Math.cos(azim) * dist, shot.focusY + shot.elev + 0.25, Math.sin(azim) * dist);
     // En escritorio el texto va a la izquierda: se desplaza la escena hacia la derecha.
-    // En vertical se sube la escena para dejar libre la franja inferior, donde va el texto.
-    camera.lookAt(0, focusY + 0.16 - (portrait ? 1.3 : 0), portrait ? 0 : 0.88);
+    // En vertical se sube la escena para dejar libre la franja inferior del texto.
+    cam.lookAt(0, shot.focusY - (portrait ? 1.45 : 0), portrait ? 0 : 0.88);
   });
   return null;
 }
@@ -120,7 +93,7 @@ export function HeroScene({ scrollProgress }: HeroSceneProps = {}) {
         <Canvas
           frameloop={active ? "always" : "never"}
           dpr={dpr}
-          camera={{ position: [6.6, 0.5, 0], fov: 35, near: 0.1, far: 60 }}
+          camera={{ position: [5, 1.5, 0], fov: 33, near: 0.1, far: 60 }}
           gl={{
             antialias: true,
             alpha: true,
@@ -141,7 +114,7 @@ export function HeroScene({ scrollProgress }: HeroSceneProps = {}) {
           <PerformanceMonitor flipflops={3} onDecline={() => setDpr([0.8, 1])} />
 
           {/* Luz base + una direccional. Sin sombras en tiempo real (caras en móvil). */}
-          <hemisphereLight args={["#fff1de", "#2a1208", 0.4]} />
+          <hemisphereLight args={["#fff1de", "#3a2014", 0.55]} />
           <directionalLight position={[5, 8, 6]} intensity={2.1} color="#fff0dc" />
 
           {/* Entorno generado por código (sin descargar ningún HDR): tres "softboxes". */}
@@ -153,6 +126,8 @@ export function HeroScene({ scrollProgress }: HeroSceneProps = {}) {
             <Lightformer form="rect" intensity={5} color="#fff4e4" position={[4, 5, 6]} scale={[5, 3, 1]} target={[0, 0, 0]} />
             <Lightformer form="rect" intensity={3} color="#ffa564" position={[-6, 2, -4]} scale={[5, 9, 1]} target={[0, 0, 0]} />
             <Lightformer form="ring" intensity={2} color="#ffe2c0" position={[0, 7, -2]} scale={5} target={[0, 0, 0]} />
+            {/* Gran softbox frontal (detrás de la cámara): las caras que miran al espectador nunca quedan negras. */}
+            <Lightformer form="rect" intensity={1.7} color="#efe6da" position={[9, 1, 0]} scale={[10, 8, 1]} target={[0, 0, 0]} />
             {Array.from({ length: 8 }, (_, i) => {
               const a = (i / 8) * Math.PI * 2;
               return (
@@ -173,6 +148,7 @@ export function HeroScene({ scrollProgress }: HeroSceneProps = {}) {
           <BeansStation progress={progress} />
           <GrinderStation progress={progress} />
           <GroundsFlow progress={progress} />
+          <Stove progress={progress} />
           <MokaStation progress={progress} />
           <Suspense fallback={null}>
             <CupStation progress={progress} />

@@ -18,22 +18,45 @@ export function lathe(profile: THREE.Vector2[], segments: number) {
 }
 export { v2 };
 
-/** Grano de café: elipsoide aplanado con el surco central en una cara. */
+/**
+ * Grano de café realista: ovoide, una cara convexa y otra más plana, con el
+ * surco central en S (más profundo en el medio, abierto en las puntas),
+ * un extremo más afilado y el surco más claro (película plateada).
+ * El color va en los vértices; luego cada instancia lo oscurece o aclara.
+ */
 export function createBeanGeometry() {
-  const g = new THREE.SphereGeometry(1, 24, 18);
-  g.scale(1, 0.62, 0.74);
+  const g = new THREE.SphereGeometry(1, 40, 28);
+  g.scale(1, 0.58, 0.74);
   const pos = g.attributes.position;
+  const colors = new Float32Array(pos.count * 3);
+  const base = new THREE.Color("#4a2a17");
+  const tan = new THREE.Color("#b98a5a");
+  const c = new THREE.Color();
   for (let i = 0; i < pos.count; i++) {
     const x = pos.getX(i);
-    const y = pos.getY(i);
-    const z = pos.getZ(i);
+    let y = pos.getY(i);
+    let z = pos.getZ(i);
+    // extremo derecho más afilado, izquierdo más redondo
+    if (x > 0) z *= 1 - 0.16 * x * x;
+    // cara inferior algo más plana
+    if (y < 0) y *= 0.82;
+    let groove = 0;
     if (y > 0) {
-      const wiggle = 0.07 * Math.sin(x * 3.2);
-      const d = z - wiggle;
-      const groove = Math.exp(-(d * d) / 0.016) * (1 - Math.min(1, x * x * 0.85));
-      pos.setY(i, y - groove * 0.22 * (y / 0.62));
+      const center = 0.1 * Math.sin(x * 2.7); // surco serpenteante
+      const d = z - center;
+      const lengthFade = Math.max(0, 1 - Math.pow(Math.abs(x), 3.2)); // se abre en las puntas
+      groove = Math.exp(-(d * d) / 0.0055) * lengthFade;
+      y -= groove * 0.2 * (y / 0.58);
+      // labios del surco ligeramente elevados
+      y += Math.exp(-((Math.abs(d) - 0.1) ** 2) / 0.004) * 0.02 * lengthFade;
     }
+    pos.setXYZ(i, x, y, z);
+    c.copy(base).lerp(tan, Math.min(1, groove * 0.9));
+    colors[i * 3] = c.r;
+    colors[i * 3 + 1] = c.g;
+    colors[i * 3 + 2] = c.b;
   }
+  g.setAttribute("color", new THREE.BufferAttribute(colors, 3));
   g.computeVertexNormals();
   return g;
 }
@@ -118,11 +141,24 @@ export function createMokaHandleGeometry() {
   return g;
 }
 
-/** Pico: cono achatado que sobresale del borde superior. */
+/** Pico: lengüeta redondeada (extrusión de un perfil lateral) que sobresale del borde superior. */
 export function createMokaSpoutGeometry() {
-  const g = new THREE.ConeGeometry(0.21, 0.5, 10);
-  g.rotateZ(-Math.PI / 2);
-  g.scale(1, 0.8, 1.15);
+  const s = new THREE.Shape();
+  s.moveTo(-0.1, 0.12);
+  s.lineTo(0.12, 0.12);
+  s.quadraticCurveTo(0.42, 0.1, 0.5, -0.08); // la punta cae un poco: guía el chorro
+  s.quadraticCurveTo(0.38, -0.02, 0.1, -0.1);
+  s.lineTo(-0.1, -0.12);
+  s.closePath();
+  const g = new THREE.ExtrudeGeometry(s, {
+    depth: 0.34,
+    bevelEnabled: true,
+    bevelThickness: 0.05,
+    bevelSize: 0.05,
+    bevelSegments: 3,
+    curveSegments: 10,
+  });
+  g.translate(0, 0, -0.17);
   return g;
 }
 
@@ -149,10 +185,47 @@ export function createGrinderHousingGeometry(segments: number) {
   return lathe(v2([[0.0, 0.44], [0.47, 0.44], [0.47, 1.0], [0.0, 1.0]]), segments);
 }
 
-/** Tapa / tolva de cobre con la abertura por donde entran los granos. */
+/** Tapa / tolva de cobre: se ensancha para recibir el hilo de granos. */
 export function createGrinderHopperGeometry(segments: number) {
   return lathe(
-    smooth([[0.5, 1.0], [0.52, 1.05], [0.48, 1.2], [0.36, 1.3], [0.34, 1.28], [0.3, 1.1], [0.0, 1.06]], 4),
+    smooth([[0.5, 1.0], [0.55, 1.05], [0.62, 1.2], [0.72, 1.36], [0.7, 1.38], [0.6, 1.2], [0.5, 1.08], [0.0, 1.04]], 4),
     segments,
   );
+}
+
+/** Costal de fique: tronco de elipse arrugado, boca enrollada y cara interior visible. */
+export function createSackGeometry() {
+  const outer = smooth(
+    [[0, -1.5], [0.55, -1.5], [0.86, -1.38], [0.95, -0.9], [0.93, 0.0], [0.86, 0.8], [0.76, 1.28], [0.73, 1.46]],
+    5,
+  );
+  const rim: [number, number][] = [[0.76, 1.53], [0.72, 1.58], [0.66, 1.52]];
+  const inner = smooth([[0.63, 1.46], [0.62, 1.4]], 2);
+  const pts = [...outer, ...v2(rim), ...inner, new THREE.Vector2(0, 1.36)];
+  const g = new THREE.LatheGeometry(pts, 48);
+  const pos = g.attributes.position;
+  for (let i = 0; i < pos.count; i++) {
+    let x = pos.getX(i);
+    const y = pos.getY(i);
+    let z = pos.getZ(i);
+    const r = Math.hypot(x, z);
+    if (r > 0.01) {
+      const a = Math.atan2(x, z);
+      const neck = Math.max(0, (y - 0.7) / 0.8); // el cuello se arruga más (está fruncido)
+      const amp = 0.04 * Math.max(0, 1 - Math.abs(y) / 1.7) + 0.05 * neck;
+      const w = amp * (Math.sin(a * 5 + y * 3.1) + 0.6 * Math.sin(a * 9 - y * 5.3));
+      x += (x / r) * w;
+      z += (z / r) * w;
+    }
+    pos.setXYZ(i, x, y, z * 0.64); // aplastado: un costal no es un cilindro perfecto
+  }
+  g.computeVertexNormals();
+  return g;
+}
+
+/** Plato de loza. */
+export function createSaucerGeometry(segments: number) {
+  const out = smooth([[0, 0], [0.55, 0], [0.9, 0.02], [1.2, 0.08], [1.34, 0.12]], 4);
+  const inn = smooth([[1.33, 0.13], [1.2, 0.1], [0.85, 0.06], [0.55, 0.05], [0, 0.05]], 4);
+  return lathe([...out, ...v2([[1.36, 0.125]]), ...inn], segments);
 }

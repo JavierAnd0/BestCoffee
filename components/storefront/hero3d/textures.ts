@@ -114,3 +114,85 @@ export const makeLeafTexture = () =>
       }
     }
   });
+
+/** Ruido granulado en escala de grises: sirve de relieve (bump) para granos y panela. */
+export const makeNoiseTexture = (size = 128, seed = 3) =>
+  canvasTexture(size, (ctx, s) => {
+    const rnd = mulberry32(seed);
+    ctx.fillStyle = "#808080";
+    ctx.fillRect(0, 0, s, s);
+    for (let i = 0; i < s * s * 0.9; i++) {
+      const v = Math.floor(90 + rnd() * 90);
+      ctx.fillStyle = `rgb(${v},${v},${v})`;
+      ctx.fillRect(rnd() * s, rnd() * s, 1 + rnd() * 2, 1 + rnd() * 2);
+    }
+  });
+
+/** Tela de fique (yute): trama cruzada con fibras sueltas. */
+export const makeBurlapTexture = () =>
+  canvasTexture(512, (ctx, s) => {
+    const rnd = mulberry32(9);
+    ctx.fillStyle = "#9a7a4e";
+    ctx.fillRect(0, 0, s, s);
+    for (let y = 0; y < s; y += 3) {
+      ctx.fillStyle = `rgba(${rnd() > 0.5 ? "70,45,20" : "230,200,150"},${0.1 + rnd() * 0.22})`;
+      ctx.fillRect(0, y + (rnd() - 0.5), s, 1.2);
+    }
+    for (let x = 0; x < s; x += 3) {
+      ctx.fillStyle = `rgba(${rnd() > 0.5 ? "70,45,20" : "230,200,150"},${0.1 + rnd() * 0.22})`;
+      ctx.fillRect(x + (rnd() - 0.5), 0, 1.2, s);
+    }
+    for (let i = 0; i < 220; i++) {
+      ctx.strokeStyle = `rgba(${rnd() > 0.5 ? "100,70,35" : "215,185,135"},0.35)`;
+      ctx.lineWidth = 1;
+      const x = rnd() * s;
+      const y = rnd() * s;
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x + (rnd() - 0.5) * 24, y + (rnd() - 0.5) * 24);
+      ctx.stroke();
+    }
+  });
+
+/** Sello impreso en el costal: bandera + "CAFÉ DE COLOMBIA". Fondo transparente. */
+export const makeSackLogoTexture = () => {
+  const w = 512;
+  const h = 384;
+  const canvas = document.createElement("canvas");
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext("2d")!;
+  ctx.clearRect(0, 0, w, h);
+  // tricolor
+  const top = 40;
+  ctx.fillStyle = "#e0b000";
+  ctx.fillRect(70, top, w - 140, 46);
+  ctx.fillStyle = "#1b3f8f";
+  ctx.fillRect(70, top + 46, w - 140, 23);
+  ctx.fillStyle = "#b5122a";
+  ctx.fillRect(70, top + 69, w - 140, 23);
+  ctx.fillStyle = "rgba(40,18,8,0.92)";
+  ctx.textAlign = "center";
+  ctx.font = "bold 66px Georgia, 'Times New Roman', serif";
+  ctx.fillText("CAFÉ", w / 2, 220);
+  ctx.font = "bold 46px Georgia, 'Times New Roman', serif";
+  ctx.fillText("DE COLOMBIA", w / 2, 275);
+  ctx.font = "italic 26px Georgia, 'Times New Roman', serif";
+  ctx.fillText("Tostado en origen · Eje Cafetero", w / 2, 322);
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.needsUpdate = true;
+  return tex;
+};
+
+/** Cuadro de panela: caramelo con vetas. */
+export const makePanelaTexture = () =>
+  canvasTexture(128, (ctx, s) => {
+    const rnd = mulberry32(14);
+    ctx.fillStyle = "#9a5b22";
+    ctx.fillRect(0, 0, s, s);
+    for (let i = 0; i < 400; i++) {
+      ctx.fillStyle = `rgba(${rnd() > 0.5 ? "60,30,8" : "210,150,70"},${0.05 + rnd() * 0.16})`;
+      ctx.fillRect(rnd() * s, rnd() * s, 1 + rnd() * 5, 1 + rnd() * 3);
+    }
+  });
