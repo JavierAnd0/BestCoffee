@@ -86,3 +86,31 @@ export const makeWoodTexture = () =>
       ctx.stroke();
     }
   });
+
+/** Hoja de cafeto: verde con degradado, nervio central y nervios laterales. */
+export const makeLeafTexture = () =>
+  canvasTexture(256, (ctx, s) => {
+    const g = ctx.createLinearGradient(0, 0, s, 0);
+    g.addColorStop(0, "#2f6a2c");
+    g.addColorStop(0.5, "#3f8a37");
+    g.addColorStop(1, "#245a26");
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, s, s);
+    ctx.strokeStyle = "rgba(210,235,170,0.8)";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(0, s / 2);
+    ctx.lineTo(s, s / 2);
+    ctx.stroke();
+    ctx.strokeStyle = "rgba(190,225,150,0.35)";
+    ctx.lineWidth = 1.5;
+    for (let i = 1; i < 9; i++) {
+      const x = (i / 9) * s;
+      for (const dir of [-1, 1]) {
+        ctx.beginPath();
+        ctx.moveTo(x, s / 2);
+        ctx.lineTo(x + s * 0.12, s / 2 + dir * s * 0.42);
+        ctx.stroke();
+      }
+    }
+  });
