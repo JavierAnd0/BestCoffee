@@ -40,7 +40,7 @@ export function Stove({ progress }: P) {
     const on = smoothstep(0.56, 0.6, p) * (1 - smoothstep(0.73, 0.76, p));
     if (root.current) {
       // Cuando la moka se levanta, la hornilla sale de cuadro.
-      root.current.visible = p > 0.4 && p < 0.86;
+      root.current.visible = p > 0.5 && p < 0.86;
       // se desliza hacia un costado (derecha de pantalla), no atraviesa la taza
       root.current.position.z = -smoothstep(0.73, 0.8, p) * 7;
     }

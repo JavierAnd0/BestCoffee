@@ -11,7 +11,7 @@ export interface Quality {
 
 export const DESKTOP_QUALITY: Quality = {
   mobile: false,
-  beans: 90,
+  beans: 72,
   grounds: 520,
   steam: 16,
   segments: 64,
@@ -19,7 +19,7 @@ export const DESKTOP_QUALITY: Quality = {
 
 export const MOBILE_QUALITY: Quality = {
   mobile: true,
-  beans: 48,
+  beans: 40,
   grounds: 220,
   steam: 10,
   segments: 36,

@@ -5,19 +5,19 @@ import { useFrame } from "@react-three/fiber";
 import { useGLTF } from "@react-three/drei";
 import * as THREE from "three";
 import type { MotionValue } from "motion/react";
-import { CUP_BASE_Y, CUP_INNER_R, CUP_ROT_Y, CUP_SCALE, LIQUID_MAX, SAUCER_H } from "./constants";
-import { createBeanGeometry, createSaucerGeometry } from "./geometries";
+import { CUP_BASE_Y, CUP_INNER_R, CUP_ROT_Y, CUP_SCALE, LIQUID_MAX, MODEL_URLS, SAUCER_H } from "./constants";
+import { createSaucerGeometry } from "./geometries";
+import { useBean } from "./assets";
 import { lerp, smoothstep } from "./math";
-import { makeBeanMaterial } from "./materials";
 import { liquidLevel, pourActive, pourState } from "./pour";
 import { useQuality } from "./quality";
 import { Steam } from "./steam";
-import { makeCremaTexture, makeNoiseTexture, makePanelaTexture, makeShadowTexture } from "./textures";
+import { makeBurlapTexture, makeCremaTexture, makeShadowTexture } from "./textures";
 
 type P = { progress: MotionValue<number> };
 
 // Modelo original de la taza ("CAFÉ DE COLOMBIA"), comprimido: 2.5 MB → ~140 KB.
-export const CUP_URL = "/models/taza.opt.glb?v=2";
+const CUP_URL = MODEL_URLS.cup;
 
 /** Presentación final: taza sobre plato con cucharita, granos y un trozo de panela. */
 export function CupStation({ progress }: P) {
@@ -34,22 +34,22 @@ export function CupStation({ progress }: P) {
   const shadowTex = useMemo(() => makeShadowTexture(), []);
   const cup = useMemo(() => scene.clone(true), [scene]);
   const saucerGeo = useMemo(() => createSaucerGeometry(segments), [segments]);
-  const beanGeo = useMemo(() => createBeanGeometry(), []);
-  const beanMat = useMemo(() => makeBeanMaterial(), []);
+  const { geometry: beanGeo, material: beanMat } = useBean();
+  const burlap = useMemo(() => {
+    const map = makeBurlapTexture();
+    map.wrapS = map.wrapT = THREE.RepeatWrapping;
+    map.repeat.set(7, 6);
+    return new THREE.MeshStandardMaterial({ map, bumpMap: map, bumpScale: 1.2, roughness: 0.95, side: THREE.DoubleSide });
+  }, []);
   const porcelain = useMemo(
     () => new THREE.MeshPhysicalMaterial({ color: "#f8f4df", roughness: 0.2, clearcoat: 0.8, clearcoatRoughness: 0.15 }),
     [],
   );
   const steel = useMemo(() => new THREE.MeshStandardMaterial({ color: "#d0d4d9", metalness: 1, roughness: 0.22 }), []);
-  const panela = useMemo(
-    () => new THREE.MeshStandardMaterial({ map: makePanelaTexture(), bumpMap: makeNoiseTexture(64, 8), bumpScale: 1.2, roughness: 0.7 }),
-    [],
-  );
-
   useFrame(({ clock }) => {
     const p = progress.get();
     const t = clock.elapsedTime;
-    const appear = smoothstep(0.7, 0.77, p);
+    const appear = smoothstep(0.77, 0.81, p);
     if (outer.current) {
       outer.current.visible = appear > 0.01;
       outer.current.scale.setScalar(lerp(0.9, 1, appear));
@@ -121,7 +121,10 @@ export function CupStation({ progress }: P) {
           </group>
         </group>
 
-        {/* Cucharita, granos y panela sobre el plato */}
+        {/* Tela de fique bajo el plato, cucharita y granos esparcidos (como la foto de referencia) */}
+        <mesh rotation={[-Math.PI / 2, 0, 0.3]} position={[0.4, 0.012, 0.2]} material={burlap}>
+          <circleGeometry args={[7.5, 56]} />
+        </mesh>
         <group position={[0.2, SAUCER_H + 0.02, 0.95]} rotation={[0, 0.5, 0]}>
           <mesh position={[0.34, 0.02, 0]} scale={[0.17, 0.045, 0.1]} material={steel}>
             <sphereGeometry args={[1, 20, 12]} />
@@ -131,20 +134,15 @@ export function CupStation({ progress }: P) {
           </mesh>
         </group>
         {[
-          [1.0, -0.5, 0.6],
-          [1.12, -0.28, 2.1],
-          [0.9, -0.68, 4.0],
+          [1.15, -0.55, 0.6, 0.0], [1.35, -0.2, 2.1, 0.0], [1.0, -0.85, 4.0, 0.0], [1.6, -0.7, 5.0, 0.0],
+          [1.45, 0.35, 1.2, 0.0], [1.75, -0.05, 3.3, 0.0], [1.25, 0.65, 2.6, 0.0], [1.9, 0.5, 0.2, 0.0],
         ].map(([x, z, r], i) => (
-          <mesh key={i} geometry={beanGeo} material={beanMat} position={[x, SAUCER_H + 0.06, z]} rotation={[0.2, r, 0.1]} scale={0.14} />
+          <mesh key={i} geometry={beanGeo} material={beanMat} position={[x, 0.07, z]} rotation={[0.1, r, 0.0]} scale={0.125} />
         ))}
-        <mesh position={[0.9, SAUCER_H + 0.1, 0.1]} rotation={[0, 0.4, 0]} material={panela}>
-          <boxGeometry args={[0.3, 0.17, 0.3]} />
-        </mesh>
       </group>
       <Steam count={steam} state={steamState} size={0.62} rise={1.8} spread={0.3} />
     </>
   );
 }
 
-useGLTF.preload(CUP_URL);
 

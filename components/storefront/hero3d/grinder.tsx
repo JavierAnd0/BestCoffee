@@ -1,64 +1,40 @@
 "use client";
 
-import { useMemo, useRef } from "react";
+import { useLayoutEffect, useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
+import { useGLTF } from "@react-three/drei";
 import * as THREE from "three";
 import type { MotionValue } from "motion/react";
 import {
-  COLOMBIA,
-  GRINDER_HALF_H,
   GRINDER_OUTLET_Y,
   GRINDER_Y,
+  MODEL_URLS,
   MOKA_ASSEMBLED_Y,
   MOKA_DOSING_Y,
   MOKA_FUNNEL_RIM,
 } from "./constants";
-import { createGrinderGripGeometry, createGrinderHopperGeometry, createGrinderHousingGeometry } from "./geometries";
 import { lerp, mulberry32, smoothstep } from "./math";
 import { useQuality } from "./quality";
 import { Steam } from "./steam";
-import { makeDotTexture, makeWoodTexture } from "./textures";
+import { makeDotTexture } from "./textures";
 
 type P = { progress: MotionValue<number> };
 
-/** Molino manual: cuerpo negro acanalado, franjas de la bandera, tapa de cobre y manivela de madera. */
+/** Molino manual modelado en Blender; la manivela gira y el cuerpo vibra al moler. */
 export function GrinderStation({ progress }: P) {
-  const { segments } = useQuality();
+  const { scene } = useGLTF(MODEL_URLS.grinder);
+  const model = useMemo(() => scene.clone(true), [scene]);
   const root = useRef<THREE.Group>(null);
-  const crank = useRef<THREE.Group>(null);
-  const grip = useMemo(() => createGrinderGripGeometry(segments), [segments]);
-  const housing = useMemo(() => createGrinderHousingGeometry(segments), [segments]);
-  const hopper = useMemo(() => createGrinderHopperGeometry(segments), [segments]);
-
-  const black = useMemo(
-    () => new THREE.MeshPhysicalMaterial({ color: "#1b1715", roughness: 0.42, metalness: 0.55, clearcoat: 0.25 }),
-    [],
-  );
-  const steel = useMemo(() => new THREE.MeshStandardMaterial({ color: "#c9cdd2", metalness: 1, roughness: 0.28, envMapIntensity: 1.4 }), []);
-  const copper = useMemo(
-    () => new THREE.MeshStandardMaterial({ color: "#e08f5a", metalness: 1, roughness: 0.26, envMapIntensity: 1.7, side: THREE.DoubleSide }),
-    [],
-  );
-  const wood = useMemo(() => {
-    const map = makeWoodTexture();
-    map.wrapS = map.wrapT = THREE.RepeatWrapping;
-    return new THREE.MeshStandardMaterial({ map, roughness: 0.5, color: "#efd2aa" });
-  }, []);
-  const stripe = useMemo(
-    () => ({
-      y: new THREE.MeshStandardMaterial({ color: COLOMBIA.yellow, roughness: 0.4, metalness: 0.2 }),
-      b: new THREE.MeshStandardMaterial({ color: COLOMBIA.blue, roughness: 0.4, metalness: 0.2 }),
-      r: new THREE.MeshStandardMaterial({ color: COLOMBIA.red, roughness: 0.4, metalness: 0.2 }),
-    }),
-    [],
-  );
+  const crank = useRef<THREE.Object3D | null>(null);
+  useLayoutEffect(() => {
+    crank.current = model.getObjectByName("crank") ?? null;
+  }, [model]);
 
   useFrame(({ clock }) => {
     const p = progress.get();
     const grinding = smoothstep(0.3, 0.36, p) * (1 - smoothstep(0.46, 0.5, p));
     if (crank.current) crank.current.rotation.y = smoothstep(0.3, 0.48, p) * 30;
     if (root.current) {
-      // leve vibración mientras muele
       const t = clock.elapsedTime;
       root.current.position.x = Math.sin(t * 46) * 0.006 * grinding;
       root.current.position.z = Math.cos(t * 39) * 0.006 * grinding;
@@ -68,36 +44,7 @@ export function GrinderStation({ progress }: P) {
 
   return (
     <group ref={root} position={[0, GRINDER_Y, 0]}>
-      <mesh geometry={grip} material={black} />
-      <mesh position={[0, 0.24, 0]} material={stripe.y}>
-        <cylinderGeometry args={[0.515, 0.515, 0.09, segments]} />
-      </mesh>
-      <mesh position={[0, 0.33, 0]} material={stripe.b}>
-        <cylinderGeometry args={[0.515, 0.515, 0.09, segments]} />
-      </mesh>
-      <mesh position={[0, 0.42, 0]} material={stripe.r}>
-        <cylinderGeometry args={[0.515, 0.515, 0.09, segments]} />
-      </mesh>
-      <mesh geometry={housing} material={steel} />
-      <mesh geometry={hopper} material={copper} />
-      <mesh position={[0, -GRINDER_HALF_H + 0.04, 0]} material={steel}>
-        <cylinderGeometry args={[0.42, 0.36, 0.14, segments]} />
-      </mesh>
-      {/* Manivela (eje corto: no atraviesa el montón de granos) */}
-      <group ref={crank}>
-        <mesh position={[0, 1.58, 0]} material={steel}>
-          <cylinderGeometry args={[0.06, 0.06, 0.5, 16]} />
-        </mesh>
-        <mesh position={[0.55, 1.86, 0]} rotation={[0, 0, Math.PI / 2]} material={steel}>
-          <cylinderGeometry args={[0.05, 0.05, 1.2, 16]} />
-        </mesh>
-        <mesh position={[1.17, 2.02, 0]} material={wood}>
-          <capsuleGeometry args={[0.11, 0.38, 6, 14]} />
-        </mesh>
-        <mesh position={[0, 1.86, 0]} material={copper}>
-          <sphereGeometry args={[0.11, 16, 12]} />
-        </mesh>
-      </group>
+      <primitive object={model} />
     </group>
   );
 }

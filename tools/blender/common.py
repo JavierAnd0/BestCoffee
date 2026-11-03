@@ -41,3 +41,52 @@ def principled(name, base, rough=0.5, metal=0.0, **kw):
     for k, v in kw.items():
         if k in b.inputs: b.inputs[k].default_value = v
     return m
+
+def smooth_by_angle(ob, deg=35):
+    """Sombreado suave salvo en aristas marcadas (caras planas con bordes biselados)."""
+    bpy.context.view_layer.objects.active = ob
+    for o in bpy.context.selected_objects: o.select_set(False)
+    ob.select_set(True)
+    try:
+        bpy.ops.object.shade_auto_smooth(angle=math.radians(deg))
+        for m in list(ob.modifiers):
+            if m.type == "NODES":
+                bpy.ops.object.modifier_apply(modifier=m.name)
+    except Exception as e:
+        print("smooth fallback:", e)
+        for p in ob.data.polygons: p.use_smooth = True
+
+def bevel(ob, width=0.02, segments=2, angle=35):
+    bpy.context.view_layer.objects.active = ob
+    m = ob.modifiers.new("bev", "BEVEL"); m.width = width; m.segments = segments
+    m.limit_method = "ANGLE"; m.angle_limit = math.radians(angle)
+    bpy.ops.object.modifier_apply(modifier=m.name)
+
+def add(me_or_bm, name, mat=None, loc=(0, 0, 0)):
+    if isinstance(me_or_bm, bmesh.types.BMesh):
+        me = bpy.data.meshes.new(name); me_or_bm.to_mesh(me); me_or_bm.free()
+    else:
+        me = me_or_bm
+    ob = bpy.data.objects.new(name, me); bpy.context.collection.objects.link(ob); ob.location = loc
+    if mat: me.materials.append(mat)
+    return ob
+
+def lathe(profile, segments=64, name="lathe", mat=None, rot=0.0, loc=(0, 0, 0)):
+    """Gira un perfil [(radio, altura), ...] alrededor del eje Z (como LatheGeometry)."""
+    bm = bmesh.new()
+    ring = [bm.verts.new((r * math.cos(rot), r * math.sin(rot), z)) for r, z in profile]
+    for i in range(len(ring) - 1): bm.edges.new((ring[i], ring[i + 1]))
+    bmesh.ops.spin(bm, geom=list(bm.verts) + list(bm.edges), axis=(0, 0, 1), cent=(0, 0, 0), angle=math.tau, steps=segments)
+    bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=1e-5)
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+    return add(bm, name, mat, loc)
+
+def export_glb(path, objects=None):
+    """Exporta a glTF (Y arriba). Con `objects`, solo esos; el resto se ignora."""
+    for o in bpy.context.scene.objects: o.select_set(False)
+    objs = objects or [o for o in bpy.context.scene.objects if o.type in ("MESH", "EMPTY")]
+    for o in objs: o.select_set(True)
+    bpy.ops.export_scene.gltf(filepath=path, export_format="GLB", use_selection=True, export_yup=True,
+        export_apply=True, export_materials="EXPORT", export_cameras=False, export_lights=False,
+        export_image_format="WEBP" if False else "AUTO")
+    print("EXPORTED", path)

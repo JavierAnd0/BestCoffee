@@ -17,6 +17,7 @@ import { BeansStation } from "./hero3d/beans";
 import { CupStation } from "./hero3d/cup";
 import { GrinderStation, GroundsFlow } from "./hero3d/grinder";
 import { MokaStation } from "./hero3d/moka";
+import { preloadModels } from "./hero3d/assets";
 
 /* ═══════════════════════════ CÁMARA ═══════════════════════════
    La cámara sigue el guion de hero3d/shots.ts (planos clave por scroll).   */
@@ -145,11 +146,17 @@ export function HeroScene({ scrollProgress }: HeroSceneProps = {}) {
           </Environment>
 
           <CameraRig progress={progress} />
-          <BeansStation progress={progress} />
-          <GrinderStation progress={progress} />
+          <Suspense fallback={null}>
+            <BeansStation progress={progress} />
+          </Suspense>
+          <Suspense fallback={null}>
+            <GrinderStation progress={progress} />
+          </Suspense>
           <GroundsFlow progress={progress} />
           <Stove progress={progress} />
-          <MokaStation progress={progress} />
+          <Suspense fallback={null}>
+            <MokaStation progress={progress} />
+          </Suspense>
           <Suspense fallback={null}>
             <CupStation progress={progress} />
           </Suspense>
@@ -158,3 +165,5 @@ export function HeroScene({ scrollProgress }: HeroSceneProps = {}) {
     </div>
   );
 }
+
+preloadModels();
