@@ -197,35 +197,63 @@ export const makePanelaTexture = () =>
     }
   });
 
-/** Mesa de nogal: veta horizontal y degradado radial a transparente (se funde con el fondo). */
+/** Nogal en tablones: veta fina, nudos suaves y variación de tono. Es repetible (sin costuras) para estirarla sobre una mesa grande. */
 export const makeTableTexture = () => {
-  const size = 512;
+  const size = 1024;
   const canvas = document.createElement("canvas");
   canvas.width = canvas.height = size;
   const ctx = canvas.getContext("2d")!;
-  ctx.fillStyle = "#5a3820";
-  ctx.fillRect(0, 0, size, size);
   const rnd = mulberry32(31);
-  for (let i = 0; i < 160; i++) {
-    const y = rnd() * size;
-    ctx.strokeStyle = `rgba(${rnd() > 0.5 ? "30,16,8" : "140,96,56"},${0.05 + rnd() * 0.14})`;
-    ctx.lineWidth = 1 + rnd() * 3;
-    ctx.beginPath();
-    ctx.moveTo(0, y);
-    for (let x = 0; x <= size; x += 32) ctx.lineTo(x, y + Math.sin(x * 0.02 + i) * 3);
-    ctx.stroke();
+  const planks = 4;
+  const ph = size / planks;
+  for (let k = 0; k < planks; k++) {
+    const tone = 0.86 + rnd() * 0.26;
+    ctx.fillStyle = `rgb(${Math.round(150 * tone)},${Math.round(98 * tone)},${Math.round(58 * tone)})`;
+    ctx.fillRect(0, k * ph, size, ph);
+    // veta: líneas largas con ondulación periódica (se cierran en el borde)
+    for (let i = 0; i < 90; i++) {
+      const y = k * ph + rnd() * ph;
+      const amp = 1 + rnd() * 5;
+      const cyc = 1 + Math.floor(rnd() * 3);
+      const ph0 = rnd() * 6.28;
+      ctx.strokeStyle = `rgba(${rnd() > 0.45 ? "52,28,12" : "205,150,96"},${0.04 + rnd() * 0.13})`;
+      ctx.lineWidth = 0.6 + rnd() * 1.8;
+      ctx.beginPath();
+      for (let x = 0; x <= size; x += 16) {
+        const yy = y + Math.sin((x / size) * Math.PI * 2 * cyc + ph0) * amp;
+        if (x === 0) ctx.moveTo(x, yy);
+        else ctx.lineTo(x, yy);
+      }
+      ctx.stroke();
+    }
+    // junta entre tablones
+    ctx.fillStyle = "rgba(30,14,6,0.55)";
+    ctx.fillRect(0, k * ph, size, 2.5);
+    ctx.fillStyle = "rgba(255,225,185,0.10)";
+    ctx.fillRect(0, k * ph + 3, size, 1.5);
   }
-  // máscara radial: sólido al centro, transparente hacia el borde
-  ctx.globalCompositeOperation = "destination-in";
-  const g = ctx.createRadialGradient(size / 2, size / 2, size * 0.12, size / 2, size / 2, size / 2);
-  g.addColorStop(0, "rgba(0,0,0,1)");
-  g.addColorStop(0.35, "rgba(0,0,0,0.95)");
-  g.addColorStop(0.7, "rgba(0,0,0,0.5)");
-  g.addColorStop(1, "rgba(0,0,0,0)");
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.anisotropy = 8;
+  tex.needsUpdate = true;
+  return tex;
+};
+
+/** Máscara radial: la mesa es sólida cerca y se funde con el fondo muy lejos, sin una línea de horizonte dura. */
+export const makeTableMask = () => {
+  const size = 256;
+  const canvas = document.createElement("canvas");
+  canvas.width = canvas.height = size;
+  const ctx = canvas.getContext("2d")!;
+  const g = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
+  g.addColorStop(0, "#fff");
+  g.addColorStop(0.5, "#fff");
+  g.addColorStop(0.8, "#777");
+  g.addColorStop(1, "#000");
   ctx.fillStyle = g;
   ctx.fillRect(0, 0, size, size);
   const tex = new THREE.CanvasTexture(canvas);
-  tex.colorSpace = THREE.SRGBColorSpace;
   tex.needsUpdate = true;
   return tex;
 };

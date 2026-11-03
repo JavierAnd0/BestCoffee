@@ -12,7 +12,7 @@ import { lerp, mulberry32, smoothstep } from "./math";
 import { liquidLevel, pourActive, pourState } from "./pour";
 import { useQuality } from "./quality";
 import { Steam } from "./steam";
-import { makeCremaTexture, makeShadowTexture, makeTableTexture } from "./textures";
+import { makeCremaTexture, makeShadowTexture, makeTableMask, makeTableTexture } from "./textures";
 
 type P = { progress: MotionValue<number> };
 
@@ -32,7 +32,12 @@ export function CupStation({ progress }: P) {
 
   const cremaTex = useMemo(() => makeCremaTexture(), []);
   const shadowTex = useMemo(() => makeShadowTexture(), []);
-  const tableTex = useMemo(() => makeTableTexture(), []);
+  const tableTex = useMemo(() => {
+    const t = makeTableTexture();
+    t.repeat.set(7, 7);
+    return t;
+  }, []);
+  const tableMask = useMemo(() => makeTableMask(), []);
   const cup = useMemo(() => scene.clone(true), [scene]);
   const spoon = useMemo(() => spoonScene.clone(true), [spoonScene]);
   const saucerGeo = useMemo(() => createSaucerGeometry(segments), [segments]);
@@ -103,8 +108,8 @@ export function CupStation({ progress }: P) {
       <group ref={outer} position={[0, CUP_BASE_Y, 0]}>
         {/* Mesa de nogal: un disco con degradado que se funde con el fondo (sin bordes duros) */}
         <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.002, 0]}>
-          <circleGeometry args={[16, 64]} />
-          <meshStandardMaterial map={tableTex} transparent roughness={0.55} metalness={0} depthWrite={false} />
+          <planeGeometry args={[60, 60]} />
+          <meshStandardMaterial map={tableTex} alphaMap={tableMask} transparent roughness={0.42} metalness={0} depthWrite={false} envMapIntensity={0.7} />
         </mesh>
         {/* Sombra de contacto barata: un plano con degradado, sin sombras en tiempo real */}
         <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.006, 0]}>
@@ -136,7 +141,7 @@ export function CupStation({ progress }: P) {
         </group>
 
         {/* Cucharita apoyada en el plato, a la derecha de la taza */}
-        <group position={[0.92, SAUCER_H + 0.012, 0.08]} rotation={[0, Math.PI / 2 + 0.14, 0]} scale={1.72}>
+        <group position={[0.8, SAUCER_H + 0.012, 0.0]} rotation={[0, Math.PI / 2 + 0.2, 0]} scale={1.45}>
           <primitive object={spoon} />
         </group>
 

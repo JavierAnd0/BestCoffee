@@ -204,15 +204,51 @@ export function ScrollStory({ content }: { content: HeroContent }) {
           }}
         />
 
-        {/* ── Station 4 Editorial Warm Cream background transition ── */}
+        {/* ── Estación 4: una cafetería de fondo (pared cálida, luz de ventana y destellos desenfocados) ── */}
         <motion.div
-          className="absolute inset-0 pointer-events-none z-0"
+          className="absolute inset-0 pointer-events-none z-0 overflow-hidden"
           style={{
             opacity: creamStageOpacity,
             background:
-              "radial-gradient(ellipse 80% 75% at 64% 50%, #fffdf9 0%, #faf7f1 58%, #f2ece1 100%)",
+              "linear-gradient(180deg, #f1e6d3 0%, #e6d4b8 38%, #d3b78f 58%, #a87a4e 72%, #7a4f2c 100%)",
           }}
-        />
+        >
+          {/* luz de ventana desde arriba a la izquierda */}
+          <div
+            className="absolute inset-0"
+            style={{
+              background:
+                "radial-gradient(ellipse 46% 62% at 18% 22%, rgba(255,251,240,0.95) 0%, rgba(255,246,228,0.45) 45%, transparent 75%), radial-gradient(ellipse 60% 40% at 82% 8%, rgba(255,236,205,0.55) 0%, transparent 70%)",
+            }}
+          />
+          {[
+            { l: "58%", t: "13%", s: 74, o: 0.55 },
+            { l: "68%", t: "9%", s: 110, o: 0.4 },
+            { l: "79%", t: "17%", s: 62, o: 0.6 },
+            { l: "88%", t: "11%", s: 96, o: 0.45 },
+            { l: "62%", t: "31%", s: 120, o: 0.34 },
+            { l: "74%", t: "28%", s: 70, o: 0.5 },
+            { l: "92%", t: "30%", s: 84, o: 0.4 },
+            { l: "46%", t: "7%", s: 58, o: 0.4 },
+            { l: "36%", t: "36%", s: 90, o: 0.25 },
+          ].map((b, i) => (
+            <span
+              key={i}
+              className="absolute rounded-full"
+              style={{
+                left: b.l,
+                top: b.t,
+                width: b.s,
+                height: b.s,
+                opacity: b.o,
+                background:
+                  "radial-gradient(circle, rgba(255,226,170,0.95) 0%, rgba(255,214,150,0.55) 55%, rgba(255,214,150,0) 72%)",
+                filter: "blur(1.5px)",
+                mixBlendMode: "soft-light",
+              }}
+            />
+          ))}
+        </motion.div>
 
         {/* ── Subtle analog film grain from globals.css ── */}
         <div

@@ -1,7 +1,7 @@
 /**
  * ESCALA REAL: 1 unidad ≈ 5 cm.
- *   grano 1.2 cm → 0.25     taza 7 cm → 1.35     moka 3 tazas ~14 cm → 2.8
- *   molino manual ~17 cm → 3.4
+ *   grano 1.2 cm → 0.25     taza 7 cm → 1.35     moka 3 tazas ~16 cm → 3.2
+ *   molino manual compacto ~13 cm → 2.7
  * Los modelos (.glb) se hicieron en Blender (tools/blender/*.py) ya a esta escala.
  * El eje Y es el "riel" por el que baja la cámara: granos → molino → moka → taza.
  */
@@ -16,18 +16,18 @@ export const MODEL_URLS = {
 } as const;
 
 // ── Molino (el origen del modelo está a 1.7 sobre la boca de salida) ──
+export const GRINDER_SCALE = 0.8; // molino compacto (~13 cm de alto, 4,5 cm de diámetro; tolva ~6 cm)
 export const GRINDER_Y = -4.9;
-export const GRINDER_OUTLET_Y = GRINDER_Y - 1.7; // salida del café molido
-export const GRINDER_TOP_Y = GRINDER_Y + 1.44; // borde de la tolva
-export const GRINDER_PILE_Y = GRINDER_Y + 1.0; // piso de la tolva (donde se apilan los granos)
-export const CRANK_PIVOT_Y = 1.5; // altura del eje de la manivela dentro del modelo
+export const GRINDER_OUTLET_Y = GRINDER_Y - 1.7 * GRINDER_SCALE; // salida del café molido
+export const GRINDER_TOP_Y = GRINDER_Y + 1.44 * GRINDER_SCALE; // borde de la tolva
+export const GRINDER_PILE_Y = GRINDER_Y + 1.0 * GRINDER_SCALE; // piso de la tolva (donde se apilan los granos)
 
 // ── Moka (origen del modelo = base de la caldera) ──
-export const MOKA_SCALE = 0.95;
+export const MOKA_SCALE = 1.1; // Bialetti de 3 tazas: ~16 cm de alto, 9 cm de base
 export const MOKA_UPPER_Y = 1.2; // altura a la que asienta la cámara superior
 export const MOKA_FUNNEL_RIM = 1.24 * MOKA_SCALE; // borde del filtro, ya escalado
 export const MOKA_HEIGHT = 2.95 * MOKA_SCALE;
-export const MOKA_DOSING_Y = GRINDER_OUTLET_Y - 0.8 - MOKA_FUNNEL_RIM; // bajo el molino
+export const MOKA_DOSING_Y = GRINDER_OUTLET_Y - 0.55 - MOKA_FUNNEL_RIM; // bajo el molino
 export const STOVE_Y = -11.0; // parrilla de la hornilla
 export const MOKA_ASSEMBLED_Y = STOVE_Y + 0.05;
 export const MOKA_CENTER_Y = MOKA_ASSEMBLED_Y + MOKA_HEIGHT / 2;

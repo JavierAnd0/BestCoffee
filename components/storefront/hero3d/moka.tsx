@@ -72,7 +72,7 @@ export function MokaStation({ progress }: P) {
   }, [model]);
 
   const liquid = useMemo(
-    () => new THREE.MeshPhysicalMaterial({ color: "#1c0b04", roughness: 0.06, metalness: 0, clearcoat: 1, clearcoatRoughness: 0.05 }),
+    () => new THREE.MeshPhysicalMaterial({ color: "#5b2b11", emissive: "#2b1005", emissiveIntensity: 0.9, roughness: 0.1, metalness: 0, clearcoat: 1, clearcoatRoughness: 0.08, envMapIntensity: 0.6 }),
     [],
   );
   const dummyObj = useMemo(() => new THREE.Object3D(), []);
@@ -108,11 +108,13 @@ export function MokaStation({ progress }: P) {
     const t = clock.elapsedTime;
 
     // Solo existe mientras le toca: no asoma antes ni se queda después.
-    if (r) r.visible = p > 0.34 && p < 0.975;
+    if (r) r.visible = p > 0.355 && p < 0.975;
     if (!r || !tl || !up || !marker) return;
 
     // 1) Dosificación → armada: la caldera baja a la hornilla.
-    base.set(0, lerp(MOKA_DOSING_Y, MOKA_ASSEMBLED_Y, smoothstep(0.5, 0.57, p)), 0);
+    // Sube desde abajo hasta quedar bajo la salida del molino (no aparece de golpe).
+    const enter = smoothstep(0.36, 0.41, p);
+    base.set(0, lerp(MOKA_DOSING_Y, MOKA_ASSEMBLED_Y, smoothstep(0.5, 0.57, p)) - (1 - enter) * 3.0, 0);
 
     // 2) Servir: se inclina y su pico queda justo sobre la taza.
     const pourIn = smoothstep(0.72, 0.8, p);
@@ -144,9 +146,12 @@ export function MokaStation({ progress }: P) {
     // 4) El café molido va llenando el filtro mientras muele.
     const m = moundRef.current;
     if (m) {
-      const dose = smoothstep(0.3, 0.46, p);
+      // Cae sobre un punto: primero forma un cono y luego se ensancha hasta llenar el filtro y se empareja.
+      const dose = smoothstep(0.38, 0.47, p);
+      const level = smoothstep(0.47, 0.5, p);
       m.visible = dose > 0.01 && p < 0.9;
-      m.scale.set(0.47, Math.max(dose, 0.001) * 1.05, 0.47);
+      const rad = lerp(0.12, 0.45, Math.sqrt(dose)) + level * 0.02;
+      m.scale.set(rad, Math.max(lerp(0.3, 0.8, dose) * (1 - level * 0.62), 0.001), rad);
     }
 
     // 5) Chorro: parábola desde la punta del pico hasta la superficie del café.
@@ -169,7 +174,7 @@ export function MokaStation({ progress }: P) {
           const cy = tmp.y - 0.5 * G * tt * tt;
           const cz = tmp.z + vh * tt;
           const wobble = 1 + 0.1 * Math.sin(sN * 16 - t * 14);
-          const rad = Math.max(0.012, 0.05 * (1 - 0.5 * sN) * Math.sqrt(amt)) * wobble;
+          const rad = Math.max(0.016, 0.075 * (1 - 0.45 * sN) * Math.sqrt(amt)) * wobble;
           for (let j = 0; j < SIDES; j++) {
             const a = (j / SIDES) * Math.PI * 2;
             pos.setXYZ(i * SIDES + j, tmp.x + Math.cos(a) * rad, cy, cz + Math.sin(a) * rad);
@@ -214,7 +219,7 @@ export function MokaStation({ progress }: P) {
       <group ref={root}>
         <group ref={tilt} scale={MOKA_SCALE}>
           <primitive object={model} />
-          <group ref={moundRef} position={[0, 1.0, 0]} visible={false}>
+          <group ref={moundRef} position={[0, 1.1, 0]} visible={false}>
             <primitive object={ground} />
           </group>
         </group>

@@ -63,7 +63,7 @@ export function BeansStation({ progress }: P) {
       const pa = rnd() * Math.PI * 2;
       return {
         home: b.home,
-        te: 0.13 + (i / beans) * 0.15,
+        te: 0.11 + (i / beans) * 0.10,
         side: new THREE.Vector3((rnd() - 0.5) * 0.5, (rnd() - 0.5) * 0.2, (rnd() - 0.5) * 0.5),
         rest: new THREE.Vector3(Math.cos(pa) * pr, GRINDER_PILE_Y + (1 - (pr / 0.36) ** 2) * 0.17 + rnd() * 0.05, Math.sin(pa) * pr),
         rot: new THREE.Euler(rnd() * 6, rnd() * 6, rnd() * 6),

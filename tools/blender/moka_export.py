@@ -104,7 +104,7 @@ def build():
     brace = prism_from_poly([(-0.80, 2.26), (-0.98, 2.30), (-0.98, 2.46), (-0.80, 2.46)], 0.20, "brace", alu, (0, 0, 0), bev=0.02)
     brace2 = prism_from_poly([(-0.80, 1.36), (-0.96, 1.36), (-0.96, 1.52), (-0.80, 1.52)], 0.20, "brace2", alu, (0, 0, 0), bev=0.02)
     # punta del pico (marcador para el chorro) y pivote de la cámara
-    tip = bpy.data.objects.new("spout_tip", None); bpy.context.collection.objects.link(tip); tip.location = (1.46, 0, 1.2 + 1.2)
+    tip = bpy.data.objects.new("spout_tip", None); bpy.context.collection.objects.link(tip); tip.location = (1.44, 0, 2.15)
     return [boiler, ring, vb, funnel], [upper, lid, knob, beak, handle, brace, brace2], tip
 
 if __name__ == "__main__":

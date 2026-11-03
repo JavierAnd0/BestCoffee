@@ -38,7 +38,13 @@ function CameraRig({ progress }: { progress: MotionValue<number> }) {
     // Ancho de escena que debe caber: el costal y el servido son anchos; el molino y la moka, angostos.
     const needW = lerp(3.4, 2.3, smoothstep(0.08, 0.3, p)) + smoothstep(0.7, 0.8, p) * 1.2;
     const fitDist = needW / aspect / (2 * Math.tan((fov * Math.PI) / 360));
-    const dist = portrait ? Math.max(shot.dist * 1.35, fitDist) : shot.dist;
+    // Durante la molienda caben a la vez la salida del molino, el chorro de café y el filtro (~4.4 u),
+    // y solo se dispone de ~60 % de la altura (abajo va el texto).
+    const needH = 4.4 * (smoothstep(0.34, 0.4, p) * (1 - smoothstep(0.44, 0.49, p)));
+    const fitH = needH / 0.6 / (2 * Math.tan((fov * Math.PI) / 360));
+    const baseDist = shot.dist * 1.35;
+    const dist = portrait ? Math.max(baseDist, fitDist, fitH) : shot.dist;
+    const lift = portrait ? 1.45 * (dist / baseDist) : 0;
     cam.fov = fov;
     cam.updateProjectionMatrix();
 
@@ -48,7 +54,7 @@ function CameraRig({ progress }: { progress: MotionValue<number> }) {
     cam.position.set(Math.cos(azim) * dist, shot.focusY + shot.elev + 0.25, Math.sin(azim) * dist);
     // En escritorio el texto va a la izquierda: se desplaza la escena hacia la derecha.
     // En vertical se sube la escena para dejar libre la franja inferior del texto.
-    cam.lookAt(0, shot.focusY - (portrait ? 1.45 : 0), portrait ? 0 : 0.88);
+    cam.lookAt(0, shot.focusY - lift, portrait ? 0 : 0.88);
   });
   return null;
 }

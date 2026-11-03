@@ -45,8 +45,13 @@ def build():
     outlet = lathe([(0.0, -1.5), (0.5, -1.5), (0.5, -1.56), (0.43, -1.60), (0.42, -1.66), (0.0, -1.66)], 128, "outlet", steel)
     bevel(outlet, 0.01, 3, 40); smooth_by_angle(outlet, 60); parts.append(outlet)
     parts.append(lathe([(0.495, -1.5), (0.52, -1.5), (0.52, -1.44), (0.495, -1.44)], 128, "bottom_ring", copper))
+    # ── tapa de la tolva: cúpula baja con labio que abraza el borde; el eje de la manivela sale de su centro ──
+    lid = lathe([(0.66, 1.405), (0.735, 1.425), (0.745, 1.45), (0.73, 1.49), (0.66, 1.53), (0.5, 1.575), (0.3, 1.60), (0.14, 1.612), (0.12, 1.62), (0.0, 1.62)], 128, "lid", steel)
+    bevel(lid, 0.008, 3, 40); smooth_by_angle(lid, 65); parts.append(lid)
+    lid_ring = lathe([(0.735, 1.425), (0.752, 1.44), (0.752, 1.47), (0.735, 1.485), (0.725, 1.47), (0.725, 1.44)], 128, "lid_ring", copper)
+    smooth_by_angle(lid_ring, 70); parts.append(lid_ring)
     # ── manivela acodada: eje corto, brazo cónico, codo y perilla de nogal ──
-    piv = bpy.data.objects.new("crank", None); bpy.context.collection.objects.link(piv); piv.location = (0, 0, 1.46)
+    piv = bpy.data.objects.new("crank", None); bpy.context.collection.objects.link(piv); piv.location = (0, 0, 1.62)
     hub = lathe([(0, 0), (0.10, 0), (0.10, 0.07), (0.075, 0.13), (0.075, 0.2), (0, 0.2)], 48, "hub", steel)
     arm_bm = bmesh.new(); bmesh.ops.create_cube(arm_bm, size=1.0)
     for v in arm_bm.verts:

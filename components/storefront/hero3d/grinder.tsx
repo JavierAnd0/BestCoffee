@@ -7,6 +7,7 @@ import * as THREE from "three";
 import type { MotionValue } from "motion/react";
 import {
   GRINDER_OUTLET_Y,
+  GRINDER_SCALE,
   GRINDER_Y,
   MODEL_URLS,
   MOKA_ASSEMBLED_Y,
@@ -20,37 +21,51 @@ import { makeDotTexture } from "./textures";
 
 type P = { progress: MotionValue<number> };
 
-/** Molino manual modelado en Blender; la manivela gira y el cuerpo vibra al moler. */
+/** Molino manual modelado en Blender: se echan los granos, se pone la tapa, se coloca la manivela y se muele. */
 export function GrinderStation({ progress }: P) {
   const { scene } = useGLTF(MODEL_URLS.grinder);
   const model = useMemo(() => scene.clone(true), [scene]);
   const root = useRef<THREE.Group>(null);
-  const crank = useRef<THREE.Object3D | null>(null);
+  const crank = useRef<{ node: THREE.Object3D; y: number } | null>(null);
+  const lid = useRef<{ nodes: THREE.Object3D[]; y: number[] } | null>(null);
   useLayoutEffect(() => {
-    crank.current = model.getObjectByName("crank") ?? null;
+    const c = model.getObjectByName("crank");
+    crank.current = c ? { node: c, y: c.position.y } : null;
+    const nodes = ["lid", "lid_ring"].map((n) => model.getObjectByName(n)).filter((o): o is THREE.Object3D => !!o);
+    lid.current = { nodes, y: nodes.map((n) => n.position.y) };
   }, [model]);
 
   useFrame(({ clock }) => {
     const p = progress.get();
-    const grinding = smoothstep(0.3, 0.36, p) * (1 - smoothstep(0.46, 0.5, p));
+    const grinding = smoothstep(0.37, 0.4, p) * (1 - smoothstep(0.46, 0.5, p));
+    const l = lid.current;
+    if (l) {
+      // 1) Con los granos ya dentro, la tapa baja y cierra la tolva.
+      const close = smoothstep(0.29, 0.33, p);
+      l.nodes.forEach((n, i) => {
+        n.visible = p > 0.285;
+        n.position.y = l.y[i] + (1 - close) * 2.4;
+        n.rotation.z = (1 - close) * 0.5;
+      });
+    }
     const c = crank.current;
     if (c) {
-      // La manivela se retira para echar los granos y se coloca justo antes de moler.
-      const settle = smoothstep(0.27, 0.33, p);
-      c.visible = p > 0.26;
-      c.position.y = 1.46 + (1 - settle) * 2.2;
-      c.rotation.set(0, smoothstep(0.31, 0.48, p) * 30, (1 - settle) * 0.35);
+      // 2) Después se acopla la manivela y gira al moler.
+      const settle = smoothstep(0.32, 0.36, p);
+      c.node.visible = p > 0.315;
+      c.node.position.y = c.y + (1 - settle) * 2.4;
+      c.node.rotation.set(0, smoothstep(0.36, 0.48, p) * 30, (1 - settle) * 0.35);
     }
     if (root.current) {
       const t = clock.elapsedTime;
-      root.current.position.x = Math.sin(t * 46) * 0.006 * grinding;
-      root.current.position.z = Math.cos(t * 39) * 0.006 * grinding;
+      root.current.position.x = Math.sin(t * 46) * 0.005 * grinding;
+      root.current.position.z = Math.cos(t * 39) * 0.005 * grinding;
       root.current.visible = p < 0.58;
     }
   });
 
   return (
-    <group ref={root} position={[0, GRINDER_Y, 0]}>
+    <group ref={root} position={[0, GRINDER_Y, 0]} scale={GRINDER_SCALE}>
       <primitive object={model} />
     </group>
   );
@@ -62,96 +77,81 @@ export function GrinderStation({ progress }: P) {
  */
 export function GroundsFlow({ progress }: P) {
   const { grounds } = useQuality();
-  const lumps = useRef<THREE.InstancedMesh>(null);
-  const dust = useRef<THREE.Points>(null);
+  const fine = useRef<THREE.Points>(null);
+  const grains = useRef<THREE.Points>(null);
   const dot = useMemo(() => makeDotTexture(), []);
-  const dummy = useMemo(() => new THREE.Object3D(), []);
-  const lumpMat = useMemo(() => new THREE.MeshStandardMaterial({ color: "#3b1d0e", roughness: 0.9 }), []);
-  const lumpGeo = useMemo(() => new THREE.IcosahedronGeometry(1, 0), []);
-
-  const lumpCount = Math.round(grounds * 0.85);
-  const lumpSeeds = useMemo(() => {
-    const rnd = mulberry32(41);
-    return Array.from({ length: lumpCount }, () => ({
-      phase: rnd(),
-      speed: 0.8 + rnd() * 0.5,
-      a: rnd() * 6.28,
-      spread: 0.05 + rnd() * 0.2,
-      size: 0.016 + rnd() * 0.034,
-      rot: new THREE.Euler(rnd() * 6, rnd() * 6, rnd() * 6),
-    }));
-  }, [lumpCount]);
+  const count = Math.round(grounds * 2);
   const seeds = useMemo(() => {
     const rnd = mulberry32(33);
-    return Array.from({ length: grounds }, () => ({
+    return Array.from({ length: count }, () => ({
       phase: rnd(),
-      speed: 0.7 + rnd() * 0.6,
+      speed: 0.9 + rnd() * 0.5,
       a: rnd() * 6.28,
-      spread: 0.03 + rnd() * 0.2,
+      r: Math.sqrt(rnd()),
     }));
-  }, [grounds]);
-  const positions = useMemo(() => new Float32Array(grounds * 3), [grounds]);
+  }, [count]);
+  const positions = useMemo(() => new Float32Array(count * 3), [count]);
+  const grainCount = Math.round(grounds * 0.18);
+  const grainSeeds = useMemo(() => {
+    const rnd = mulberry32(77);
+    return Array.from({ length: grainCount }, () => ({ phase: rnd(), speed: 1 + rnd() * 0.4, a: rnd() * 6.28, r: Math.sqrt(rnd()) }));
+  }, [grainCount]);
+  const grainPos = useMemo(() => new Float32Array(grainCount * 3), [grainCount]);
 
   const steamState = useMemo(
     () => (out: THREE.Vector3) => {
       const p = progress.get();
       const mokaY = lerp(MOKA_DOSING_Y, MOKA_ASSEMBLED_Y, smoothstep(0.5, 0.57, p));
       out.set(0, mokaY + MOKA_FUNNEL_RIM + 0.1, 0);
-      return smoothstep(0.34, 0.4, p) * (1 - smoothstep(0.46, 0.5, p)) * 0.55;
+      return smoothstep(0.38, 0.43, p) * (1 - smoothstep(0.46, 0.5, p)) * 0.3;
     },
     [progress],
   );
 
   useFrame(({ clock }) => {
     const p = progress.get();
-    const active = smoothstep(0.32, 0.36, p) * (1 - smoothstep(0.47, 0.5, p));
+    const active = smoothstep(0.37, 0.4, p) * (1 - smoothstep(0.465, 0.5, p));
     const t = clock.elapsedTime;
     const mokaY = lerp(MOKA_DOSING_Y, MOKA_ASSEMBLED_Y, smoothstep(0.5, 0.57, p));
-    const floorY = mokaY + MOKA_FUNNEL_RIM + 0.12;
-    const fall = GRINDER_OUTLET_Y - 0.06 - floorY;
-
-    if (lumps.current) {
-      lumps.current.visible = active > 0.01;
-      if (lumps.current.visible) {
-        lumpSeeds.forEach((s, i) => {
-          const life = (t * 0.6 * s.speed + s.phase) % 1;
-          const open = s.spread * (0.3 + life);
-          dummy.position.set(Math.cos(s.a) * open, GRINDER_OUTLET_Y - 0.06 - fall * life * life, Math.sin(s.a) * open);
-          dummy.rotation.set(s.rot.x + life * 9, s.rot.y + life * 7, s.rot.z);
-          dummy.scale.setScalar(s.size * active);
-          dummy.updateMatrix();
-          lumps.current!.setMatrixAt(i, dummy.matrix);
-        });
-        lumps.current.instanceMatrix.needsUpdate = true;
-      }
-    }
-    const pts = dust.current;
-    if (pts) {
+    // el café cae sobre la cima del montículo, que sube mientras muele
+    const dose = smoothstep(0.38, 0.47, p);
+    const floorY = mokaY + MOKA_FUNNEL_RIM + 0.05 + dose * 0.2;
+    const top = GRINDER_OUTLET_Y - 0.06;
+    const fall = top - floorY;
+    const run = (pts: THREE.Points | null, arr: Float32Array, list: typeof seeds, rate: number, w0: number, w1: number) => {
+      if (!pts) return;
       pts.visible = active > 0.01;
-      if (pts.visible) {
-        (pts.material as THREE.PointsMaterial).opacity = active * 0.9;
-        seeds.forEach((s, i) => {
-          const life = (t * 0.55 * s.speed + s.phase) % 1;
-          const open = s.spread * life;
-          positions[i * 3] = Math.cos(s.a + life) * open;
-          positions[i * 3 + 1] = GRINDER_OUTLET_Y - 0.06 - fall * life * life;
-          positions[i * 3 + 2] = Math.sin(s.a + life) * open;
-        });
-        pts.geometry.attributes.position.needsUpdate = true;
-      }
-    }
+      if (!pts.visible) return;
+      (pts.material as THREE.PointsMaterial).opacity = active;
+      list.forEach((s, i) => {
+        const life = (t * rate * s.speed + s.phase) % 1;
+        const fell = life * life; // cae acelerando
+        const width = (w0 + (w1 - w0) * fell) * s.r; // columna fina que se abre apenas
+        arr[i * 3] = Math.cos(s.a) * width;
+        arr[i * 3 + 1] = top - fall * fell;
+        arr[i * 3 + 2] = Math.sin(s.a) * width;
+      });
+      pts.geometry.attributes.position.needsUpdate = true;
+    };
+    run(fine.current, positions, seeds, 1.5, 0.03, 0.07);
+    run(grains.current, grainPos, grainSeeds, 1.5, 0.035, 0.08);
   });
 
   return (
     <>
-      <instancedMesh ref={lumps} args={[lumpGeo, lumpMat, lumpCount]} frustumCulled={false} />
-      <points ref={dust} frustumCulled={false}>
+      <points ref={fine} frustumCulled={false}>
         <bufferGeometry>
           <bufferAttribute attach="attributes-position" args={[positions, 3]} />
         </bufferGeometry>
-        <pointsMaterial color="#4a2a15" size={0.05} map={dot} alphaTest={0.4} transparent depthWrite={false} sizeAttenuation />
+        <pointsMaterial color="#3a1f10" size={0.03} map={dot} alphaTest={0.35} transparent depthWrite={false} sizeAttenuation />
       </points>
-      <Steam count={5} state={steamState} size={0.3} rise={0.5} spread={0.12} color="#8a6a4c" />
+      <points ref={grains} frustumCulled={false}>
+        <bufferGeometry>
+          <bufferAttribute attach="attributes-position" args={[grainPos, 3]} />
+        </bufferGeometry>
+        <pointsMaterial color="#5a3016" size={0.045} map={dot} alphaTest={0.35} transparent depthWrite={false} sizeAttenuation />
+      </points>
+      <Steam count={4} state={steamState} size={0.22} rise={0.35} spread={0.08} color="#8a6a4c" />
     </>
   );
 }
