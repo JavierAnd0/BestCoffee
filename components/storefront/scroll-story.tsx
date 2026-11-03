@@ -13,10 +13,18 @@ import Link from "next/link";
 import type { HeroContent } from "@/lib/types";
 
 // Three.js cannot SSR — defer to client.
-const HeroModel = dynamic(
-  () => import("./hero-model").then((m) => m.HeroModel),
-  { ssr: false, loading: () => null },
-);
+// Interruptor de respaldo: NEXT_PUBLIC_HERO_ENGINE=legacy vuelve a la escena
+// anterior (modelos .glb) sin tocar código. Por defecto usa la escena nueva.
+const HeroModel =
+  process.env.NEXT_PUBLIC_HERO_ENGINE === "legacy"
+    ? dynamic(() => import("./hero-model").then((m) => m.HeroModel), {
+        ssr: false,
+        loading: () => null,
+      })
+    : dynamic(() => import("./hero-scene").then((m) => m.HeroScene), {
+        ssr: false,
+        loading: () => null,
+      });
 
 /* ═══════════════════════════════════════════════════════════
    STATION TEXT — Editorial floating copy synchronized with
