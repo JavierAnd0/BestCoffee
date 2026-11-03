@@ -1,26 +1,27 @@
 "use client";
 
 import { useMemo, useRef } from "react";
-import { useFrame } from "@react-three/fiber";
+import { useFrame, useLoader } from "@react-three/fiber";
 import { useGLTF } from "@react-three/drei";
 import * as THREE from "three";
 import type { MotionValue } from "motion/react";
-import { CUP_BASE_Y, CUP_INNER_R, CUP_ROT_Y, CUP_SCALE, LIQUID_MAX, MODEL_URLS, SAUCER_H } from "./constants";
+import { CAFE_BG_URL, CAFE_BG_URL_MOBILE, CUP_BASE_Y, CUP_INNER_R, CUP_ROT_Y, CUP_SCALE, LIQUID_MAX, MODEL_URLS, SAUCER_H } from "./constants";
 import { createSaucerGeometry } from "./geometries";
 import { useBean } from "./assets";
 import { lerp, mulberry32, smoothstep } from "./math";
 import { liquidLevel, pourActive, pourState } from "./pour";
 import { useQuality } from "./quality";
 import { Steam } from "./steam";
-import { makeCafeTexture, makeCremaTexture, makeShadowTexture, makeTableTexture } from "./textures";
+import { makeCremaTexture, makeShadowTexture, makeTableTexture } from "./textures";
 
 type P = { progress: MotionValue<number> };
 
 const CUP_URL = MODEL_URLS.cup;
+const CAFE_YAW = 1.6; // hacia qué parte de la cafetería mira la cámara final
 
 /** Presentación final: taza y plato de loza sobre una mesa de nogal, con cucharita y granos esparcidos. */
 export function CupStation({ progress }: P) {
-  const { steam, segments } = useQuality();
+  const { steam, segments, mobile } = useQuality();
   const { scene } = useGLTF(CUP_URL);
   const { scene: spoonScene } = useGLTF(MODEL_URLS.spoon);
   const outer = useRef<THREE.Group>(null);
@@ -39,7 +40,18 @@ export function CupStation({ progress }: P) {
     t.repeat.set(2.2, 2.6);
     return t;
   }, []);
-  const cafeTex = useMemo(() => makeCafeTexture(), []);
+  // Fondo: foto 360° de una cafetería real (Poly Haven, CC0), ya desenfocada para simular poca profundidad de campo.
+  const cafeSrc = useLoader(THREE.TextureLoader, mobile ? CAFE_BG_URL_MOBILE : CAFE_BG_URL);
+  const cafeTex = useMemo(() => {
+    const t = cafeSrc.clone();
+    t.colorSpace = THREE.SRGBColorSpace;
+    t.wrapS = THREE.RepeatWrapping;
+    t.repeat.x = -1; // se ve desde dentro de la esfera: se invierte para no verla en espejo
+    t.offset.x = 1;
+    t.anisotropy = 4;
+    t.needsUpdate = true;
+    return t;
+  }, [cafeSrc]);
   const cafe = useRef<THREE.Mesh>(null);
   const { scene: biscuitScene } = useGLTF(MODEL_URLS.biscuit);
   const biscuits = useMemo(() => [biscuitScene.clone(true), biscuitScene.clone(true)], [biscuitScene]);
@@ -150,14 +162,14 @@ export function CupStation({ progress }: P) {
           </group>
         </group>
 
-        {/* Cucharita y dos bizcochos sobre el plato */}
-        <group position={[0.95, SAUCER_H + 0.012, 0.55]} rotation={[0, Math.PI / 2 + 0.25, 0]} scale={1.3}>
+        {/* Cucharita y dos bizcochos sobre el plato (el segundo se apoya inclinado en el primero) */}
+        <group position={[0.95, SAUCER_H + 0.012, 0.62]} rotation={[0, Math.PI / 2 + 0.25, 0]} scale={1.3}>
           <primitive object={spoon} />
         </group>
-        <group position={[0.9, SAUCER_H + 0.075, -0.55]} rotation={[0, 1.45, 0]} scale={0.72}>
+        <group position={[0.98, SAUCER_H + 0.002, -0.42]} rotation={[0, 1.3, 0]} scale={0.95}>
           <primitive object={biscuits[0]} />
         </group>
-        <group position={[1.1, SAUCER_H + 0.07, 0.02]} rotation={[0, 1.78, 0]} scale={0.68}>
+        <group position={[1.12, SAUCER_H + 0.02, 0.08]} rotation={[0, 1.7, 0]} scale={0.9}>
           <primitive object={biscuits[1]} />
         </group>
 
@@ -173,10 +185,10 @@ export function CupStation({ progress }: P) {
           />
         ))}
       </group>
-      {/* Telón de fondo: cafetería desenfocada, lejos de la mesa, en perspectiva real */}
-      <mesh ref={cafe} position={[-30 * Math.cos(0.4), CUP_BASE_Y + 2.2, -30 * Math.sin(0.4)]} rotation={[0, Math.PI / 2 - 0.4, 0]} visible={false}>
-        <planeGeometry args={[66, 33]} />
-        <meshBasicMaterial map={cafeTex} transparent opacity={0} fog={false} toneMapped={false} depthWrite={false} />
+      {/* Cafetería de fondo: esfera con la foto, centrada bajo la mesa para que el piso quede lejos */}
+      <mesh ref={cafe} position={[0, CUP_BASE_Y - 3.2, 0]} rotation={[0, CAFE_YAW, 0]} visible={false} renderOrder={-10}>
+        <sphereGeometry args={[46, 48, 28]} />
+        <meshBasicMaterial map={cafeTex} side={THREE.BackSide} transparent opacity={0} fog={false} toneMapped={false} depthWrite={false} />
       </mesh>
       <Steam count={steam} state={steamState} size={0.62} rise={1.8} spread={0.3} />
     </>

@@ -26,37 +26,33 @@ export function GrinderStation({ progress }: P) {
   const { scene } = useGLTF(MODEL_URLS.grinder);
   const model = useMemo(() => scene.clone(true), [scene]);
   const root = useRef<THREE.Group>(null);
-  const crank = useRef<{ node: THREE.Object3D; y: number } | null>(null);
-  const lid = useRef<{ nodes: THREE.Object3D[]; y: number[] } | null>(null);
+  const asm = useRef<THREE.Group | null>(null);
+  const crank = useRef<THREE.Object3D | null>(null);
   useLayoutEffect(() => {
-    const c = model.getObjectByName("crank");
-    crank.current = c ? { node: c, y: c.position.y } : null;
-    const nodes = ["lid", "lid_ring"].map((n) => model.getObjectByName(n)).filter((o): o is THREE.Object3D => !!o);
-    lid.current = { nodes, y: nodes.map((n) => n.position.y) };
+    // La tapa, su aro y la manivela forman un solo conjunto: llegan juntos, se asientan juntos
+    // y solo la manivela gira sobre la tapa (que queda quieta, como en un molino real).
+    const parts = ["lid", "lid_ring", "crank"].map((n) => model.getObjectByName(n));
+    if (parts.some((o) => !o)) return;
+    const group = new THREE.Group();
+    group.name = "lid_and_crank";
+    model.add(group);
+    parts.forEach((o) => group.add(o!));
+    asm.current = group;
+    crank.current = parts[2]!;
   }, [model]);
 
   useFrame(({ clock }) => {
     const p = progress.get();
     const grinding = smoothstep(0.41, 0.44, p) * (1 - smoothstep(0.48, 0.52, p));
-    const l = lid.current;
-    if (l) {
-      // 1) Con los granos ya dentro, la tapa baja y cierra la tolva.
-      const close = smoothstep(0.30, 0.34, p);
-      l.nodes.forEach((n, i) => {
-        n.visible = p > 0.295;
-        n.position.y = l.y[i] + (1 - close) * 2.4;
-        n.rotation.z = (1 - close) * 0.5;
-      });
+    const g = asm.current;
+    if (g) {
+      // Con los granos ya dentro, el conjunto baja desde arriba y cierra la tolva.
+      const settle = smoothstep(0.3, 0.355, p);
+      g.visible = p > 0.295;
+      g.position.y = (1 - settle) * 2.4;
+      g.rotation.z = (1 - settle) * 0.35;
     }
-    const c = crank.current;
-    if (c) {
-      // 2) Después se acopla la manivela y gira al moler.
-      const settle = smoothstep(0.365, 0.405, p);
-      c.node.visible = p > 0.36;
-      c.node.position.y = c.y + (1 - settle) * 1.6;
-      c.node.position.x = (1 - settle) * 2.0;
-      c.node.rotation.set(0, smoothstep(0.41, 0.52, p) * 30, (1 - settle) * 0.9);
-    }
+    if (crank.current) crank.current.rotation.y = smoothstep(0.38, 0.52, p) * 30;
     if (root.current) {
       const t = clock.elapsedTime;
       root.current.position.x = Math.sin(t * 46) * 0.005 * grinding;

@@ -59,13 +59,13 @@ export function BeansStation({ progress }: P) {
     // los de arriba salen primero
     raw.sort((a, b) => b.home.y - a.home.y);
     return raw.map((b, i) => {
-      const pr = Math.sqrt(rnd()) * 0.36;
+      const pr = Math.sqrt(rnd()) * 0.2;
       const pa = rnd() * Math.PI * 2;
       return {
         home: b.home,
         te: 0.11 + (i / beans) * 0.10,
         side: new THREE.Vector3((rnd() - 0.5) * 0.5, (rnd() - 0.5) * 0.2, (rnd() - 0.5) * 0.5),
-        rest: new THREE.Vector3(Math.cos(pa) * pr, GRINDER_PILE_Y + (1 - (pr / 0.36) ** 2) * 0.17 + rnd() * 0.05, Math.sin(pa) * pr),
+        rest: new THREE.Vector3(Math.cos(pa) * pr, GRINDER_PILE_Y + 0.1 + (1 - (pr / 0.2) ** 2) * 0.14 + rnd() * 0.04, Math.sin(pa) * pr),
         rot: new THREE.Euler(rnd() * 6, rnd() * 6, rnd() * 6),
         spin: new THREE.Vector3((rnd() - 0.5) * 7, (rnd() - 0.5) * 7, (rnd() - 0.5) * 7),
         scale: BEAN_SCALE * (0.9 + rnd() * 0.2),
@@ -116,7 +116,6 @@ export function BeansStation({ progress }: P) {
           // apilado en la tolva; el molino lo va consumiendo
           const eaten = smoothstep(it.eat, it.eat + 0.06, p);
           dummy.position.copy(it.rest);
-          dummy.position.y -= eaten * 0.2;
           dummy.rotation.set(it.rot.x + it.spin.x * 3, it.rot.y + it.spin.y * 3, it.rot.z + it.spin.z * 3);
           dummy.scale.setScalar(Math.max(it.scale * (1 - eaten), 0.0001));
         }

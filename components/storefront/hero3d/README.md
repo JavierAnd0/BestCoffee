@@ -37,3 +37,11 @@ cargan desde `public/models/hero/packed/*.glb` (~1.2 MB en total con la taza). E
 
 ## Volver a la escena anterior
 `NEXT_PUBLIC_HERO_ENGINE=legacy` en `.env.local` (usa `hero-model.tsx` y los `.glb` originales).
+
+## Fondo de la presentación final
+Es una foto 360° real de una cafetería: **Comfy Café** de Sergej Majboroda, publicada en Poly Haven bajo licencia CC0.
+Se procesó (tono, desenfoque de profundidad de campo) y se sirve como JPG (`public/hero/cafe-bg.jpg`, 4096×2048 en
+escritorio; `cafe-bg-m.jpg`, 2048×1024 en móvil). Para cambiar a qué parte de la cafetería mira la cámara, ajusta `CAFE_YAW` en `cup.tsx`.
+
+## Molino
+La tapa, su aro y la manivela se agrupan en un solo conjunto (`lid_and_crank` en `grinder.tsx`): bajan juntos y solo la manivela gira.

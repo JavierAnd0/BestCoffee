@@ -16,6 +16,9 @@ export const MODEL_URLS = {
   cup: "/models/taza.opt.glb?v=2",
 } as const;
 
+export const CAFE_BG_URL = "/hero/cafe-bg.jpg"; // 4096×2048 (escritorio)
+export const CAFE_BG_URL_MOBILE = "/hero/cafe-bg-m.jpg"; // 2048×1024 (móvil)
+
 // ── Molino (el origen del modelo está a 1.7 sobre la boca de salida) ──
 export const GRINDER_SCALE = 0.8; // molino compacto (~13 cm de alto, 4,5 cm de diámetro; tolva ~6 cm)
 export const GRINDER_Y = -4.9;

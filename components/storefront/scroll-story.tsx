@@ -223,6 +223,24 @@ export function ScrollStory({ content }: { content: HeroContent }) {
           />
         </motion.div>
 
+        {/* ── Velo crema bajo el texto del final (sobre el canvas) para que se lea sobre la foto ── */}
+        <motion.div
+          className="absolute inset-0 pointer-events-none z-[15] hidden md:block"
+          style={{
+            opacity: creamStageOpacity,
+            background:
+              "linear-gradient(90deg, rgba(248,240,226,0.92) 0%, rgba(248,240,226,0.78) 26%, rgba(248,240,226,0.3) 46%, transparent 62%)",
+          }}
+        />
+        <motion.div
+          className="absolute inset-0 pointer-events-none z-[15] md:hidden"
+          style={{
+            opacity: creamStageOpacity,
+            background:
+              "linear-gradient(0deg, rgba(248,240,226,0.94) 0%, rgba(248,240,226,0.82) 30%, rgba(248,240,226,0.2) 52%, transparent 66%)",
+          }}
+        />
+
         {/* ── Subtle analog film grain from globals.css ── */}
         <div
           className="absolute inset-0 pointer-events-none z-20 opacity-30 mix-blend-overlay"

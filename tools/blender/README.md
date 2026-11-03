@@ -8,7 +8,9 @@ Cada pieza se modela con Python en Blender 5.x y se exporta a `public/models/her
 | `grinder_export.py` | Molino manual: cuerpo con grabado de rombos, tolva de cobre, manivela (nodo `crank`) |
 | `moka_export.py` | Bialetti: caldera, aro, válvula, filtro, cámara superior (`upper_group`) y `spout_tip` |
 | `branch_export.py` | Rama de cafeto con cerezas y hojas |
-| `ground_export.py` | Montículo de café molido (~1800 trozos) |
+| `ground_export.py` | Montículo de café molido (superficie con grano fino) |
+| `spoon_export.py` | Cucharita de café |
+| `biscuit_export.py` | Bizcocho horneado (caja redondeada, grieta, costra y azúcar glass en color de vértice) |
 
 ```sh
 /Applications/Blender.app/Contents/MacOS/Blender -b --python moka_export.py -- "$PWD/../../public/models/hero"

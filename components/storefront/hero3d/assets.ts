@@ -17,4 +17,5 @@ export function useBean() {
 
 export function preloadModels() {
   Object.values(MODEL_URLS).forEach((u) => useGLTF.preload(u));
+  // el fondo se carga con la escena final (según escritorio/móvil), no se precarga aquí
 }

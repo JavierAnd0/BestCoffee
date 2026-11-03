@@ -44,7 +44,9 @@ function CameraRig({ progress }: { progress: MotionValue<number> }) {
     const fitH = needH / 0.6 / (2 * Math.tan((fov * Math.PI) / 360));
     const baseDist = shot.dist * 1.35;
     const dist = portrait ? Math.max(baseDist, fitDist, fitH) : shot.dist;
-    const lift = portrait ? 1.45 * (dist / baseDist) : 0;
+    // Durante la molienda se sube más el encuadre: la moka queda sobre la franja de texto y no debajo de ella.
+    const grindLift = smoothstep(0.37, 0.42, p) * (1 - smoothstep(0.52, 0.58, p)) * 1.6;
+    const lift = portrait ? 1.45 * (dist / baseDist) + grindLift : 0;
     cam.fov = fov;
     cam.updateProjectionMatrix();
 
