@@ -52,7 +52,7 @@ export const CUP_RIM_Y = CUP_BASE_Y + SAUCER_H + CUP_HEIGHT;
 export const CUP_INNER_R = 1.435 * CUP_SCALE;
 export const CUP_ROT_Y = -0.45;
 export const LIQUID_MIN = 0.425;
-export const LIQUID_MAX = 1.095;
+export const LIQUID_MAX = 1.2;
 
 /** Punto donde queda la punta del pico al servir. */
 export const POUR_TARGET = { x: 0, y: CUP_RIM_Y + 1.05, z: -0.5 } as const;

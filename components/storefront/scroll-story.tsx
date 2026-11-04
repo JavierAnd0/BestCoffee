@@ -114,12 +114,12 @@ function StationStepDot({
   );
   const labelColor = useTransform(
     progress,
-    [0.76, 0.86],
+    [0.78, 0.88],
     ["rgba(247, 239, 228, 0.85)", "rgba(23, 13, 4, 0.82)"],
   );
   const trackBg = useTransform(
     progress,
-    [0.76, 0.86],
+    [0.78, 0.88],
     ["rgba(247, 239, 228, 0.16)", "rgba(23, 13, 4, 0.14)"],
   );
 
@@ -193,8 +193,8 @@ export function ScrollStory({ content }: { content: HeroContent }) {
 
   // Seamless transition from Warm Espresso Roast (Stations 1–3)
   // to the storefront's Warm Cream/Ivory palette in Station 4
-  const creamStageOpacity = useTransform(p, [0.78, 0.86], [0, 1]);
-  const darkVignetteOpacity = useTransform(p, [0.78, 0.86], [1, 0]);
+  const creamStageOpacity = useTransform(p, [0.76, 0.88], [0, 1]);
+  const darkVignetteOpacity = useTransform(p, [0.76, 0.88], [1, 0]);
   const railOpacity = useTransform(p, [0.66, 0.72], [1, 0]);
   const scrollCueOpacity = useTransform(p, [0, 0.05], [1, 0]);
 
@@ -249,7 +249,7 @@ export function ScrollStory({ content }: { content: HeroContent }) {
           style={{
             opacity: creamStageOpacity,
             background:
-              "radial-gradient(ellipse 46% 62% at 14% 46%, rgba(248,240,226,0.9) 0%, rgba(248,240,226,0.62) 55%, rgba(248,240,226,0) 100%)",
+              "radial-gradient(ellipse 48% 66% at 14% 46%, rgba(244,230,204,0.94) 0%, rgba(240,222,190,0.7) 50%, rgba(236,212,176,0) 100%)",
           }}
         />
         <motion.div
@@ -257,7 +257,7 @@ export function ScrollStory({ content }: { content: HeroContent }) {
           style={{
             opacity: creamStageOpacity,
             background:
-              "linear-gradient(0deg, rgba(248,240,226,0.94) 0%, rgba(248,240,226,0.82) 30%, rgba(248,240,226,0.2) 52%, transparent 66%)",
+              "linear-gradient(0deg, rgba(244,230,204,0.95) 0%, rgba(240,222,190,0.84) 30%, rgba(236,212,176,0.2) 52%, transparent 66%)",
           }}
         />
 
@@ -327,7 +327,7 @@ export function ScrollStory({ content }: { content: HeroContent }) {
         </StationCard>
 
         {/* ESTACIÓN 2: El Molino (25% a 48%) */}
-        <StationCard progress={p} inAt={0.25} outAt={0.5}>
+        <StationCard progress={p} inAt={0.25} outAt={0.49}>
           <span
             className="inline-flex items-center gap-2.5 text-xs font-mono font-medium tracking-[0.22em] uppercase"
             style={{ color: "#e09f67" }}
@@ -366,7 +366,7 @@ export function ScrollStory({ content }: { content: HeroContent }) {
         </StationCard>
 
         {/* ESTACIÓN 3: La Cafetera / Armado y Extracción (50% a 73%) */}
-        <StationCard progress={p} inAt={0.47} outAt={0.73}>
+        <StationCard progress={p} inAt={0.49} outAt={0.73}>
           <span
             className="inline-flex items-center gap-2.5 text-xs font-mono font-medium tracking-[0.22em] uppercase"
             style={{ color: "#e09f67" }}

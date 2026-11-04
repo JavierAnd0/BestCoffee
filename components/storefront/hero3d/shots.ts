@@ -46,8 +46,8 @@ export const SHOTS: Shot[] = [
   { p: 0.74, focusY: MOKA_CENTER_Y - 1.5, dist: 8.4, azim: 0.0, elev: 0.3, fov: 35, note: "La moka deja la hornilla" },
   { p: 0.81, focusY: CUP_CENTER_Y + 1.5, dist: 9.8, azim: 0.14, elev: 0.5, fov: 35, note: "Servido: toma amplia" },
   { p: 0.88, focusY: CUP_CENTER_Y + 1.35, dist: 9.2, azim: 0.18, elev: 0.5, fov: 34, note: "Chorro y taza de cerca" },
-  { p: 0.95, focusY: CUP_CENTER_Y + 0.35, dist: 7.6, azim: 0.3, elev: 1.2, fov: 34, note: "La moka se retira" },
-  { p: 1.0, focusY: CUP_CENTER_Y + 0.2, dist: 7.0, azim: 0.4, elev: 2.3, fov: 33, note: "Presentación final" },
+  { p: 0.95, focusY: CUP_CENTER_Y + 0.35, dist: 7.6, azim: 0.3, elev: 2.4, fov: 34, note: "La moka se retira" },
+  { p: 1.0, focusY: CUP_CENTER_Y + 0.25, dist: 7.4, azim: 0.4, elev: 4.2, fov: 33, note: "Presentación final" },
 ];
 
 /** Interpolación Catmull-Rom: la cámara no frena en cada plano, fluye. */

@@ -100,7 +100,7 @@ export function CupStation({ progress }: P) {
     const t = clock.elapsedTime;
     const appear = smoothstep(0.76, 0.8, p);
     if (cafe.current) {
-      const f = smoothstep(0.78, 0.86, p);
+      const f = smoothstep(0.78, 0.9, p);
       cafe.current.visible = f > 0.01;
       (cafe.current.material as THREE.MeshBasicMaterial).opacity = f;
       const g = bokeh.current;
@@ -155,8 +155,8 @@ export function CupStation({ progress }: P) {
       <group ref={outer} position={[0, CUP_BASE_Y, 0]}>
         {/* Mesa de nogal con grosor y borde (no un piso infinito) */}
         <mesh position={[-0.1, -0.21, 0]}>
-          <boxGeometry args={[16, 0.42, 22]} />
-          <meshStandardMaterial map={tableTex} color="#8d7968" roughness={0.5} metalness={0} envMapIntensity={0.55} />
+          <boxGeometry args={[44, 0.42, 44]} />
+          <meshStandardMaterial map={tableTex} color="#7a6858" roughness={0.7} metalness={0} envMapIntensity={0.1} />
         </mesh>
         {/* Sombra de contacto barata: un plano con degradado, sin sombras en tiempo real */}
         <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.006, 0]}>
@@ -173,7 +173,7 @@ export function CupStation({ progress }: P) {
             <group ref={liquidGroup} visible={false}>
               <mesh ref={crema} rotation={[-Math.PI / 2, 0, 0]}>
                 <circleGeometry args={[CUP_INNER_R, segments]} />
-                <meshPhysicalMaterial map={cremaTex} roughness={0.34} metalness={0} clearcoat={0.35} clearcoatRoughness={0.3} envMapIntensity={0.4} color="#ffffff" />
+                <meshPhysicalMaterial map={cremaTex} roughness={0.5} metalness={0} clearcoat={0.12} clearcoatRoughness={0.4} envMapIntensity={0.1} color="#ffffff" />
               </mesh>
               <mesh ref={ring1} rotation={[-Math.PI / 2, 0, 0]}>
                 <ringGeometry args={[CUP_INNER_R * 0.68, CUP_INNER_R * 0.74, 48]} />
@@ -226,7 +226,7 @@ export function CupStation({ progress }: P) {
           </sprite>
         ))}
       </group>
-      <Steam count={steam} state={steamState} size={0.7} rise={1.9} spread={0.3} color="#f1e6d6" />
+      <Steam count={steam} state={steamState} size={0.9} rise={2.0} spread={0.32} color="#9c8c7c" />
     </>
   );
 }

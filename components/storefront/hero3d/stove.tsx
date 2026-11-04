@@ -14,8 +14,8 @@ const FLAMES = 56;
 
 /** Lengua de llama: gota de base ancha y punta fina, con degradado de color/alfa a lo largo (azul intenso → casi transparente). */
 function createFlameGeometry() {
-  const sides = 10;
-  const rings = 8;
+  const sides = 18;
+  const rings = 14;
   const pos: number[] = [];
   const col: number[] = [];
   const idx: number[] = [];

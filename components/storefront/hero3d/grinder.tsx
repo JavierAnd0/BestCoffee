@@ -22,7 +22,18 @@ type P = { progress: MotionValue<number> };
 /** Molino manual modelado en Blender: se echan los granos, se pone la tapa, se coloca la manivela y se muele. */
 export function GrinderStation({ progress }: P) {
   const { scene } = useGLTF(MODEL_URLS.grinder);
-  const model = useMemo(() => scene.clone(true), [scene]);
+  const model = useMemo(() => {
+    const c = scene.clone(true);
+    const knob = c.getObjectByName("knob") as THREE.Mesh | undefined;
+    if (knob?.material) {
+      // nogal muy oscuro y satinado (antes salía ámbar como un huevo)
+      const m = (knob.material as THREE.MeshStandardMaterial).clone();
+      m.color.set("#2a1608");
+      m.roughness = 0.38;
+      knob.material = m;
+    }
+    return c;
+  }, [scene]);
   const root = useRef<THREE.Group>(null);
   const asm = useRef<THREE.Group | null>(null);
   const crank = useRef<THREE.Object3D | null>(null);

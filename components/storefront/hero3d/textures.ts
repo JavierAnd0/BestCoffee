@@ -54,11 +54,12 @@ export const makeShadowTexture = () =>
 export const makeCremaTexture = () =>
   canvasTexture(256, (ctx, s) => {
     radial(ctx, s, [
-      [0, "#4a2410"],
-      [0.5, "#5e3016"],
-      [0.82, "#a06a38"],
-      [0.95, "#7a4a24"],
-      [1, "#2b1208"],
+      [0, "#1d0d05"],
+      [0.55, "#2a1308"],
+      [0.8, "#3a1c0c"],
+      [0.9, "#c8925a"],
+      [0.97, "#e6b987"],
+      [1, "#6b3c1c"],
     ]);
     const rnd = mulberry32(11);
     for (let i = 0; i < 160; i++) {
@@ -209,7 +210,7 @@ export const makeTableTexture = () => {
   const ph = size / planks;
   for (let k = 0; k < planks; k++) {
     const tone = 0.86 + rnd() * 0.26;
-    ctx.fillStyle = `rgb(${Math.round(92 * tone)},${Math.round(56 * tone)},${Math.round(33 * tone)})`;
+    ctx.fillStyle = `rgb(${Math.round(60 * tone)},${Math.round(36 * tone)},${Math.round(21 * tone)})`;
     ctx.fillRect(0, k * ph, size, ph);
     // veta: líneas largas con ondulación periódica (se cierran en el borde)
     for (let i = 0; i < 90; i++) {
