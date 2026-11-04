@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { Environment, Lightformer, PerformanceMonitor } from "@react-three/drei";
+import { Environment, Lightformer, PerformanceMonitor, useProgress } from "@react-three/drei";
 import * as THREE from "three";
 import { useMotionValue, type MotionValue } from "motion/react";
 import { mokaState } from "./hero3d/pour";
@@ -63,6 +63,99 @@ function CameraRig({ progress }: { progress: MotionValue<number> }) {
     // En vertical se sube la escena para dejar libre la franja inferior del texto.
     cam.lookAt(0, focusY - lerp(lift, 1.9, follow), portrait ? 0 : 0.88);
   });
+  return null;
+}
+
+/**
+ * Precalentamiento: three.js compila cada shader y sube cada textura la PRIMERA vez que algo se dibuja.
+ * Como muchos objetos de la historia están ocultos hasta su turno (llama, café, taza, fondo de cafetería),
+ * ese trabajo caía en pleno scroll y producía tirones de 70–150 ms. Aquí se hace una vez, al terminar de cargar:
+ * se marcan todos visibles un instante, se compilan los programas y las texturas se suben una por una en pausas
+ * cortas para no bloquear un solo cuadro.
+ */
+function Warmup() {
+  const gl = useThree((st) => st.gl);
+  const scene = useThree((st) => st.scene);
+  const camera = useThree((st) => st.camera);
+  const { active, progress } = useProgress();
+  const started = useRef(false);
+  const alive = useRef(true);
+  useEffect(() => {
+    alive.current = true;
+    return () => {
+      alive.current = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (active || progress < 100 || started.current) return;
+    let cancelled = false;
+    const timer = window.setTimeout(() => {
+      if (cancelled || started.current) return;
+      started.current = true;
+      const flags: [THREE.Object3D, boolean][] = [];
+      const textures = new Set<THREE.Texture>();
+      scene.traverse((o) => {
+        flags.push([o, o.visible]);
+        o.visible = true;
+        const mat = (o as THREE.Mesh).material as THREE.Material | THREE.Material[] | undefined;
+        (Array.isArray(mat) ? mat : mat ? [mat] : []).forEach((m) => {
+          Object.values(m).forEach((v) => {
+            if (v && (v as THREE.Texture).isTexture) textures.add(v as THREE.Texture);
+          });
+        });
+      });
+      // Los programas se recogen de forma síncrona y se compilan en paralelo (no bloquea).
+      const compiled = gl.compileAsync(scene, camera).catch(() => {});
+      flags.forEach(([o, v]) => (o.visible = v));
+      // Cuando los programas están listos se dibuja UN fotograma con todo visible: así la geometría de cada pieza
+      // (taza, bizcochos, montículo, fondo) ya está en la GPU y no se sube a mitad del scroll.
+      void compiled.then(() => {
+        if (!alive.current) return;
+        const saved: [THREE.Object3D, boolean][] = [];
+        scene.traverse((o) => {
+          saved.push([o, o.visible]);
+          o.visible = true;
+        });
+        try {
+          gl.render(scene, camera);
+        } catch {}
+        saved.forEach(([o, v]) => (o.visible = v));
+      });
+      const queue = [...textures];
+      const step = () => {
+        const tex = queue.pop();
+        if (!tex || !alive.current) return;
+        try {
+          gl.initTexture(tex);
+        } catch {}
+        window.setTimeout(step, 40);
+      };
+      step();
+    }, 600);
+    const again = window.setTimeout(() => {
+      if (!alive.current) return;
+      gl.compileAsync(scene, camera).catch(() => {});
+      scene.traverse((o) => {
+        const mat = (o as THREE.Mesh).material as THREE.Material | THREE.Material[] | undefined;
+        (Array.isArray(mat) ? mat : mat ? [mat] : []).forEach((m) =>
+          Object.values(m).forEach((v) => {
+            if (v && (v as THREE.Texture).isTexture) {
+              try {
+                gl.initTexture(v as THREE.Texture);
+              } catch {}
+            }
+          }),
+        );
+      });
+    }, 4000);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+      window.clearTimeout(again);
+    };
+  }, [active, progress, gl, scene, camera]);
+
   return null;
 }
 
@@ -180,6 +273,7 @@ export function HeroScene({ scrollProgress }: HeroSceneProps = {}) {
           <fog attach="fog" args={["#1c0d06", 14, 38]} />
           <RimLight progress={progress} />
           <CameraRig progress={progress} />
+          <Warmup />
           <Suspense fallback={null}>
             <BeansStation progress={progress} />
           </Suspense>

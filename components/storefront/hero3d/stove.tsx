@@ -15,6 +15,7 @@ const FLAMES = 44;
 /** Hornilla de gas: base, anillo del quemador, parrilla y una corona de llamas azules. */
 export function Stove({ progress }: P) {
   const root = useRef<THREE.Group>(null);
+  const body = useRef<THREE.Group>(null);
   const flameRef = useRef<THREE.InstancedMesh>(null);
   const glow = useRef<THREE.Sprite>(null);
   const light = useRef<THREE.PointLight>(null);
@@ -40,7 +41,9 @@ export function Stove({ progress }: P) {
     const on = smoothstep(0.62, 0.65, p) * (1 - smoothstep(0.73, 0.76, p));
     if (root.current) {
       // Cuando la moka se levanta, la hornilla sale de cuadro.
-      root.current.visible = p > 0.55 && p < 0.79;
+      // Solo se oculta la geometría: la luz puntual se queda siempre en la escena. Cambiar el número de luces
+      // obliga a three.js a recompilar TODOS los materiales (tirón de 100+ ms).
+      if (body.current) body.current.visible = p > 0.55 && p < 0.79;
       // se desliza hacia un costado (derecha de pantalla), no atraviesa la taza
       root.current.position.z = -smoothstep(0.72, 0.77, p) * 7;
     }
@@ -67,6 +70,7 @@ export function Stove({ progress }: P) {
 
   return (
     <group ref={root} position={[0, STOVE_Y - 0.32, 0]}>
+      <group ref={body}>
       <mesh position={[0, 0, 0]} material={metal}>
         <cylinderGeometry args={[0.92, 0.98, 0.1, 48]} />
       </mesh>
@@ -83,6 +87,7 @@ export function Stove({ progress }: P) {
         </mesh>
       ))}
       <sprite ref={glow} material={glowMat} position={[0, 0.5, 0]} />
+      </group>
       <pointLight ref={light} position={[0, 0.6, 0]} color="#ff9a4a" intensity={0} distance={5} decay={2} />
     </group>
   );
