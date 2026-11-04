@@ -10,6 +10,7 @@ import {
   MODEL_URLS,
   MOKA_ASSEMBLED_Y,
   MOKA_DOSING_Y,
+  MOKA_HEIGHT,
   MOKA_SCALE,
   MOKA_UPPER_Y,
   MOKA_YAW,
@@ -18,7 +19,7 @@ import {
   SAUCER_H,
 } from "./constants";
 import { lerp, mulberry32, smoothstep } from "./math";
-import { liquidLevel, pourActive, setPourAmount, setPourImpact } from "./pour";
+import { groundState, liquidLevel, mokaState, pourActive, setPourAmount, setPourImpact } from "./pour";
 import { Steam } from "./steam";
 
 type P = { progress: MotionValue<number> };
@@ -57,6 +58,7 @@ export function MokaStation({ progress }: P) {
     return c;
   }, [scene]);
   const ground = useMemo(() => groundScene.clone(true), [groundScene]);
+  const groundH = useMemo(() => new THREE.Box3().setFromObject(ground).max.y, [ground]);
 
   const root = useRef<THREE.Group>(null);
   const tilt = useRef<THREE.Group>(null);
@@ -125,6 +127,8 @@ export function MokaStation({ progress }: P) {
     const brewing = smoothstep(0.62, 0.67, p) * (1 - pourIn);
     r.position.x += Math.sin(t * 38) * 0.004 * brewing;
 
+    // Mientras solo está la caldera con el filtro, su centro visible es más bajo; al llegar la cámara superior sube.
+    mokaState.centerY = base.y + lerp(0.75, MOKA_HEIGHT / 2, smoothstep(0.54, 0.64, p));
     r.updateMatrixWorld(true);
     marker.getWorldPosition(tmp);
     const offX = tmp.x - r.position.x;
@@ -143,15 +147,18 @@ export function MokaStation({ progress }: P) {
     up.position.set(lerp(2.2, 0, e), MOKA_UPPER_Y + lerp(1.7, 0, e) + Math.sin(e * Math.PI) * 0.45, 0);
     up.rotation.z = (1 - e) * 0.5;
 
-    // 4) El café molido va llenando el filtro mientras muele.
+    // 4) El café molido se acumula en el filtro: empieza como un punto bajo el hilo (cuando llegan los
+    //    primeros granos), forma un cono y luego se ensancha y se empareja.
     const m = moundRef.current;
+    const FLOOR = 1.1; // piso del filtro dentro del modelo
     if (m) {
-      // Cae sobre un punto: primero forma un cono y luego se ensancha hasta llenar el filtro y se empareja.
-      const dose = smoothstep(0.42, 0.51, p);
-      const level = smoothstep(0.51, 0.55, p);
-      m.visible = dose > 0.01 && p < 0.9;
-      const rad = lerp(0.12, 0.45, Math.sqrt(dose)) + level * 0.02;
-      m.scale.set(rad, Math.max(lerp(0.3, 0.8, dose) * (1 - level * 0.62), 0.001), rad);
+      const dose = smoothstep(0.44, 0.52, p);
+      const level = smoothstep(0.52, 0.56, p);
+      m.visible = dose > 0.005 && p < 0.9;
+      const rad = lerp(0.07, 0.45, Math.pow(dose, 0.6)) + level * 0.02;
+      const hgt = Math.max(lerp(0.12, 0.8, dose) * (1 - level * 0.62), 0.001);
+      m.scale.set(rad, hgt, rad);
+      groundState.topY = r.position.y + (FLOOR + groundH * hgt) * MOKA_SCALE;
     }
 
     // 5) Chorro: parábola desde la punta del pico hasta la superficie del café.

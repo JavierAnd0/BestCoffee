@@ -24,3 +24,9 @@ export function setPourAmount(a: number) {
 export function setPourImpact(x: number, y: number, z: number) {
   pourState.impact.set(x, y, z);
 }
+
+/** Cima del montículo de café molido en el filtro (coordenadas de mundo); el hilo cae hasta ahí. */
+export const groundState = { topY: -999 };
+
+/** Centro real de la moka (mundo): la cámara en vertical la sigue mientras baja del molino a la hornilla. */
+export const mokaState = { centerY: -999 };

@@ -5,6 +5,7 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Environment, Lightformer, PerformanceMonitor } from "@react-three/drei";
 import * as THREE from "three";
 import { useMotionValue, type MotionValue } from "motion/react";
+import { mokaState } from "./hero3d/pour";
 import { cameraAt } from "./hero3d/shots";
 import { lerp, smoothstep } from "./hero3d/math";
 import { Stove } from "./hero3d/stove";
@@ -38,12 +39,16 @@ function CameraRig({ progress }: { progress: MotionValue<number> }) {
     // Ancho de escena que debe caber: el costal y el servido son anchos; el molino y la moka, angostos.
     const needW = lerp(3.4, 2.3, smoothstep(0.08, 0.3, p)) + smoothstep(0.7, 0.8, p) * 1.2;
     const fitDist = needW / aspect / (2 * Math.tan((fov * Math.PI) / 360));
+    // En vertical, entre la molienda y el armado la cámara sigue a la moka real (que baja del molino a la hornilla).
+    const follow = portrait && mokaState.centerY > -900 ? smoothstep(0.47, 0.51, p) * (1 - smoothstep(0.62, 0.68, p)) : 0;
+    const focusY = lerp(shot.focusY, mokaState.centerY + 0.9, follow);
     // Durante la molienda caben a la vez la salida del molino, el chorro de café y el filtro (~4.4 u),
     // y solo se dispone de ~60 % de la altura (abajo va el texto).
     const needH = 5.0 * (smoothstep(0.4, 0.45, p) * (1 - smoothstep(0.5, 0.55, p)));
     const fitH = needH / 0.6 / (2 * Math.tan((fov * Math.PI) / 360));
     const baseDist = shot.dist * 1.35;
-    const dist = portrait ? Math.max(baseDist, fitDist, fitH) : shot.dist;
+    const dist0 = portrait ? Math.max(baseDist, fitDist, fitH) : shot.dist;
+    const dist = portrait ? lerp(dist0, Math.max(dist0, 10.5), follow) : dist0;
     // Durante la molienda se sube más el encuadre: la moka queda sobre la franja de texto y no debajo de ella.
     const grindLift = smoothstep(0.37, 0.42, p) * (1 - smoothstep(0.52, 0.58, p)) * 1.6;
     const lift = portrait ? 1.45 * (dist / baseDist) + grindLift : 0;
@@ -53,10 +58,10 @@ function CameraRig({ progress }: { progress: MotionValue<number> }) {
     // Respiración de "cámara en mano": movimiento mínimo para dar vida.
     const sway = Math.sin(t * 0.35) * 0.012;
     const azim = shot.azim + sway;
-    cam.position.set(Math.cos(azim) * dist, shot.focusY + shot.elev + 0.25, Math.sin(azim) * dist);
+    cam.position.set(Math.cos(azim) * dist, focusY + shot.elev + 0.25, Math.sin(azim) * dist);
     // En escritorio el texto va a la izquierda: se desplaza la escena hacia la derecha.
     // En vertical se sube la escena para dejar libre la franja inferior del texto.
-    cam.lookAt(0, shot.focusY - lift, portrait ? 0 : 0.88);
+    cam.lookAt(0, focusY - lerp(lift, 1.9, follow), portrait ? 0 : 0.88);
   });
   return null;
 }

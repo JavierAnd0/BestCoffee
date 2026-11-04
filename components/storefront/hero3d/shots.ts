@@ -16,6 +16,7 @@ import {
   GRINDER_Y,
   MOKA_CENTER_Y,
   GRINDER_OUTLET_Y,
+  MOKA_ASSEMBLED_Y,
   MOKA_DOSING_Y,
 } from "./constants";
 import { clamp01 } from "./math";
@@ -41,7 +42,7 @@ export const SHOTS: Shot[] = [
   { p: 0.385, focusY: GRINDER_Y + 0.95, dist: 5.6, azim: -0.18, elev: 0.3, fov: 34, note: "Se acopla la manivela" },
   { p: 0.44, focusY: GRINDER_Y + 0.05, dist: 8.6, azim: -0.06, elev: 0.22, fov: 34, note: "Molino, manivela y filtro en un solo cuadro: cae el café" },
   { p: 0.52, focusY: TRANSFER_Y - 0.5, dist: 5.4, azim: 0.05, elev: 0.95, fov: 34, note: "El filtro lleno" },
-  { p: 0.56, focusY: MOKA_CENTER_Y + 1.7, dist: 8.4, azim: -0.1, elev: 0.3, fov: 35, note: "La cámara superior desciende" },
+  { p: 0.56, focusY: MOKA_CENTER_Y + 1.7 + (MOKA_DOSING_Y - MOKA_ASSEMBLED_Y) * 0.4, dist: 8.4, azim: -0.1, elev: 0.3, fov: 35, note: "La cámara superior desciende" },
   { p: 0.62, focusY: MOKA_CENTER_Y + 0.3, dist: 7.6, azim: -0.2, elev: 0.3, fov: 35, note: "Se arma la moka" },
   { p: 0.66, focusY: MOKA_CENTER_Y + 0.15, dist: 7.8, azim: -0.3, elev: 0.1, fov: 34, note: "Hornilla: llama y vapor" },
   { p: 0.74, focusY: MOKA_CENTER_Y - 1.5, dist: 8.4, azim: 0.0, elev: 0.3, fov: 35, note: "La moka deja la hornilla" },

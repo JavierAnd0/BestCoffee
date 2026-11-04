@@ -10,11 +10,9 @@ import {
   GRINDER_SCALE,
   GRINDER_Y,
   MODEL_URLS,
-  MOKA_ASSEMBLED_Y,
-  MOKA_DOSING_Y,
-  MOKA_FUNNEL_RIM,
 } from "./constants";
-import { lerp, mulberry32, smoothstep } from "./math";
+import { mulberry32, smoothstep } from "./math";
+import { groundState } from "./pour";
 import { useQuality } from "./quality";
 import { Steam } from "./steam";
 import { makeDotTexture } from "./textures";
@@ -74,81 +72,118 @@ export function GrinderStation({ progress }: P) {
  */
 export function GroundsFlow({ progress }: P) {
   const { grounds } = useQuality();
+  const grains = useRef<THREE.InstancedMesh>(null);
   const fine = useRef<THREE.Points>(null);
-  const grains = useRef<THREE.Points>(null);
+  const puff = useRef<THREE.Points>(null);
   const dot = useMemo(() => makeDotTexture(), []);
-  const count = Math.round(grounds * 2);
-  const seeds = useMemo(() => {
-    const rnd = mulberry32(33);
-    return Array.from({ length: count }, () => ({
-      phase: rnd(),
-      speed: 0.9 + rnd() * 0.5,
+  const dummy = useMemo(() => new THREE.Object3D(), []);
+  const grainGeo = useMemo(() => new THREE.IcosahedronGeometry(1, 0), []);
+  const grainMat = useMemo(() => new THREE.MeshStandardMaterial({ color: "#3e2010", roughness: 0.85 }), []);
+
+  const nGrain = Math.round(grounds * 0.5);
+  const nFine = grounds * 2;
+  const nPuff = 26;
+  const mk = (n: number, seed: number) => {
+    const rnd = mulberry32(seed);
+    return Array.from({ length: n }, (_, i) => ({
+      // fase uniforme: las partículas quedan repartidas de forma pareja a lo largo de toda la caída (hilo continuo)
+      phase: (i + rnd() * 0.9) / n,
       a: rnd() * 6.28,
       r: Math.sqrt(rnd()),
+      size: 0.011 + rnd() * 0.012,
+      rot: new THREE.Euler(rnd() * 6, rnd() * 6, rnd() * 6),
     }));
-  }, [count]);
-  const positions = useMemo(() => new Float32Array(count * 3), [count]);
-  const grainCount = Math.round(grounds * 0.18);
-  const grainSeeds = useMemo(() => {
-    const rnd = mulberry32(77);
-    return Array.from({ length: grainCount }, () => ({ phase: rnd(), speed: 1 + rnd() * 0.4, a: rnd() * 6.28, r: Math.sqrt(rnd()) }));
-  }, [grainCount]);
-  const grainPos = useMemo(() => new Float32Array(grainCount * 3), [grainCount]);
+  };
+  const grainSeeds = useMemo(() => mk(nGrain, 77), [nGrain]);
+  const fineSeeds = useMemo(() => mk(nFine, 33), [nFine]);
+  const puffSeeds = useMemo(() => mk(nPuff, 5), []);
+  const finePos = useMemo(() => new Float32Array(nFine * 3), [nFine]);
+  const puffPos = useMemo(() => new Float32Array(nPuff * 3), []);
 
   const steamState = useMemo(
     () => (out: THREE.Vector3) => {
       const p = progress.get();
-      const mokaY = lerp(MOKA_DOSING_Y, MOKA_ASSEMBLED_Y, smoothstep(0.55, 0.61, p));
-      out.set(0, mokaY + MOKA_FUNNEL_RIM + 0.1, 0);
-      return smoothstep(0.43, 0.47, p) * (1 - smoothstep(0.50, 0.53, p)) * 0.3;
+      out.set(0, Math.max(groundState.topY, -50) + 0.05, 0);
+      return smoothstep(0.45, 0.5, p) * (1 - smoothstep(0.52, 0.56, p)) * 0.25;
     },
     [progress],
   );
 
   useFrame(({ clock }) => {
     const p = progress.get();
-    const active = smoothstep(0.41, 0.44, p) * (1 - smoothstep(0.50, 0.53, p));
     const t = clock.elapsedTime;
-    const mokaY = lerp(MOKA_DOSING_Y, MOKA_ASSEMBLED_Y, smoothstep(0.55, 0.61, p));
-    // el café cae sobre la cima del montículo, que sube mientras muele
-    const dose = smoothstep(0.42, 0.51, p);
-    const floorY = mokaY + MOKA_FUNNEL_RIM + 0.05 + dose * 0.2;
-    const top = GRINDER_OUTLET_Y - 0.06;
-    const fall = top - floorY;
-    const run = (pts: THREE.Points | null, arr: Float32Array, list: typeof seeds, rate: number, w0: number, w1: number) => {
-      if (!pts) return;
-      pts.visible = active > 0.01;
-      if (!pts.visible) return;
-      (pts.material as THREE.PointsMaterial).opacity = active;
-      list.forEach((s, i) => {
-        const life = (t * rate * s.speed + s.phase) % 1;
-        const fell = life * life; // cae acelerando
-        const width = (w0 + (w1 - w0) * fell) * s.r; // columna fina que se abre apenas
-        arr[i * 3] = Math.cos(s.a) * width;
-        arr[i * 3 + 1] = top - fall * fell;
-        arr[i * 3 + 2] = Math.sin(s.a) * width;
-      });
-      pts.geometry.attributes.position.needsUpdate = true;
-    };
-    run(fine.current, positions, seeds, 1.5, 0.03, 0.07);
-    run(grains.current, grainPos, grainSeeds, 1.5, 0.035, 0.08);
+    const active = smoothstep(0.425, 0.445, p) * (1 - smoothstep(0.525, 0.545, p));
+    const on = active > 0.01;
+    const top = GRINDER_OUTLET_Y + 0.12; // nace dentro de la boca de salida (queda tapado por ella)
+    const bottom = groundState.topY > -900 ? groundState.topY : GRINDER_OUTLET_Y - 1.6;
+    const fall = Math.max(top - bottom, 0.05);
+
+    if (grains.current) {
+      grains.current.visible = on;
+      if (on) {
+        grainSeeds.forEach((s, i) => {
+          const life = (t * 0.9 + s.phase) % 1;
+          const f = life * (0.6 + 0.4 * life); // acelera suavemente
+          const w = 0.022 + 0.02 * f;
+          dummy.position.set(Math.cos(s.a + life * 5) * w * s.r, top - fall * f, Math.sin(s.a + life * 5) * w * s.r);
+          dummy.rotation.set(s.rot.x + life * 12, s.rot.y + life * 9, s.rot.z);
+          // aparecen al salir y se funden con la superficie al llegar
+          const k = Math.min(1, life * 14) * (1 - smoothstep(0.93, 1, life));
+          dummy.scale.setScalar(s.size * 1.35 * k * active);
+          dummy.updateMatrix();
+          grains.current!.setMatrixAt(i, dummy.matrix);
+        });
+        grains.current.instanceMatrix.needsUpdate = true;
+      }
+    }
+    if (fine.current) {
+      fine.current.visible = on;
+      if (on) {
+        (fine.current.material as THREE.PointsMaterial).opacity = active;
+        fineSeeds.forEach((s, i) => {
+          const life = (t * 1.05 + s.phase) % 1;
+          const f = life * (0.6 + 0.4 * life);
+          const w = 0.015 + 0.03 * f;
+          finePos[i * 3] = Math.cos(s.a + life * 6) * w * s.r;
+          finePos[i * 3 + 1] = top - fall * f;
+          finePos[i * 3 + 2] = Math.sin(s.a + life * 6) * w * s.r;
+        });
+        fine.current.geometry.attributes.position.needsUpdate = true;
+      }
+    }
+    // nubecita de polvo al impactar sobre la cima
+    if (puff.current) {
+      puff.current.visible = on;
+      if (on) {
+        (puff.current.material as THREE.PointsMaterial).opacity = active * 0.55;
+        puffSeeds.forEach((s, i) => {
+          const life = (t * 0.9 + s.phase) % 1;
+          const rad = 0.03 + life * 0.22 * s.r;
+          puffPos[i * 3] = Math.cos(s.a) * rad;
+          puffPos[i * 3 + 1] = bottom + 0.01 + life * 0.14;
+          puffPos[i * 3 + 2] = Math.sin(s.a) * rad;
+        });
+        puff.current.geometry.attributes.position.needsUpdate = true;
+      }
+    }
   });
 
   return (
     <>
+      <instancedMesh ref={grains} args={[grainGeo, grainMat, nGrain]} frustumCulled={false} />
       <points ref={fine} frustumCulled={false}>
         <bufferGeometry>
-          <bufferAttribute attach="attributes-position" args={[positions, 3]} />
+          <bufferAttribute attach="attributes-position" args={[finePos, 3]} />
         </bufferGeometry>
-        <pointsMaterial color="#3a1f10" size={0.03} map={dot} alphaTest={0.35} transparent depthWrite={false} sizeAttenuation />
+        <pointsMaterial color="#3a1f10" size={0.026} map={dot} alphaTest={0.3} transparent depthWrite={false} sizeAttenuation />
       </points>
-      <points ref={grains} frustumCulled={false}>
+      <points ref={puff} frustumCulled={false}>
         <bufferGeometry>
-          <bufferAttribute attach="attributes-position" args={[grainPos, 3]} />
+          <bufferAttribute attach="attributes-position" args={[puffPos, 3]} />
         </bufferGeometry>
-        <pointsMaterial color="#5a3016" size={0.045} map={dot} alphaTest={0.35} transparent depthWrite={false} sizeAttenuation />
+        <pointsMaterial color="#6b4326" size={0.05} map={dot} alphaTest={0.2} transparent depthWrite={false} sizeAttenuation />
       </points>
-      <Steam count={4} state={steamState} size={0.22} rise={0.35} spread={0.08} color="#8a6a4c" />
+      <Steam count={3} state={steamState} size={0.18} rise={0.3} spread={0.06} color="#8a6a4c" />
     </>
   );
 }
