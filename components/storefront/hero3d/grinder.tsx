@@ -95,7 +95,7 @@ export function GroundsFlow({ progress }: P) {
       dx: rnd() - 0.5,
       dz: rnd() - 0.5,
       r: Math.sqrt(rnd()),
-      size: 0.005 + Math.pow(rnd(), 2.2) * 0.008, // muchos muy pequeños, pocos más grandes
+      size: 0.007 + Math.pow(rnd(), 2.0) * 0.010, // muchos muy pequeños, pocos más grandes
       rot: new THREE.Euler(rnd() * 6, rnd() * 6, rnd() * 6),
       tone: rnd(),
     }));
@@ -148,7 +148,7 @@ export function GroundsFlow({ progress }: P) {
         grainSeeds.forEach((s, i) => {
           const life = (t * 0.85 + s.phase) % 1;
           const f = life * (0.55 + 0.45 * life); // acelera con suavidad
-          const w = (0.012 + 0.03 * f) * s.r;
+          const w = (0.02 + 0.04 * f) * s.r;
           dummy.position.set(s.dx * 2 * w, top - fall * f, s.dz * 2 * w);
           dummy.rotation.set(s.rot.x + life * 10, s.rot.y + life * 8, s.rot.z);
           const k = Math.min(1, life * 18) * (1 - smoothstep(0.94, 1, life));
@@ -166,7 +166,7 @@ export function GroundsFlow({ progress }: P) {
         fineSeeds.forEach((s, i) => {
           const life = (t * 1.0 + s.phase) % 1;
           const f = life * (0.55 + 0.45 * life);
-          const w = (0.01 + 0.035 * f) * s.r;
+          const w = (0.016 + 0.045 * f) * s.r;
           finePos[i * 3] = s.dx * 2 * w;
           finePos[i * 3 + 1] = top - fall * f;
           finePos[i * 3 + 2] = s.dz * 2 * w;
@@ -198,7 +198,7 @@ export function GroundsFlow({ progress }: P) {
         <bufferGeometry>
           <bufferAttribute attach="attributes-position" args={[finePos, 3]} />
         </bufferGeometry>
-        <pointsMaterial color="#5a3318" size={0.02} map={dot} alphaTest={0.3} transparent depthWrite={false} sizeAttenuation />
+        <pointsMaterial color="#5a3318" size={0.028} map={dot} alphaTest={0.3} transparent depthWrite={false} sizeAttenuation />
       </points>
       <points ref={puff} frustumCulled={false}>
         <bufferGeometry>

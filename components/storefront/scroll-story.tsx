@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import dynamic from "next/dynamic";
 import {
   motion,
@@ -173,6 +173,24 @@ export function ScrollStory({ content }: { content: HeroContent }) {
     restDelta: 0.0004,
   });
 
+  // Mientras la escena oscura está pegada arriba, la cabecera se vuelve transparente (ver globals.css).
+  useEffect(() => {
+    const root = document.documentElement;
+    const update = () => {
+      const top = containerRef.current?.getBoundingClientRect().top ?? 1;
+      if (top <= 0 && p.get() < 0.8) root.setAttribute("data-hero-dark", "");
+      else root.removeAttribute("data-hero-dark");
+    };
+    update();
+    window.addEventListener("scroll", update, { passive: true });
+    const off = p.on("change", update);
+    return () => {
+      window.removeEventListener("scroll", update);
+      off();
+      root.removeAttribute("data-hero-dark");
+    };
+  }, [p]);
+
   // Seamless transition from Warm Espresso Roast (Stations 1–3)
   // to the storefront's Warm Cream/Ivory palette in Station 4
   const creamStageOpacity = useTransform(p, [0.78, 0.86], [0, 1]);
@@ -231,7 +249,7 @@ export function ScrollStory({ content }: { content: HeroContent }) {
           style={{
             opacity: creamStageOpacity,
             background:
-              "linear-gradient(90deg, rgba(248,240,226,0.92) 0%, rgba(248,240,226,0.78) 26%, rgba(248,240,226,0.3) 46%, transparent 62%)",
+              "radial-gradient(ellipse 46% 62% at 14% 46%, rgba(248,240,226,0.9) 0%, rgba(248,240,226,0.62) 55%, rgba(248,240,226,0) 100%)",
           }}
         />
         <motion.div
@@ -270,7 +288,7 @@ export function ScrollStory({ content }: { content: HeroContent }) {
         {/* ════════ 4 STATIONS FLOATING TEXT (EDITORIAL KINFOLK STYLE) ════════ */}
 
         {/* ESTACIÓN 1: El Grano (0% a 23%) */}
-        <StationCard progress={p} inAt={0} outAt={0.23} stayIn>
+        <StationCard progress={p} inAt={0} outAt={0.21} stayIn>
           <span
             className="inline-flex items-center gap-2.5 text-xs font-mono font-medium tracking-[0.22em] uppercase"
             style={{ color: "#e09f67" }}
@@ -309,7 +327,7 @@ export function ScrollStory({ content }: { content: HeroContent }) {
         </StationCard>
 
         {/* ESTACIÓN 2: El Molino (25% a 48%) */}
-        <StationCard progress={p} inAt={0.25} outAt={0.48}>
+        <StationCard progress={p} inAt={0.25} outAt={0.5}>
           <span
             className="inline-flex items-center gap-2.5 text-xs font-mono font-medium tracking-[0.22em] uppercase"
             style={{ color: "#e09f67" }}
@@ -348,7 +366,7 @@ export function ScrollStory({ content }: { content: HeroContent }) {
         </StationCard>
 
         {/* ESTACIÓN 3: La Cafetera / Armado y Extracción (50% a 73%) */}
-        <StationCard progress={p} inAt={0.5} outAt={0.73}>
+        <StationCard progress={p} inAt={0.47} outAt={0.73}>
           <span
             className="inline-flex items-center gap-2.5 text-xs font-mono font-medium tracking-[0.22em] uppercase"
             style={{ color: "#e09f67" }}

@@ -54,9 +54,10 @@ export const makeShadowTexture = () =>
 export const makeCremaTexture = () =>
   canvasTexture(256, (ctx, s) => {
     radial(ctx, s, [
-      [0, "#c98b4f"],
-      [0.55, "#9a5a2b"],
-      [0.9, "#4a2410"],
+      [0, "#4a2410"],
+      [0.5, "#5e3016"],
+      [0.82, "#a06a38"],
+      [0.95, "#7a4a24"],
       [1, "#2b1208"],
     ]);
     const rnd = mulberry32(11);

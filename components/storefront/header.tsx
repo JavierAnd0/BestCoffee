@@ -72,7 +72,7 @@ export function Header({
   };
 
   return (
-    <header className="border-b border-line bg-background/92 backdrop-blur-sm sticky top-0 z-30">
+    <header className="site-header border-b border-line bg-background/92 backdrop-blur-sm sticky top-0 z-30">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-4 lg:py-5">
         {/* Mobile: hamburger | logo | cart  */}
         <div className="lg:hidden flex items-center justify-between gap-4">

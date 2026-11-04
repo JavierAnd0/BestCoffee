@@ -42,15 +42,21 @@ export function MokaStation({ progress }: P) {
       if (!mesh.isMesh) return;
       const m = (mesh.material as THREE.MeshStandardMaterial).clone();
       // El aluminio debe verse como metal (reflejos con contraste), no como cerámica blanca.
-      if (m.name === "aluminio" || m.name === "aluminio_int") {
+      if (m.name === "aluminio") {
         m.color.multiplyScalar(0.62);
-        m.roughness = 0.3;
+        m.roughness = 0.36;
         m.envMapIntensity = 1.0;
+      }
+      if (m.name === "aluminio_int") {
+        // interior del filtro: gris oscuro mate (antes el fondo vacío salía como un disco blanco)
+        m.color.set("#4a4744");
+        m.roughness = 0.6;
+        m.envMapIntensity = 0.5;
       }
       // Baquelita: negro brillante de verdad (el export la deja gris con la luz de estudio).
       if (m.name === "baquelita") {
-        m.color.set("#0b0908");
-        m.roughness = 0.22;
+        m.color.set("#0a0807");
+        m.roughness = 0.16;
         m.metalness = 0;
         m.envMapIntensity = 0.55;
       }
@@ -158,7 +164,7 @@ export function MokaStation({ progress }: P) {
     //    primeros granos), forma un cono y luego se ensancha y se empareja.
     const m = moundRef.current;
     if (m) {
-      const dose = smoothstep(0.44, 0.535, p);
+      const dose = smoothstep(0.43, 0.535, p);
       const level = smoothstep(0.545, 0.575, p);
       m.visible = dose > 0.005 && p < 0.9;
       if (fillRef.current) fillRef.current.visible = m.visible;

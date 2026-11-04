@@ -207,3 +207,14 @@ html {
   z-index: 1;
 }
 
+
+/* Cabecera sobre el hero oscuro: se vuelve transparente y de letra clara mientras la escena está pegada arriba
+   (la activa scroll-story.tsx con data-hero-dark) y recupera su aspecto normal en la estación final. */
+.site-header { transition: background-color .35s ease, border-color .35s ease, color .35s ease; }
+html[data-hero-dark] .site-header {
+  background: linear-gradient(180deg, rgba(14, 6, 2, 0.78), rgba(14, 6, 2, 0)) !important;
+  border-color: transparent !important;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+html[data-hero-dark] .site-header :is(a, button, svg, span, p) { color: #f4e8d9 !important; }
