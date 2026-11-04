@@ -175,14 +175,16 @@ export function ScrollStory({ content }: { content: HeroContent }) {
 
   // Seamless transition from Warm Espresso Roast (Stations 1–3)
   // to the storefront's Warm Cream/Ivory palette in Station 4
-  const creamStageOpacity = useTransform(p, [0.76, 0.86], [0, 1]);
-  const darkVignetteOpacity = useTransform(p, [0.74, 0.84], [1, 0]);
+  const creamStageOpacity = useTransform(p, [0.78, 0.86], [0, 1]);
+  const darkVignetteOpacity = useTransform(p, [0.78, 0.86], [1, 0]);
+  const railOpacity = useTransform(p, [0.66, 0.72], [1, 0]);
   const scrollCueOpacity = useTransform(p, [0, 0.05], [1, 0]);
 
   return (
     /* ── 500vh scroll driver ── */
     <div
       ref={containerRef}
+      data-hero-story
       style={{ height: "500vh", backgroundColor: "#110602" }}
     >
       {/* ── Sticky full-viewport stage ── */}
@@ -419,7 +421,7 @@ export function ScrollStory({ content }: { content: HeroContent }) {
             className="mt-4 text-base sm:text-lg font-light leading-relaxed max-w-md"
             style={{ color: "rgba(46, 26, 12, 0.82)" }}
           >
-            {content.subtitle} Tostado esta semana, en tu puerta mañana.
+            {/[.!?…]$/.test((content.subtitle ?? "").trim()) ? content.subtitle : `${content.subtitle ?? ""}.`} Tostado esta semana, en tu puerta mañana.
           </p>
           <div className="mt-8 flex flex-wrap items-center gap-5">
             <Link
@@ -451,9 +453,10 @@ export function ScrollStory({ content }: { content: HeroContent }) {
         </StationCard>
 
         {/* ── Right-side Vertical Station Rail HUD ── */}
-        <div
+        <motion.div
           className="hidden md:flex flex-col gap-4 absolute right-8 lg:right-12 top-1/2 -translate-y-1/2 z-30 pointer-events-none"
           aria-hidden="true"
+          style={{ opacity: railOpacity }}
         >
           <StationStepDot
             progress={p}
@@ -479,7 +482,7 @@ export function ScrollStory({ content }: { content: HeroContent }) {
             num="04"
             label="La Taza"
           />
-        </div>
+        </motion.div>
 
         {/* ── Initial Scroll Cue ── */}
         <motion.div

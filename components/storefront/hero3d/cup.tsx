@@ -100,7 +100,7 @@ export function CupStation({ progress }: P) {
     const t = clock.elapsedTime;
     const appear = smoothstep(0.76, 0.8, p);
     if (cafe.current) {
-      const f = smoothstep(0.78, 0.88, p);
+      const f = smoothstep(0.78, 0.86, p);
       cafe.current.visible = f > 0.01;
       (cafe.current.material as THREE.MeshBasicMaterial).opacity = f;
       const g = bokeh.current;
@@ -173,7 +173,7 @@ export function CupStation({ progress }: P) {
             <group ref={liquidGroup} visible={false}>
               <mesh ref={crema} rotation={[-Math.PI / 2, 0, 0]}>
                 <circleGeometry args={[CUP_INNER_R, segments]} />
-                <meshPhysicalMaterial map={cremaTex} roughness={0.16} metalness={0.08} clearcoat={0.85} clearcoatRoughness={0.12} />
+                <meshPhysicalMaterial map={cremaTex} roughness={0.42} metalness={0} clearcoat={0.25} clearcoatRoughness={0.35} envMapIntensity={0.18} color="#c9b8a8" />
               </mesh>
               <mesh ref={ring1} rotation={[-Math.PI / 2, 0, 0]}>
                 <ringGeometry args={[CUP_INNER_R * 0.68, CUP_INNER_R * 0.74, 48]} />

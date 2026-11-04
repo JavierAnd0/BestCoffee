@@ -10,10 +10,15 @@ export const MODEL_URLS = {
   grinder: "/models/hero/packed/grinder.glb",
   moka: "/models/hero/packed/moka.glb",
   branch: "/models/hero/packed/branch.glb",
-  ground: "/models/hero/packed/ground.glb",
   spoon: "/models/hero/packed/spoon.glb",
   biscuit: "/models/hero/packed/biscuit.glb",
   cup: "/models/taza.opt.glb?v=2",
+} as const;
+
+export const GROUNDS_MAPS = {
+  albedo: "/hero/coffee-grounds-albedo.jpg",
+  normal: "/hero/coffee-grounds-normal.jpg",
+  rough: "/hero/coffee-grounds-rough.jpg",
 } as const;
 
 export const CAFE_BG_URL = "/hero/cafe-bg.jpg"; // 4096×2048 (escritorio)

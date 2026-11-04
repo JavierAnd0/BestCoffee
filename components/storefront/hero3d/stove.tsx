@@ -10,7 +10,7 @@ import { makeSoftTexture } from "./textures";
 
 type P = { progress: MotionValue<number> };
 
-const FLAMES = 28;
+const FLAMES = 44;
 
 /** Hornilla de gas: base, anillo del quemador, parrilla y una corona de llamas azules. */
 export function Stove({ progress }: P) {
@@ -22,7 +22,7 @@ export function Stove({ progress }: P) {
   const metal = useMemo(() => new THREE.MeshStandardMaterial({ color: "#0f0d0c", roughness: 0.42, metalness: 0.55 }), []);
   const grate = useMemo(() => new THREE.MeshStandardMaterial({ color: "#1a1816", roughness: 0.6, metalness: 0.9 }), []);
   const flameMat = useMemo(
-    () => new THREE.MeshBasicMaterial({ color: "#4f9dff", transparent: true, opacity: 0.75, depthWrite: false, toneMapped: false }),
+    () => new THREE.MeshBasicMaterial({ color: "#6db3ff", transparent: true, opacity: 0.9, depthWrite: false, toneMapped: false }),
     [],
   );
   const glowMat = useMemo(
@@ -49,10 +49,10 @@ export function Stove({ progress }: P) {
       fl.visible = on > 0.01;
       seeds.forEach((s, i) => {
         const a = (i / FLAMES) * Math.PI * 2;
-        const h = (0.13 + 0.05 * Math.sin(t * s.speed + s.phase)) * on;
-        dummy.position.set(Math.cos(a) * 0.5, 0.1 + h / 2, Math.sin(a) * 0.5);
+        const h = (0.3 + 0.09 * Math.sin(t * s.speed + s.phase)) * on;
+        dummy.position.set(Math.cos(a) * 0.98, 0.1 + h / 2, Math.sin(a) * 0.98);
         dummy.rotation.set(Math.sin(a) * 0.15, 0, -Math.cos(a) * 0.15);
-        dummy.scale.set(0.028, Math.max(h, 0.001), 0.028);
+        dummy.scale.set(0.05, Math.max(h, 0.001), 0.05);
         dummy.updateMatrix();
         fl.setMatrixAt(i, dummy.matrix);
       });
@@ -60,7 +60,7 @@ export function Stove({ progress }: P) {
     }
     if (glow.current) {
       (glow.current.material as THREE.SpriteMaterial).opacity = on * (0.55 + 0.1 * Math.sin(t * 9));
-      glow.current.scale.setScalar(2.4);
+      glow.current.scale.setScalar(3.6);
     }
     if (light.current) light.current.intensity = on * (3 + Math.sin(t * 7) * 0.5);
   });
@@ -71,7 +71,7 @@ export function Stove({ progress }: P) {
         <cylinderGeometry args={[0.92, 0.98, 0.1, 48]} />
       </mesh>
       <mesh position={[0, 0.13, 0]} rotation={[Math.PI / 2, 0, 0]} material={grate}>
-        <torusGeometry args={[0.5, 0.07, 10, 36]} />
+        <torusGeometry args={[0.98, 0.07, 10, 48]} />
       </mesh>
       <instancedMesh ref={flameRef} args={[undefined, flameMat, FLAMES]} position={[0, 0.1, 0]} frustumCulled={false}>
         <coneGeometry args={[1, 1, 6]} />

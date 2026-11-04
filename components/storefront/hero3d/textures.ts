@@ -208,7 +208,7 @@ export const makeTableTexture = () => {
   const ph = size / planks;
   for (let k = 0; k < planks; k++) {
     const tone = 0.86 + rnd() * 0.26;
-    ctx.fillStyle = `rgb(${Math.round(150 * tone)},${Math.round(98 * tone)},${Math.round(58 * tone)})`;
+    ctx.fillStyle = `rgb(${Math.round(92 * tone)},${Math.round(56 * tone)},${Math.round(33 * tone)})`;
     ctx.fillRect(0, k * ph, size, ph);
     // veta: líneas largas con ondulación periódica (se cierran en el borde)
     for (let i = 0; i < 90; i++) {

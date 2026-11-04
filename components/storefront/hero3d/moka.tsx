@@ -1,12 +1,13 @@
 "use client";
 
 import { useLayoutEffect, useMemo, useRef } from "react";
-import { useFrame } from "@react-three/fiber";
+import { useFrame, useLoader } from "@react-three/fiber";
 import { useGLTF } from "@react-three/drei";
 import * as THREE from "three";
 import type { MotionValue } from "motion/react";
 import {
   CUP_BASE_Y,
+  GROUNDS_MAPS,
   MODEL_URLS,
   MOKA_ASSEMBLED_Y,
   MOKA_DOSING_Y,
@@ -20,6 +21,7 @@ import {
 } from "./constants";
 import { lerp, mulberry32, smoothstep } from "./math";
 import { groundState, liquidLevel, mokaState, pourActive, setPourAmount, setPourImpact } from "./pour";
+import { createPileGeometry, createPileMaterial } from "./pile";
 import { Steam } from "./steam";
 
 type P = { progress: MotionValue<number> };
@@ -33,7 +35,6 @@ const SIDES = 8;
  */
 export function MokaStation({ progress }: P) {
   const { scene } = useGLTF(MODEL_URLS.moka);
-  const { scene: groundScene } = useGLTF(MODEL_URLS.ground);
   const model = useMemo(() => {
     const c = scene.clone(true);
     c.traverse((o) => {
@@ -57,12 +58,18 @@ export function MokaStation({ progress }: P) {
     });
     return c;
   }, [scene]);
-  const ground = useMemo(() => groundScene.clone(true), [groundScene]);
-  const groundH = useMemo(() => new THREE.Box3().setFromObject(ground).max.y, [ground]);
+  const groundMaps = useLoader(THREE.TextureLoader, [GROUNDS_MAPS.albedo, GROUNDS_MAPS.normal, GROUNDS_MAPS.rough]);
+  const pileGeo = useMemo(() => createPileGeometry(), []);
+  const pileMat = useMemo(
+    () => createPileMaterial({ albedo: groundMaps[0].clone(), normal: groundMaps[1].clone(), rough: groundMaps[2].clone() }),
+    [groundMaps],
+  );
 
   const root = useRef<THREE.Group>(null);
   const tilt = useRef<THREE.Group>(null);
   const moundRef = useRef<THREE.Group>(null);
+  const fillRef = useRef<THREE.Mesh>(null);
+  const fillGeo = useMemo(() => new THREE.CylinderGeometry(1, 1, 1, 56, 1, false), []);
   const upper = useRef<THREE.Object3D | null>(null);
   const tip = useRef<THREE.Object3D | null>(null);
   const stream = useRef<THREE.Mesh>(null);
@@ -150,15 +157,38 @@ export function MokaStation({ progress }: P) {
     // 4) El café molido se acumula en el filtro: empieza como un punto bajo el hilo (cuando llegan los
     //    primeros granos), forma un cono y luego se ensancha y se empareja.
     const m = moundRef.current;
-    const FLOOR = 1.1; // piso del filtro dentro del modelo
     if (m) {
-      const dose = smoothstep(0.44, 0.52, p);
-      const level = smoothstep(0.52, 0.56, p);
+      const dose = smoothstep(0.44, 0.535, p);
+      const level = smoothstep(0.545, 0.575, p);
       m.visible = dose > 0.005 && p < 0.9;
-      const rad = lerp(0.07, 0.45, Math.pow(dose, 0.6)) + level * 0.02;
-      const hgt = Math.max(lerp(0.12, 0.8, dose) * (1 - level * 0.62), 0.001);
+      if (fillRef.current) fillRef.current.visible = m.visible;
+      // El embudo es un cono (radio 0.3 en el fondo y 0.7 en el borde): el café va llenándolo.
+      // Primero forma un montículo en el fondo; luego sube el nivel y se ensancha hasta tocar la pared.
+      const L = lerp(0.8, 1.13, smoothstep(0.3, 1, dose));
+      const wall = (0.3 + (L - 0.7) * 0.87) * 1.03; // radio del embudo a esa altura
+      const rad = lerp(0.06, wall, Math.pow(dose, 0.55));
+      const hgt = Math.max(rad * 0.72 * (1 - level * 0.7), 0.001); // ángulo de reposo ≈ 35°; al final se empareja
+      m.position.y = L - 0.015;
       m.scale.set(rad, hgt, rad);
-      groundState.topY = r.position.y + (FLOOR + groundH * hgt) * MOKA_SCALE;
+      // Relleno: tronco de cono pegado a la pared del embudo, del fondo hasta el nivel actual
+      const f = fillRef.current;
+      if (f) {
+        f.visible = true;
+        const pos = f.geometry.attributes.position as THREE.BufferAttribute;
+        const rBottom = 0.37 * 1.0;
+        for (let i = 0; i < pos.count; i++) {
+          const isTop = pos.getY(i) > 0;
+          const ux = pos.getX(i);
+          const uz = pos.getZ(i);
+          const len = Math.hypot(ux, uz) || 1;
+          const rr = isTop ? wall : rBottom;
+          pos.setXYZ(i, (ux / len) * rr * (len > 0.0001 ? 1 : 0), isTop ? L - 0.02 : 0.8, (uz / len) * rr * (len > 0.0001 ? 1 : 0));
+        }
+        pos.needsUpdate = true;
+        f.geometry.computeVertexNormals();
+        f.geometry.computeBoundingSphere();
+      }
+      groundState.topY = r.position.y + (L + hgt) * MOKA_SCALE;
     }
 
     // 5) Chorro: parábola desde la punta del pico hasta la superficie del café.
@@ -226,9 +256,10 @@ export function MokaStation({ progress }: P) {
       <group ref={root}>
         <group ref={tilt} scale={MOKA_SCALE}>
           <primitive object={model} />
-          <group ref={moundRef} position={[0, 1.1, 0]} visible={false}>
-            <primitive object={ground} />
+          <group ref={moundRef} position={[0, 0.8, 0]} visible={false}>
+            <mesh geometry={pileGeo} material={pileMat} />
           </group>
+          <mesh ref={fillRef} geometry={fillGeo} material={pileMat} visible={false} frustumCulled={false} />
         </group>
       </group>
       <mesh ref={stream} geometry={streamGeo} material={liquid} visible={false} frustumCulled={false} />

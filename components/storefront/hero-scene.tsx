@@ -37,7 +37,7 @@ function CameraRig({ progress }: { progress: MotionValue<number> }) {
     // En vertical (móvil) hay poco ancho: se aleja y se abre el campo para que todo quepa.
     const fov = shot.fov + (portrait ? 5 : 0);
     // Ancho de escena que debe caber: el costal y el servido son anchos; el molino y la moka, angostos.
-    const needW = lerp(3.4, 2.3, smoothstep(0.08, 0.3, p)) + smoothstep(0.7, 0.8, p) * 1.2;
+    const needW = lerp(3.4, 2.3, smoothstep(0.08, 0.3, p)) + smoothstep(0.7, 0.76, p) * 2.2;
     const fitDist = needW / aspect / (2 * Math.tan((fov * Math.PI) / 360));
     // En vertical, entre la molienda y el armado la cámara sigue a la moka real (que baja del molino a la hornilla).
     const follow = portrait && mokaState.centerY > -900 ? smoothstep(0.47, 0.51, p) * (1 - smoothstep(0.62, 0.68, p)) : 0;
@@ -159,6 +159,8 @@ export function HeroScene({ scrollProgress }: HeroSceneProps = {}) {
             <Lightformer form="ring" intensity={2} color="#ffe2c0" position={[0, 7, -2]} scale={5} target={[0, 0, 0]} />
             {/* Gran softbox frontal (detrás de la cámara): las caras que miran al espectador nunca quedan negras. */}
             <Lightformer form="rect" intensity={0.9} color="#efe6da" position={[9, 1, 0]} scale={[10, 8, 1]} target={[0, 0, 0]} />
+            {/* Luz de rebote desde la mesa/hornilla: sin ella las caras inferiores del metal salen negras */}
+            <Lightformer form="rect" intensity={1.6} color="#d9b48a" position={[0, -6, 0]} scale={[14, 14, 1]} target={[0, 0, 0]} />
             {Array.from({ length: 8 }, (_, i) => {
               const a = (i / 8) * Math.PI * 2;
               return (

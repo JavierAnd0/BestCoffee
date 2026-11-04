@@ -71,7 +71,7 @@ export function BeansStation({ progress }: P) {
         scale: BEAN_SCALE * (0.9 + rnd() * 0.2),
         phase: rnd() * 6.28,
         eat: 0.41 + rnd() * 0.09,
-        shade: 0.85 + rnd() * 0.5,
+        shade: 1.0 + rnd() * 0.5,
       };
     });
   }, [beans]);

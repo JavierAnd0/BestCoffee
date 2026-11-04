@@ -7,6 +7,8 @@ import { test, expect, type Page } from "@playwright/test";
  */
 async function waitUntilPromptShows(page: Page) {
   const card = page.getByRole("complementary", { name: /Boletín/i });
+  // La invitación nunca se abre sobre el hero animado: primero se pasa de largo (el hero mide 500vh).
+  await page.evaluate(() => window.scrollTo(0, window.innerHeight * 5.4));
   await expect(async () => {
     await page.clock.fastForward(15_000);
     await expect(card).toBeVisible({ timeout: 500 });
@@ -30,6 +32,14 @@ test.describe("Newsletter — invitación discreta", () => {
     await page.clock.fastForward(5_000);
     await expect(page.getByRole("complementary", { name: /Boletín/i })).toHaveCount(0);
     await expect(page.locator('[role="dialog"]')).toHaveCount(0);
+  });
+
+  test("no se abre mientras el hero animado está en pantalla", async ({ page }) => {
+    await page.goto("/");
+    await page.waitForLoadState("load");
+    await page.evaluate(() => window.scrollTo(0, window.innerHeight * 2.5));
+    await page.clock.fastForward(60_000);
+    await expect(page.getByRole("complementary", { name: /Boletín/i })).toHaveCount(0);
   });
 
   test("aparece tras interés real, en español, sin bloquear la página", async ({ page }) => {

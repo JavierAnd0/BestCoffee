@@ -80,11 +80,20 @@ export function NewsletterPrompt({ brand, tenantSlug, welcomeOffer }: Props) {
     }
 
     const startedAt = Date.now();
+    // Nunca se abre sobre el hero animado: espera a que el usuario lo haya dejado atrás.
+    const heroInView = () => {
+      const hero = document.querySelector("[data-hero-story]");
+      if (!hero) return false;
+      const r = hero.getBoundingClientRect();
+      return r.top < window.innerHeight * 0.9 && r.bottom > window.innerHeight * 0.1;
+    };
     const show = () => {
+      if (heroInView()) return false;
       try {
         sessionStorage.setItem(sessionKey, "1");
       } catch {}
       setOpen(true);
+      return true;
     };
 
     const onScroll = () => {
@@ -92,15 +101,15 @@ export function NewsletterPrompt({ brand, tenantSlug, welcomeOffer }: Props) {
       if (scrollable <= 0) return;
       const ratio = window.scrollY / scrollable;
       if (ratio >= SCROLL_RATIO && Date.now() - startedAt >= MIN_DELAY_MS) {
-        cleanup();
-        show();
+        if (show()) cleanup();
       }
     };
 
     // `cleanup` es una declaración (hoisted): se invoca siempre tras crear `timer`.
     const timer = setTimeout(() => {
-      cleanup();
-      show();
+      // si el hero sigue en pantalla, se queda escuchando el scroll y sale al pasarlo
+      if (show()) cleanup();
+      else window.addEventListener("scroll", onScroll, { passive: true });
     }, DWELL_MS);
 
     function cleanup() {
