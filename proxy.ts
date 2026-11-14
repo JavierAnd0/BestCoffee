@@ -3,10 +3,16 @@ import { auth } from "@/lib/auth/server";
 
 // Hosts treated as the platform shell (no tenant). `localhost` alone is the
 // dev fallback for the platform; per-tenant work uses `<slug>.localhost:3000`.
+// The apex domain comes from NEXT_PUBLIC_PLATFORM_DOMAIN so the same build can
+// run under any domain (tenants live at `<slug>.<PLATFORM_DOMAIN>`).
+const PLATFORM_DOMAIN = (
+  process.env.NEXT_PUBLIC_PLATFORM_DOMAIN ?? "bestcoffee.io"
+).toLowerCase();
+
 const PLATFORM_HOSTS = new Set([
-  "app.bestcoffee.io",
-  "bestcoffee.io",
-  "www.bestcoffee.io",
+  `app.${PLATFORM_DOMAIN}`,
+  PLATFORM_DOMAIN,
+  `www.${PLATFORM_DOMAIN}`,
   "localhost",
 ]);
 
@@ -287,10 +293,19 @@ function resolveTenantSlug(host: string): string | null {
     }
     return null;
   }
-  const parts = host.split(".");
-  // `<slug>.localhost` in dev, or `<slug>.bestcoffee.io` in prod.
-  if (parts.length < 2) return null;
-  const first = parts[0];
-  if (!first || RESERVED_SUBDOMAINS.has(first)) return null;
-  return first;
+  // `<slug>.localhost` in dev, or `<slug>.<PLATFORM_DOMAIN>` in prod.
+  for (const suffix of [".localhost", `.${PLATFORM_DOMAIN}`]) {
+    if (!host.endsWith(suffix)) continue;
+    const sub = host.slice(0, -suffix.length);
+    // Only one label deep: `a.b.<domain>` is not a tenant.
+    if (!sub || sub.includes(".") || RESERVED_SUBDOMAINS.has(sub)) return null;
+    return sub;
+  }
+
+  // Any other host (the deploy's own *.vercel.app URL, a preview URL, or a
+  // domain pointed at a single-store deploy) is NOT parsed for a slug — taking
+  // its first label would resolve `tienda.caferoma.com` to a tenant named
+  // "tienda". It serves DEFAULT_TENANT_SLUG when the deploy pins one, and the
+  // platform shell otherwise.
+  return process.env.DEFAULT_TENANT_SLUG || null;
 }
