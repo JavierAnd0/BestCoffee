@@ -2,6 +2,16 @@ import { test, expect, type Page } from "@playwright/test";
 import { MOCKS, NEEDS_BACKEND } from "./env";
 
 /**
+ * Página donde se prueba la invitación. NO es el inicio: el inicio lleva la
+ * escena 3D (WebGL), que en el servidor del CI —sin GPU— deja el hilo principal
+ * saturado y la invitación nunca llega a pintarse dentro del tiempo del test.
+ * La invitación no depende de la página (solo de tiempo, scroll y de que el
+ * hero no esté a la vista), así que se prueba donde no hay canvas. El
+ * comportamiento "no se abre sobre el hero" sigue probándose en el inicio.
+ */
+const PROMPT_PAGE = "/catalogo";
+
+/**
  * Avanza el reloj falso hasta que se cumpla el criterio de la invitación.
  * (Se hace en pasos porque los temporizadores del cliente solo existen tras
  * la hidratación; avanzar antes no tendría efecto.)
@@ -54,7 +64,7 @@ test.describe("Newsletter — invitación discreta", () => {
   });
 
   test("aparece tras interés real, en español, sin bloquear la página", async ({ page }) => {
-    await page.goto("/");
+    await page.goto(PROMPT_PAGE);
     const card = await waitUntilPromptShows(page);
     await expect(card).toContainText(/Únete a la comunidad/i);
     await expect(card).toContainText(/10% de descuento/i);
@@ -62,11 +72,11 @@ test.describe("Newsletter — invitación discreta", () => {
     await expect(card).not.toContainText(/email address|enter your email|join our|go\b/i);
     // No es modal: no hay overlay ni diálogo, y la página sigue siendo clicable
     await expect(page.locator('[role="dialog"]')).toHaveCount(0);
-    await page.getByRole("link", { name: /Ver todo el catálogo/i }).first().scrollIntoViewIfNeeded();
+    await page.getByRole("link", { name: /Catálogo/i }).first().scrollIntoViewIfNeeded();
   });
 
   test("suscribirse entrega el código real y no vuelve a aparecer", async ({ page }) => {
-    await page.goto("/");
+    await page.goto(PROMPT_PAGE);
     const card = await waitUntilPromptShows(page);
     await card.getByLabel("Correo electrónico").fill(`visita.${Date.now()}@correo.test`);
     await card.getByRole("button", { name: "Suscribirme" }).click();
@@ -81,7 +91,7 @@ test.describe("Newsletter — invitación discreta", () => {
   });
 
   test("valida el correo en español", async ({ page }) => {
-    await page.goto("/");
+    await page.goto(PROMPT_PAGE);
     const card = await waitUntilPromptShows(page);
     await card.getByLabel("Correo electrónico").fill("no-es-un-correo");
     await card.getByRole("button", { name: "Suscribirme" }).click();
@@ -89,7 +99,7 @@ test.describe("Newsletter — invitación discreta", () => {
   });
 
   test("'Ahora no' la cierra y no vuelve en esta sesión ni al recargar", async ({ page }) => {
-    await page.goto("/");
+    await page.goto(PROMPT_PAGE);
     await waitUntilPromptShows(page);
     await page.getByRole("button", { name: "Ahora no" }).click();
     await expect(page.getByRole("complementary", { name: /Boletín/i })).toHaveCount(0);
