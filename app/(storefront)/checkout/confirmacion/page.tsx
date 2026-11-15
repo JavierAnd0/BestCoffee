@@ -1,9 +1,11 @@
+import { redirect } from "next/navigation";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { Check, Truck, Coffee } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Eyebrow } from "@/components/ui/eyebrow";
 import { requireFeature } from "@/lib/data/feature-guard";
+import { formatOrderCode } from "@/lib/format";
 
 export const metadata: Metadata = { title: "Confirmación de pedido" };
 
@@ -14,14 +16,16 @@ export default async function ConfirmationPage({
 }) {
   await requireFeature("checkout");
   const { orderId: rawOrderId } = await searchParams;
-  const orderId = rawOrderId?.trim() || "ORG-10428";
+  const orderId = rawOrderId?.trim();
+  // Sin número de pedido real no hay nada que confirmar.
+  if (!orderId) redirect("/");
 
   return (
     <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 py-20 text-center">
       <span className="mx-auto size-16 rounded-full bg-foreground text-background grid place-items-center">
         <Check className="size-8" strokeWidth={2} />
       </span>
-      <Eyebrow className="mt-6">Pedido #{orderId}</Eyebrow>
+      <Eyebrow className="mt-6">Pedido #{formatOrderCode(orderId)}</Eyebrow>
       <h1 className="mt-4 font-display text-5xl font-semibold tracking-tight">
         ¡Gracias por tu compra!
       </h1>

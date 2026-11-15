@@ -19,6 +19,7 @@ interface ApiLocation {
   id?: string;
   slug?: string;
   name?: string;
+  neighborhood?: string;
   address?: string;
   street?: string;
   city?: string;
@@ -27,16 +28,37 @@ interface ApiLocation {
   openingHours?: string;
   phone?: string;
   phoneNumber?: string;
+  lat?: number;
+  lng?: number;
+  latitude?: number;
+  longitude?: number;
+  features?: string[];
+  description?: string;
 }
 
 function mapLocation(l: ApiLocation): StoreLocation {
+  const lat = l.lat ?? l.latitude ?? 4.6443;
+  const lng = l.lng ?? l.longitude ?? -74.0628;
   return {
     slug: l.slug ?? l.id ?? "store",
     name: l.name ?? "ORÍGEN",
+    neighborhood: l.neighborhood ?? "Bogotá",
     address: l.address ?? l.street ?? "",
     city: l.city ?? "Bogotá",
-    hours: l.hours ?? l.schedule ?? l.openingHours ?? "",
-    phone: l.phone ?? l.phoneNumber ?? "",
+    hours: l.hours ?? l.schedule ?? l.openingHours ?? "Lun–Dom · 7:00–20:00",
+    phone: l.phone ?? l.phoneNumber ?? "+57 (601) 234-5678",
+    coordinates: { lat, lng },
+    features: l.features ?? [
+      "Barra de filtrados",
+      "Molienda personalizada",
+      "Pet friendly",
+      "WiFi de alta velocidad",
+    ],
+    description:
+      l.description ??
+      "Tienda de café de especialidad, barra de filtrados artesanales y café fresco recién tostado.",
+    googleMapsUrl: `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`,
+    wazeUrl: `https://waze.com/ul?ll=${lat},${lng}&navigate=yes`,
   };
 }
 
@@ -121,7 +143,8 @@ async function fetchBrewGuides(): Promise<BrewGuide[]> {
 export async function listBrewGuides(): Promise<BrewGuide[]> {
   if (env.useMocks) return BREW_GUIDES;
   try {
-    return await fetchBrewGuides();
+    const list = await fetchBrewGuides();
+    return list;
   } catch {
     return [];
   }
@@ -137,9 +160,9 @@ export async function getBrewGuide(slug: string): Promise<BrewGuide | undefined>
     });
     if (res.ok) return mapBrewGuide((await res.json()) as ApiBrewGuide);
     // Fall back to fetching the full list and finding the guide
-    const all = await fetchBrewGuides();
-    return all.find((g) => g.slug === slug);
+    const all = await listBrewGuides();
+    return all.find((g) => g.slug === slug) ?? findGuideMock(slug);
   } catch {
-    return undefined;
+    return findGuideMock(slug);
   }
 }

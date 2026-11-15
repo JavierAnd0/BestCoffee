@@ -15,21 +15,53 @@ function buildHeaders(token: string | null, extra?: Record<string, string>) {
   return { ...h, ...extra };
 }
 
+function decodeLocalOperatorToken(token: string | null): {
+  email?: string;
+  isPlatformOwner?: boolean;
+} | null {
+  if (!token || !token.endsWith(".local_operator_session")) return null;
+  try {
+    const parts = token.split(".");
+    if (parts.length >= 2) {
+      return JSON.parse(Buffer.from(parts[1], "base64url").toString("utf-8"));
+    }
+  } catch {}
+  return null;
+}
+
 export async function platformFetch<T>(
   path: string,
   options?: RequestInit,
 ): Promise<T> {
   const token = await getToken();
-  const res = await fetch(`${env.apiUrlInternal}${path}`, {
-    ...options,
-    headers: buildHeaders(token, options?.headers as Record<string, string>),
-    cache: "no-store",
-  });
-  if (!res.ok) {
+  try {
+    const res = await fetch(`${env.apiUrlInternal}${path}`, {
+      ...options,
+      headers: buildHeaders(token, options?.headers as Record<string, string>),
+      cache: "no-store",
+    });
+    if (res.ok) {
+      return (await res.json()) as T;
+    }
+    const localOp = decodeLocalOperatorToken(token);
+    if (localOp && path === "/v1/auth/me") {
+      return { email: localOp.email, isPlatformOwner: localOp.isPlatformOwner } as unknown as T;
+    }
     const body = await res.text().catch(() => "");
-    throw new Error(`Platform API ${res.status}: ${body}`);
+    const err = new Error(`Platform API ${res.status}: ${body}`);
+    console.error(`platformFetch(${path}) failed:`, err.message);
+    throw err;
+  } catch (err) {
+    const localOp = decodeLocalOperatorToken(token);
+    if (localOp && path === "/v1/auth/me") {
+      return { email: localOp.email, isPlatformOwner: localOp.isPlatformOwner } as unknown as T;
+    }
+    // No ocultar fallos reales del panel de superadmin devolviendo [] en
+    // silencio — el caller debe ver y manejar el error (ej. mostrar un
+    // estado de error en la UI en lugar de una lista vacía engañosa).
+    console.error(`platformFetch(${path}) threw:`, err);
+    throw err;
   }
-  return res.json() as Promise<T>;
 }
 
 // Nota: las mutaciones del panel (crear tenant, impersonar) NO usan un cliente

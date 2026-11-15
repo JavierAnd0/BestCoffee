@@ -91,7 +91,7 @@ export function CreateTenantForm() {
           />
           {slug && (
             <p className="text-xs text-muted-foreground mt-1">
-              tienda en: <span className="font-mono">{slug}.bestcoffee.io</span>
+              tienda en: <span className="font-mono">{slug}.{process.env.NEXT_PUBLIC_PLATFORM_DOMAIN ?? "bestcoffee.io"}</span>
             </p>
           )}
         </Field>

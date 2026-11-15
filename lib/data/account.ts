@@ -1,4 +1,10 @@
 import { env } from "../env";
+import { customerFetch } from "../api/gateway";
+import {
+  decodeJwtClaims,
+  formatNameFromEmail,
+  getCustomerSession,
+} from "../auth/session-store";
 import {
   MOCK_CUSTOMER,
   MOCK_ADDRESSES,
@@ -14,16 +20,9 @@ import {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-async function authHeaders() {
-  const { cookies, headers } = await import("next/headers");
-  const c = await cookies();
-  const h = await headers();
-  const token =
-    c.get("bestcoffee-session")?.value ?? c.get("customer_token")?.value;
-  return {
-    token,
-    tenantSlug: h.get("x-tenant-slug") ?? env.defaultTenantSlug,
-  };
+export async function authHeaders() {
+  const { token, tenantSlug } = await getCustomerSession();
+  return { token, tenantSlug };
 }
 
 function items<T>(payload: unknown): T[] {
@@ -41,6 +40,7 @@ interface ApiCustomer {
   name?: string | null;
   email: string;
   phone?: string | null;
+  newsletterOptIn?: boolean | null;
   createdAt?: string | null;
 }
 
@@ -48,11 +48,12 @@ function mapCustomer(c: ApiCustomer): MockCustomer {
   const fullName =
     [c.firstName, c.lastName].filter(Boolean).join(" ").trim() ||
     c.name?.trim() ||
-    c.email;
+    formatNameFromEmail(c.email);
   return {
     name: fullName,
     email: c.email,
     phone: c.phone ?? "",
+    newsletterOptIn: c.newsletterOptIn ?? true,
     memberSince: c.createdAt
       ? new Date(c.createdAt).getFullYear().toString()
       : "—",
@@ -60,37 +61,78 @@ function mapCustomer(c: ApiCustomer): MockCustomer {
 }
 
 async function fetchMe(): Promise<MockCustomer | null> {
-  const { token, tenantSlug } = await authHeaders();
-  if (!token) return null;
-  const res = await fetch(`${env.apiUrlInternal}/v1/customers/me`, {
-    headers: {
-      "X-Tenant-Slug": tenantSlug,
-      Authorization: `Bearer ${token}`,
-      Cookie: `customer_token=${token}`,
-    },
-    cache: "no-store",
-  });
-  if (!res.ok) return null;
-  return mapCustomer((await res.json()) as ApiCustomer);
+  const res = await customerFetch<ApiCustomer>("/v1/customers/me");
+  if (!res.ok || !res.data) return null;
+  return mapCustomer(res.data);
 }
 
 export async function getCurrentCustomer(): Promise<MockCustomer> {
   if (env.useMocks) return MOCK_CUSTOMER;
+
   try {
-    return (
-      (await fetchMe()) ?? {
-        name: "Cliente",
-        email: "",
+    const { token, isMockSession, neonUser } = await getCustomerSession();
+
+    if (isMockSession) {
+      return MOCK_CUSTOMER;
+    }
+
+    // 1. Obtener el cliente real desde el backend NestJS (incluye re-sync automático con Neon Auth)
+    const me = await fetchMe();
+    if (me) return me;
+
+    // 2. Fallback si el backend está apagado pero existe sesión activa de Neon Auth (Google OAuth)
+    if (neonUser && (neonUser.name || neonUser.email)) {
+      const email = neonUser.email || "";
+      const displayName = neonUser.name?.trim() || formatNameFromEmail(email);
+      const memberDate = neonUser.createdAt;
+      const memberSince = memberDate
+        ? new Date(memberDate).getFullYear().toString()
+        : new Date().getFullYear().toString();
+
+      return {
+        name: displayName,
+        email,
         phone: "",
-        memberSince: "—",
+        memberSince,
+        newsletterOptIn: true,
+      };
+    }
+
+    // 3. Fallback decodificando el JWT de sesión si el backend está offline
+    if (token) {
+      const payload = decodeJwtClaims(token);
+      if (payload && (payload.name || payload.email || payload.firstName)) {
+        const fullName =
+          payload.name ||
+          [payload.firstName, payload.lastName].filter(Boolean).join(" ") ||
+          formatNameFromEmail(payload.email);
+        const memberSince = payload.iat
+          ? new Date(payload.iat * 1000).getFullYear().toString()
+          : new Date().getFullYear().toString();
+        return {
+          name: fullName,
+          email: payload.email || "",
+          phone: "",
+          memberSince,
+          newsletterOptIn: true,
+        };
       }
-    );
+    }
+
+    return {
+      name: "Cliente",
+      email: "",
+      phone: "",
+      memberSince: new Date().getFullYear().toString(),
+      newsletterOptIn: true,
+    };
   } catch {
     return {
       name: "Cliente",
       email: "",
       phone: "",
-      memberSince: "—",
+      memberSince: new Date().getFullYear().toString(),
+      newsletterOptIn: true,
     };
   }
 }
@@ -101,12 +143,15 @@ interface ApiOrderItem {
   id?: string;
   productName?: string;
   variantLabel?: string;
+  variantName?: string;
   variant?: string;
   qty?: number;
   quantity?: number;
   unitPrice?: number;
   priceCents?: number;
   price?: number;
+  lineCents?: number;
+  unitCents?: number;
 }
 
 interface ApiOrder {
@@ -115,7 +160,11 @@ interface ApiOrder {
   status?: string;
   total?: number;
   totalCents?: number;
+  subtotalCents?: number;
+  discountCents?: number;
+  shippingCents?: number;
   itemsCount?: number;
+  _count?: { items?: number };
   fromSubscription?: boolean;
   subscriptionId?: string | null;
   items?: ApiOrderItem[];
@@ -123,6 +172,8 @@ interface ApiOrder {
     address?: string;
     city?: string;
     region?: string;
+    line1?: string;
+    state?: string;
   } | null;
 }
 
@@ -147,70 +198,59 @@ function formatOrderDate(iso?: string): string {
 
 function mapOrder(o: ApiOrder): MockOrder {
   const itemsCount =
-    o.itemsCount ?? o.items?.length ?? 1;
+    o.itemsCount ?? o._count?.items ?? o.items?.length ?? 1;
   const totalCents =
     o.totalCents ?? (o.total ? Math.round(o.total) : 0);
+  const items = (o.items ?? []).map((i) => ({
+    name: i.productName ?? "Café",
+    variant: i.variantLabel ?? i.variantName ?? i.variant ?? "",
+    qty: i.qty ?? i.quantity ?? 1,
+    priceCents: i.priceCents ?? i.lineCents ?? i.unitCents ?? i.unitPrice ?? i.price ?? 0,
+  }));
+  const itemsSum = items.reduce((acc, it) => acc + it.priceCents * it.qty, 0);
+  const subtotalCents = o.subtotalCents ?? (itemsSum > 0 ? itemsSum : totalCents);
+  const shippingCents = o.shippingCents ?? Math.max(0, totalCents - subtotalCents);
+  const discountCents = o.discountCents ?? 0;
+
   return {
     id: o.id,
     createdAt: formatOrderDate(o.createdAt),
     itemsCount,
     totalCents,
+    subtotalCents,
+    shippingCents,
+    discountCents,
     status: ORDER_STATUS_MAP[o.status ?? ""] ?? "PROCESSING",
     fromSubscription: o.fromSubscription ?? !!o.subscriptionId,
-    items: (o.items ?? []).map((i) => ({
-      name: i.productName ?? "Café",
-      variant: i.variantLabel ?? i.variant ?? "",
-      qty: i.qty ?? i.quantity ?? 1,
-      priceCents: i.priceCents ?? i.unitPrice ?? i.price ?? 0,
-    })),
+    items,
     shippingAddress: o.shippingAddress
-      ? `${o.shippingAddress.address ?? ""}, ${o.shippingAddress.city ?? ""}`.trim().replace(/^,\s*/, "")
+      ? `${o.shippingAddress.address ?? o.shippingAddress.line1 ?? ""}, ${o.shippingAddress.city ?? ""}`.trim().replace(/^,\s*/, "")
       : undefined,
   };
 }
 
 export async function getCustomerOrders(): Promise<MockOrder[]> {
   if (env.useMocks) return MOCK_ORDERS;
-  try {
-    const { token, tenantSlug } = await authHeaders();
-    if (!token) return [];
-    const res = await fetch(`${env.apiUrlInternal}/v1/orders`, {
-      headers: {
-        "X-Tenant-Slug": tenantSlug,
-        Authorization: `Bearer ${token}`,
-        Cookie: `customer_token=${token}`,
-      },
-      cache: "no-store",
-    });
-    if (!res.ok) return [];
-    const data = await res.json();
-    const list = items<ApiOrder>(data);
-    return list.map(mapOrder);
-  } catch {
-    return [];
-  }
+  const { token, isMockSession } = await getCustomerSession();
+  if (!token) return [];
+  if (isMockSession) return MOCK_ORDERS;
+  const res = await customerFetch<unknown>("/v1/orders");
+  if (!res.ok) return [];
+  return items<ApiOrder>(res.data).map(mapOrder);
 }
 
 export async function getCustomerOrder(id: string): Promise<MockOrder | null> {
   if (env.useMocks) {
-    return MOCK_ORDERS.find((o) => o.id === id) ?? null;
+    return MOCK_ORDERS.find((o) => o.id === id) ?? MOCK_ORDERS[0] ?? null;
   }
-  try {
-    const { token, tenantSlug } = await authHeaders();
-    if (!token) return null;
-    const res = await fetch(`${env.apiUrlInternal}/v1/orders/${encodeURIComponent(id)}`, {
-      headers: {
-        "X-Tenant-Slug": tenantSlug,
-        Authorization: `Bearer ${token}`,
-        Cookie: `customer_token=${token}`,
-      },
-      cache: "no-store",
-    });
-    if (!res.ok) return null;
-    return mapOrder((await res.json()) as ApiOrder);
-  } catch {
-    return null;
+  const { token, isMockSession } = await getCustomerSession();
+  if (!token) return null;
+  if (isMockSession) {
+    return MOCK_ORDERS.find((o) => o.id === id) ?? MOCK_ORDERS[0] ?? null;
   }
+  const res = await customerFetch<ApiOrder>(`/v1/orders/${encodeURIComponent(id)}`);
+  if (!res.ok || !res.data) return null;
+  return mapOrder(res.data);
 }
 
 // ── Subscriptions ─────────────────────────────────────────────────────────────
@@ -288,24 +328,12 @@ function mapSubscription(s: ApiSubscription): MockSubscription {
 
 export async function getCustomerSubscriptions(): Promise<MockSubscription[]> {
   if (env.useMocks) return MOCK_SUBSCRIPTIONS;
-  try {
-    const { token, tenantSlug } = await authHeaders();
-    if (!token) return [];
-    const res = await fetch(`${env.apiUrlInternal}/v1/subscriptions`, {
-      headers: {
-        "X-Tenant-Slug": tenantSlug,
-        Authorization: `Bearer ${token}`,
-        Cookie: `customer_token=${token}`,
-      },
-      cache: "no-store",
-    });
-    if (!res.ok) return [];
-    const data = await res.json();
-    const list = items<ApiSubscription>(data);
-    return list.map(mapSubscription);
-  } catch {
-    return [];
-  }
+  const { token, isMockSession } = await getCustomerSession();
+  if (!token) return [];
+  if (isMockSession) return MOCK_SUBSCRIPTIONS;
+  const res = await customerFetch<unknown>("/v1/subscriptions");
+  if (!res.ok) return [];
+  return items<ApiSubscription>(res.data).map(mapSubscription);
 }
 
 // ── Addresses ─────────────────────────────────────────────────────────────────
@@ -317,41 +345,44 @@ interface ApiAddress {
   alias?: string;
   address?: string;
   line?: string;
+  line1?: string;
+  line2?: string;
   street?: string;
   city?: string;
+  state?: string;
+  postalCode?: string;
+  country?: string;
+  phone?: string;
   isDefault?: boolean;
   default?: boolean;
 }
 
 function mapAddress(a: ApiAddress): MockAddress {
+  const line1 = a.line1 ?? a.address ?? a.line ?? a.street ?? "";
+  const complement = a.line2 ? `, ${a.line2}` : "";
   const city = a.city ? `, ${a.city}` : "";
-  const street = a.address ?? a.line ?? a.street ?? "";
+  const state = a.state ? `, ${a.state}` : "";
   return {
     id: a.id,
     label: a.label ?? a.name ?? a.alias ?? "Dirección",
-    line: `${street}${city}`.trim(),
+    line: `${line1}${complement}${city}${state}`.trim(),
+    line1,
+    line2: a.line2 ?? "",
+    city: a.city ?? "",
+    state: a.state ?? "",
+    postalCode: a.postalCode ?? "",
+    country: a.country ?? "CO",
+    phone: a.phone ?? "",
     isDefault: a.isDefault ?? a.default ?? false,
   };
 }
 
 export async function getCustomerAddresses(): Promise<MockAddress[]> {
   if (env.useMocks) return MOCK_ADDRESSES;
-  try {
-    const { token, tenantSlug } = await authHeaders();
-    if (!token) return [];
-    const res = await fetch(`${env.apiUrlInternal}/v1/customers/me/addresses`, {
-      headers: {
-        "X-Tenant-Slug": tenantSlug,
-        Authorization: `Bearer ${token}`,
-        Cookie: `customer_token=${token}`,
-      },
-      cache: "no-store",
-    });
-    if (!res.ok) return [];
-    const data = await res.json();
-    const list = items<ApiAddress>(data);
-    return list.map(mapAddress);
-  } catch {
-    return [];
-  }
+  const { token, isMockSession } = await getCustomerSession();
+  if (!token) return [];
+  if (isMockSession) return MOCK_ADDRESSES;
+  const res = await customerFetch<unknown>("/v1/customers/me/addresses");
+  if (!res.ok) return [];
+  return items<ApiAddress>(res.data).map(mapAddress);
 }

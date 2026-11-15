@@ -1,37 +1,55 @@
 "use client";
 
-import { useState } from "react";
-import { Trash2, Plus, Upload } from "lucide-react";
+import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { Trash2, Plus, Check, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Roast } from "@/components/ui/roast";
-import type { Product, ProductVariant } from "@/lib/types";
+import type { GrindFormat, Product, ProductImage, ProductStatus } from "@/lib/types";
+import { GRIND_OPTIONS, sortGrinds } from "@/lib/grind";
+import { saveProductAction } from "@/lib/actions/admin-mutations";
+import { ProductImages } from "./product-images";
 
-interface DraftVariant {
+/** Presentación (tamaño) con su precio. Se replica para cada molienda ofrecida. */
+interface DraftSize {
   sizeGrams: number;
-  grind: ProductVariant["grind"];
   priceOneTime: number;
   priceSubscription: number;
   stock: number;
 }
 
-function variantsFromProduct(p?: Product): DraftVariant[] {
-  if (!p) return [{ sizeGrams: 340, grind: "WHOLE_BEAN", priceOneTime: 60_000, priceSubscription: 51_000, stock: 0 }];
-  return p.variants.map((v) => ({
-    sizeGrams: v.sizeGrams,
-    grind: v.grind,
-    priceOneTime: v.priceOneTimeCents / 100,
-    priceSubscription: (v.priceSubscriptionCents ?? 0) / 100,
-    stock: v.stock,
-  }));
+/** Variante tal como la espera la API (`CreateVariantDto`), precios en COP. */
+export interface ExpandedVariant extends DraftSize {
+  grind: GrindFormat;
 }
 
-const GRINDS: { value: ProductVariant["grind"]; label: string }[] = [
-  { value: "WHOLE_BEAN", label: "Grano entero" },
-  { value: "ESPRESSO", label: "Molido espresso" },
-  { value: "FILTER", label: "Molido filtro" },
-  { value: "FRENCH_PRESS", label: "Molido prensa" },
-];
+const DEFAULT_SIZE: DraftSize = { sizeGrams: 340, priceOneTime: 60_000, priceSubscription: 51_000, stock: 0 };
+
+function sizesFromProduct(p?: Product): DraftSize[] {
+  if (!p || p.variants.length === 0) return [{ ...DEFAULT_SIZE }];
+  const bySize = new Map<number, DraftSize>();
+  for (const v of p.variants) {
+    if (bySize.has(v.sizeGrams)) continue;
+    bySize.set(v.sizeGrams, {
+      sizeGrams: v.sizeGrams,
+      priceOneTime: v.priceOneTimeCents / 100,
+      priceSubscription: (v.priceSubscriptionCents ?? 0) / 100,
+      stock: v.stock,
+    });
+  }
+  return Array.from(bySize.values()).sort((a, b) => a.sizeGrams - b.sizeGrams);
+}
+
+function grindsFromProduct(p?: Product): GrindFormat[] {
+  if (!p || p.variants.length === 0) return ["WHOLE_BEAN"];
+  return sortGrinds(Array.from(new Set(p.variants.map((v) => v.grind))));
+}
+
+/** Una variante por cada combinación tamaño × molienda. */
+export function expandVariants(sizes: DraftSize[], grinds: GrindFormat[]): ExpandedVariant[] {
+  return sizes.flatMap((s) => grinds.map((grind) => ({ ...s, grind })));
+}
 
 const BADGE_LABEL: Record<string, string> = {
   BESTSELLER: "Más vendido",
@@ -42,6 +60,7 @@ const BADGE_LABEL: Record<string, string> = {
 };
 
 export function ProductForm({ product }: { product?: Product }) {
+  const router = useRouter();
   const [name, setName] = useState(product?.name ?? "");
   const [shortDesc, setShortDesc] = useState(product?.shortDescription ?? "");
   const [longDesc, setLongDesc] = useState(product?.longDescription ?? "");
@@ -53,23 +72,86 @@ export function ProductForm({ product }: { product?: Product }) {
     product?.flavorNotes.join(", ") ?? "",
   );
   const [badges, setBadges] = useState<string[]>(product?.badges ?? []);
-  const [status, setStatus] = useState(product?.status ?? "DRAFT");
+  const [status, setStatus] = useState<ProductStatus>(product?.status ?? "DRAFT");
   const [subAvail, setSubAvail] = useState(product?.subscriptionAvailability ?? "YES");
-  const [variants, setVariants] = useState<DraftVariant[]>(variantsFromProduct(product));
+  const [sizes, setSizes] = useState<DraftSize[]>(sizesFromProduct(product));
+  const [grinds, setGrinds] = useState<GrindFormat[]>(grindsFromProduct(product));
+  // Producto nuevo: URLs ya subidas a Blob, pendientes de registrar al crear.
+  const [images, setImages] = useState<ProductImage[]>(product?.images ?? []);
+  const [feedback, setFeedback] = useState<{ ok: boolean; text: string } | null>(null);
+  const [isPending, startTransition] = useTransition();
 
   const toggleBadge = (b: string) =>
     setBadges((arr) => (arr.includes(b) ? arr.filter((x) => x !== b) : [...arr, b]));
 
-  const updateVariant = (i: number, patch: Partial<DraftVariant>) =>
-    setVariants((arr) => arr.map((v, idx) => (idx === i ? { ...v, ...patch } : v)));
+  const toggleGrind = (g: GrindFormat) =>
+    setGrinds((arr) => sortGrinds(arr.includes(g) ? arr.filter((x) => x !== g) : [...arr, g]));
 
-  const addVariant = () =>
-    setVariants((arr) => [...arr, { sizeGrams: 340, grind: "WHOLE_BEAN", priceOneTime: 60_000, priceSubscription: 51_000, stock: 0 }]);
-  const removeVariant = (i: number) =>
-    setVariants((arr) => arr.filter((_, idx) => idx !== i));
+  const updateSize = (i: number, patch: Partial<DraftSize>) =>
+    setSizes((arr) => arr.map((s, idx) => (idx === i ? { ...s, ...patch } : s)));
+
+  const addSize = () => setSizes((arr) => [...arr, { ...DEFAULT_SIZE }]);
+  const removeSize = (i: number) => setSizes((arr) => arr.filter((_, idx) => idx !== i));
+
+  const variantCount = expandVariants(sizes, grinds).length;
+
+  const submitForm = (overrideStatus?: ProductStatus) => {
+    setFeedback(null);
+    const finalStatus = overrideStatus ?? status;
+    if (overrideStatus) setStatus(overrideStatus);
+
+    startTransition(async () => {
+      const res = await saveProductAction({
+        id: product?.id,
+        name,
+        shortDescription: shortDesc,
+        longDescription: longDesc,
+        type,
+        origin,
+        producerStory: story,
+        roastLevel: roast,
+        flavorNotes: flavors
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean),
+        badges,
+        status: finalStatus,
+        subscriptionAvailability: subAvail,
+        variants: expandVariants(sizes, grinds),
+        pendingImages: product?.id ? undefined : images,
+      });
+
+      if (res.ok) {
+        setFeedback({ ok: true, text: res.message });
+        if (!product?.id) {
+          router.push("/admin/productos");
+        }
+      } else {
+        setFeedback({ ok: false, text: res.error });
+      }
+    });
+  };
 
   return (
-    <form className="space-y-8">
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        submitForm();
+      }}
+      className="space-y-8"
+    >
+      {feedback && (
+        <div
+          className={
+            "rounded-md border px-4 py-3 text-sm " +
+            (feedback.ok
+              ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-800"
+              : "border-red-300/60 bg-red-50 text-red-800")
+          }
+        >
+          {feedback.text}
+        </div>
+      )}
       <Section title="Identificación">
         <Field label="Nombre del producto" value={name} onChange={setName} placeholder="Mezcla del alba" />
         <Field
@@ -134,69 +216,101 @@ export function ProductForm({ product }: { product?: Product }) {
       </Section>
 
       <Section title="Imágenes">
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {[0, 1, 2, 3].map((i) => (
-            <div
-              key={i}
-              className="aspect-square rounded-md border border-dashed border-border bg-muted/30 grid place-items-center text-xs text-muted-foreground"
-            >
-              {i === 0 ? <Upload className="size-5" /> : "+"}
-            </div>
-          ))}
-        </div>
-        <p className="text-xs text-muted-foreground">
-          Arrastra para reordenar. La primera imagen es la principal del catálogo.
-        </p>
+        <ProductImages
+          productId={product?.id}
+          initial={product?.images ?? []}
+          productName={name}
+          onChange={setImages}
+        />
       </Section>
 
-      <Section title="Variantes">
+      <Section title="Molienda">
+        <p className="text-sm text-muted-foreground">
+          Marca las moliendas que ofreces para este café. El cliente elegirá una al comprar.
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {GRIND_OPTIONS.map((g) => {
+            const active = grinds.includes(g.value);
+            return (
+              <button
+                type="button"
+                key={g.value}
+                onClick={() => toggleGrind(g.value)}
+                aria-pressed={active}
+                className={
+                  "inline-flex items-center gap-2 rounded-full border px-4 py-1.5 text-sm transition-colors " +
+                  (active
+                    ? "bg-foreground text-background border-foreground"
+                    : "border-border text-muted-foreground hover:text-foreground hover:border-foreground/40")
+                }
+              >
+                <span
+                  className={
+                    "grid size-4 place-items-center rounded-sm border " +
+                    (active ? "border-background" : "border-current")
+                  }
+                >
+                  {active && <Check className="size-3" />}
+                </span>
+                {g.label}
+              </button>
+            );
+          })}
+        </div>
+        {grinds.length === 0 && (
+          <p className="text-xs text-destructive">Selecciona al menos una molienda.</p>
+        )}
+      </Section>
+
+      <Section title="Tamaños y precios">
         <div className="space-y-3">
-          {variants.map((v, i) => (
+          {sizes.map((s, i) => (
             <div
               key={i}
-              className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_1fr_1fr_1fr_auto] gap-3 items-end rounded-md border border-border bg-muted/20 p-3"
+              className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_1fr_1fr_auto] gap-3 items-end rounded-md border border-border bg-muted/20 p-3"
             >
               <NumberField
                 label="Tamaño (g)"
-                value={v.sizeGrams}
-                onChange={(n) => updateVariant(i, { sizeGrams: n })}
-              />
-              <SelectField
-                label="Molienda"
-                value={v.grind}
-                onChange={(g) => updateVariant(i, { grind: g as ProductVariant["grind"] })}
-                options={GRINDS}
+                value={s.sizeGrams}
+                onChange={(n) => updateSize(i, { sizeGrams: n })}
               />
               <NumberField
                 label="Precio (COP)"
-                value={v.priceOneTime}
-                onChange={(n) => updateVariant(i, { priceOneTime: n })}
+                value={s.priceOneTime}
+                onChange={(n) => updateSize(i, { priceOneTime: n })}
               />
               <NumberField
                 label="Precio suscr."
-                value={v.priceSubscription}
-                onChange={(n) => updateVariant(i, { priceSubscription: n })}
+                value={s.priceSubscription}
+                onChange={(n) => updateSize(i, { priceSubscription: n })}
               />
               <NumberField
                 label="Stock"
-                value={v.stock}
-                onChange={(n) => updateVariant(i, { stock: n })}
+                value={s.stock}
+                onChange={(n) => updateSize(i, { stock: n })}
               />
               <Button
                 type="button"
                 variant="ghost"
                 size="sm"
-                onClick={() => removeVariant(i)}
-                aria-label="Eliminar variante"
+                onClick={() => removeSize(i)}
+                disabled={sizes.length === 1}
+                aria-label="Eliminar tamaño"
               >
                 <Trash2 className="size-4 text-destructive" />
               </Button>
             </div>
           ))}
-          <Button type="button" variant="outline" onClick={addVariant}>
+          <Button type="button" variant="outline" onClick={addSize}>
             <Plus className="size-4" />
-            Agregar variante
+            Agregar tamaño
           </Button>
+          <p className="text-xs text-muted-foreground">
+            El precio aplica a todas las moliendas marcadas. Se generarán{" "}
+            <span className="font-medium text-foreground tabular-nums">{variantCount}</span>{" "}
+            variantes ({sizes.length} {sizes.length === 1 ? "tamaño" : "tamaños"} × {grinds.length}{" "}
+            {grinds.length === 1 ? "molienda" : "moliendas"}).
+          </p>
         </div>
       </Section>
 
@@ -256,10 +370,18 @@ export function ProductForm({ product }: { product?: Product }) {
       </Section>
 
       <div className="flex justify-end gap-3 sticky bottom-0 bg-muted/30 -mx-8 px-8 py-4 border-t border-border">
-        <Button type="button" variant="outline">
+        <Button
+          type="button"
+          variant="outline"
+          disabled={isPending}
+          onClick={() => submitForm("DRAFT")}
+        >
           Guardar como borrador
         </Button>
-        <Button type="submit">Guardar producto</Button>
+        <Button type="submit" disabled={isPending}>
+          {isPending && <Loader2 className="size-4 animate-spin mr-1.5" />}
+          {isPending ? "Guardando…" : "Guardar producto"}
+        </Button>
       </div>
     </form>
   );

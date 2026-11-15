@@ -14,6 +14,9 @@ export interface MockOrder {
   createdAt: string; // already formatted "04 jun 2026"
   itemsCount: number;
   totalCents: number;
+  subtotalCents?: number;
+  shippingCents?: number;
+  discountCents?: number;
   status: OrderStatus;
   fromSubscription: boolean;
   items?: MockOrderItem[];
@@ -37,6 +40,13 @@ export interface MockAddress {
   label: string;
   line: string;
   isDefault: boolean;
+  line1?: string;
+  line2?: string;
+  city?: string;
+  state?: string;
+  postalCode?: string;
+  country?: string;
+  phone?: string;
 }
 
 export interface MockCustomer {
@@ -44,6 +54,8 @@ export interface MockCustomer {
   email: string;
   phone: string;
   memberSince: string;
+  /** Recibe novedades/promociones por correo (por defecto sí; se puede desactivar). */
+  newsletterOptIn: boolean;
 }
 
 export const MOCK_CUSTOMER: MockCustomer = {
@@ -51,6 +63,7 @@ export const MOCK_CUSTOMER: MockCustomer = {
   email: "maria@correo.com",
   phone: "+57 300 123 4567",
   memberSince: "2024",
+  newsletterOptIn: true,
 };
 
 export const MOCK_ADDRESSES: MockAddress[] = [

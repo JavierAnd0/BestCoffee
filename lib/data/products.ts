@@ -10,21 +10,43 @@ import type { Product } from "../types";
 
 export async function listProducts(): Promise<Product[]> {
   if (env.useMocks) return PRODUCTS;
-  const api = await apiServer();
-  const { data, error } = await api.GET("/v1/products");
-  if (error || !data) throw new Error("API GET /v1/products failed");
-  const items = (data as unknown as { items: ApiProduct[] }).items ?? [];
-  return items.map(mapProduct);
+  try {
+    const api = await apiServer();
+    type Page = { items?: ApiProduct[]; data?: ApiProduct[]; nextCursor?: string | null };
+    const all: ApiProduct[] = [];
+    let cursor: string | undefined;
+    // La API pagina por cursor y admite hasta 100 por página (por defecto 24:
+    // con 200 productos serían nueve viajes seguidos). Se recorre completa, con un
+    // tope de páginas para que una respuesta anómala no deje un bucle abierto.
+    for (let i = 0; i < 20; i++) {
+      const { data, error } = await api.GET("/v1/products", {
+        // `limit` y `cursor` existen en la API pero no en los tipos generados (desactualizados).
+        params: { query: { limit: 100, ...(cursor ? { cursor } : {}) } } as never,
+      });
+      if (error || !data) break;
+      const page = data as unknown as Page;
+      all.push(...(page.items ?? page.data ?? []));
+      if (!page.nextCursor) break;
+      cursor = page.nextCursor;
+    }
+    return all.map(mapProduct);
+  } catch {
+    return [];
+  }
 }
 
 export async function getProductBySlug(slug: string): Promise<Product | undefined> {
   if (env.useMocks) return findMock(slug);
-  const api = await apiServer();
-  const { data, error } = await api.GET("/v1/products/{slug}", {
-    params: { path: { slug } },
-  });
-  if (error || !data) return undefined;
-  return mapProduct(data as unknown as ApiProduct);
+  try {
+    const api = await apiServer();
+    const { data, error } = await api.GET("/v1/products/{slug}", {
+      params: { path: { slug } },
+    });
+    if (error || !data) return undefined;
+    return mapProduct(data as unknown as ApiProduct);
+  } catch {
+    return undefined;
+  }
 }
 
 export async function listBestsellers(): Promise<Product[]> {
@@ -48,4 +70,14 @@ export async function listRelated(
   const sameType = all.filter((p) => p.slug !== product.slug && p.type === product.type);
   const pool = sameType.length ? sameType : all.filter((p) => p.slug !== product.slug);
   return pool.slice(0, limit);
+}
+
+export async function listAccessories(): Promise<Product[]> {
+  const all = await listProducts();
+  return all.filter((p) => p.type === "ACCESSORY" || p.collectionSlugs.includes("accesorios"));
+}
+
+export async function listCoffees(): Promise<Product[]> {
+  const all = await listProducts();
+  return all.filter((p) => p.type !== "ACCESSORY");
 }

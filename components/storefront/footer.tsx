@@ -1,15 +1,102 @@
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { toast } from "@/components/ui/toast";
 import { Logo } from "./logo";
+import { subscribeNewsletterAction } from "@/lib/actions/newsletter";
+import type { EditorialPage, TenantFeatures, TenantNewsletter } from "@/lib/types";
 
-const COLUMNS: { title: string; links: string[] }[] = [
-  { title: "Tienda", links: ["Catálogo", "Suscripciones", "Paquetes", "Accesorios"] },
-  { title: "Aprende", links: ["Guías de preparación", "Blog", "Origen"] },
-  { title: "Empresa", links: ["Nuestra historia", "Sostenibilidad", "Mayoristas"] },
-  { title: "Ayuda", links: ["Contacto", "Envíos", "Devoluciones"] },
+interface FooterLink {
+  label: string;
+  href: string;
+  /** Si la tienda no tiene esta capacidad, el enlace no se muestra. */
+  feature?: Exclude<keyof TenantFeatures, "maxProducts">;
+  /** Página editorial: solo si la tienda tiene la suya. */
+  page?: EditorialPage;
+}
+
+const COLUMNS: { title: string; links: FooterLink[] }[] = [
+  {
+    title: "Tienda",
+    links: [
+      { label: "Catálogo", href: "/catalogo", feature: "catalog" },
+      { label: "Suscripciones", href: "/suscripciones", feature: "subscriptions" },
+      { label: "Paquetes", href: "/catalogo?coleccion=paquetes", feature: "catalog" },
+      { label: "Accesorios", href: "/accesorios", feature: "accessories" },
+      { label: "Nuestras tiendas", href: "/tiendas", page: "tiendas" },
+    ],
+  },
+  {
+    title: "Aprende",
+    links: [
+      { label: "Guías de preparación", href: "/guias" },
+      { label: "Blog", href: "/blog", feature: "blog" },
+      { label: "Origen", href: "/historia", page: "historia" },
+    ],
+  },
+  {
+    title: "Empresa",
+    links: [
+      { label: "Nuestra historia", href: "/historia", page: "historia" },
+      { label: "Sostenibilidad", href: "/sostenibilidad", page: "sostenibilidad" },
+      { label: "Mayoristas", href: "/mayoristas", page: "mayoristas" },
+    ],
+  },
+  {
+    title: "Ayuda",
+    links: [
+      { label: "Contacto", href: "/contacto" },
+      { label: "Envíos", href: "/envios" },
+      { label: "Devoluciones", href: "/devoluciones" },
+    ],
+  },
 ];
 
-export function Footer({ brand = "ORÍGEN" }: { brand?: string }) {
+interface FooterProps {
+  brand?: string;
+  /** Con sesión iniciada ya se recibe el boletín (se gestiona en "Mis datos"). */
+  isLoggedIn?: boolean;
+  welcomeOffer?: TenantNewsletter["welcomeOffer"];
+  /** Capacidades del plan: ocultan los enlaces a secciones que la tienda no tiene. */
+  features?: TenantFeatures;
+  pages?: Record<EditorialPage, boolean>;
+}
+
+export function Footer({
+  brand = "",
+  isLoggedIn = false,
+  welcomeOffer = null,
+  features,
+  pages,
+}: FooterProps) {
+  const visible = (l: FooterLink) =>
+    (l.page ? (pages?.[l.page] ?? true) : true) &&
+    (!l.feature ||
+    !features ||
+    // los accesorios son parte del catálogo
+      (features[l.feature] && (l.feature !== "accessories" || features.catalog)));
+  const [email, setEmail] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [subscribed, setSubscribed] = useState(false);
+
+  async function handleNewsletterSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setError(null);
+    setBusy(true);
+    const res = await subscribeNewsletterAction({ email, source: "footer" });
+    setBusy(false);
+    if (!res.ok) {
+      setError(res.error);
+      return;
+    }
+    setSubscribed(true);
+    setEmail("");
+    toast({ title: "¡Gracias por suscribirte!", description: res.message });
+  }
+
   return (
     <footer
       className="mt-0"
@@ -22,22 +109,57 @@ export function Footer({ brand = "ORÍGEN" }: { brand?: string }) {
             Únete al club
           </h3>
           <p className="mt-3 text-sm text-white/44 font-light leading-relaxed">
-            Historias de café, lanzamientos y un descuento de bienvenida.
+            {isLoggedIn
+              ? "Ya recibes nuestras novedades por correo. Puedes cambiarlo cuando quieras."
+              : welcomeOffer
+                ? `Historias de café, lanzamientos y ${welcomeOffer.label} en tu primera compra.`
+                : "Historias de café, lanzamientos y novedades de la tienda."}
           </p>
-          <form className="mt-6 flex items-center gap-2 border-b border-white/18 pb-2">
-            <input
-              type="email"
-              placeholder="tu@correo.com"
-              className="flex-1 bg-transparent text-sm outline-none placeholder:text-white/25 text-white font-light"
-            />
-            <Button
-              type="submit"
-              size="sm"
-              className="bg-white! text-foreground! hover:bg-white/90! border-transparent! text-xs! rounded-sm!"
+
+          {isLoggedIn ? (
+            <Link
+              href="/cuenta/datos#preferencias"
+              className="mt-6 inline-block text-xs text-white/70 underline underline-offset-4 hover:text-white"
             >
-              →
-            </Button>
-          </form>
+              Administrar mis preferencias de correo
+            </Link>
+          ) : subscribed ? (
+            <p role="status" className="mt-6 text-xs text-white/70 bg-white/5 border border-white/10 p-3 rounded">
+              ✓ Gracias por suscribirte.
+              {welcomeOffer ? ` Usa el código ${welcomeOffer.code} en el pago.` : ""}
+            </p>
+          ) : (
+            <>
+              <form onSubmit={handleNewsletterSubmit} className="mt-6 flex items-center gap-2 border-b border-white/18 pb-2" noValidate>
+                <label htmlFor="footer-newsletter-email" className="sr-only">
+                  Correo electrónico
+                </label>
+                <input
+                  id="footer-newsletter-email"
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="tu@correo.com"
+                  className="flex-1 bg-transparent text-sm outline-none placeholder:text-white/25 text-white font-light"
+                />
+                <Button
+                  type="submit"
+                  size="sm"
+                  disabled={busy}
+                  aria-label="Suscribirme al boletín"
+                  className="bg-white! text-foreground! hover:bg-white/90! border-transparent! text-xs! rounded-sm!"
+                >
+                  {busy ? "…" : "→"}
+                </Button>
+              </form>
+              {error && (
+                <p role="alert" className="mt-2 text-xs text-red-300">
+                  {error}
+                </p>
+              )}
+            </>
+          )}
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-8">
@@ -45,10 +167,13 @@ export function Footer({ brand = "ORÍGEN" }: { brand?: string }) {
             <div key={c.title}>
               <p className="eyebrow text-white/30 mb-5">{c.title}</p>
               <ul className="space-y-2.5 text-sm text-white/40 font-light">
-                {c.links.map((l) => (
-                  <li key={l}>
-                    <Link href="#" className="hover:text-white/80 transition-colors duration-150">
-                      {l}
+                {c.links.filter(visible).map((link) => (
+                  <li key={link.label}>
+                    <Link
+                      href={link.href}
+                      className="hover:text-white/80 transition-colors duration-150"
+                    >
+                      {link.label}
                     </Link>
                   </li>
                 ))}
@@ -62,9 +187,21 @@ export function Footer({ brand = "ORÍGEN" }: { brand?: string }) {
       <div className="border-t border-white/6">
         <div className="mx-auto max-w-7xl px-6 sm:px-10 lg:px-16 xl:px-24 py-6 flex flex-col sm:flex-row items-center justify-between gap-4">
           <Logo size={15} brand={brand} className="text-white/25" />
-          <span className="text-[11px] text-white/25 tracking-wide">
-            © 2026 {brand} · Términos · Privacidad · Devoluciones
-          </span>
+          <div className="text-[11px] text-white/25 tracking-wide flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
+            <span>© 2026 {brand}</span>
+            <span>·</span>
+            <Link href="/legal/terminos" className="hover:text-white/60 transition-colors">
+              Términos
+            </Link>
+            <span>·</span>
+            <Link href="/legal/privacidad" className="hover:text-white/60 transition-colors">
+              Privacidad
+            </Link>
+            <span>·</span>
+            <Link href="/devoluciones" className="hover:text-white/60 transition-colors">
+              Devoluciones
+            </Link>
+          </div>
           <div className="flex gap-2">
             {[0, 1, 2, 3].map((i) => (
               <span

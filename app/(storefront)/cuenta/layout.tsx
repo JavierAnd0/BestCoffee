@@ -1,20 +1,20 @@
-import Link from "next/link";
-import { LogOut } from "lucide-react";
+import { redirect } from "next/navigation";
 import { getCurrentCustomer } from "@/lib/data/account";
-import { logoutAction } from "@/lib/actions/auth";
+import { getCustomerSession } from "@/lib/auth/session-store";
+import { env } from "@/lib/env";
 import { requireFeature } from "@/lib/data/feature-guard";
-
-const NAV = [
-  { href: "/cuenta", label: "Resumen" },
-  { href: "/cuenta/pedidos", label: "Pedidos" },
-  { href: "/cuenta/suscripciones", label: "Suscripciones" },
-  { href: "/cuenta/direcciones", label: "Direcciones" },
-  { href: "/cuenta/datos", label: "Mis datos" },
-];
+import { CustomerLogoutButton } from "@/components/storefront/customer-logout-button";
+import { AccountNav } from "@/components/storefront/account-nav";
 
 export default async function AccountLayout({ children }: { children: React.ReactNode }) {
   // Las cuentas de cliente son una capacidad de plan (PRO+).
   await requireFeature("customerAccounts");
+  // El proxy solo comprueba que exista alguna cookie de sesión. Aquí se exige una
+  // sesión real (token emitido por el backend o identidad Neon verificada): sin
+  // ella no se pinta el panel, ni siquiera vacío.
+  if (!env.useMocks && !(await getCustomerSession()).token) {
+    redirect("/login?next=/cuenta");
+  }
   const customer = await getCurrentCustomer();
   return (
     <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-12 grid lg:grid-cols-[240px_1fr] gap-12">
@@ -34,25 +34,9 @@ export default async function AccountLayout({ children }: { children: React.Reac
             </div>
           </div>
         </div>
-        <nav className="flex flex-col gap-1">
-          {NAV.map((n) => (
-            <Link
-              key={n.href}
-              href={n.href}
-              className="rounded-md px-3 py-2 text-sm text-foreground/80 hover:bg-muted hover:text-foreground transition-colors"
-            >
-              {n.label}
-            </Link>
-          ))}
-          <form action={logoutAction}>
-            <button
-              type="submit"
-              className="mt-2 w-full inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-foreground transition-colors text-left"
-            >
-              <LogOut className="size-4" />
-              Cerrar sesión
-            </button>
-          </form>
+        <nav className="flex flex-col gap-3">
+          <AccountNav />
+          <CustomerLogoutButton />
         </nav>
       </aside>
       <div>{children}</div>

@@ -51,25 +51,36 @@ function mapPost(p: ApiBlogItem): BlogPost {
 
 export async function listBlogPosts(): Promise<BlogPost[]> {
   if (env.useMocks) return BLOG_POSTS;
-  const api = await apiServer();
-  const { data, error } = await api.GET("/v1/blog");
-  if (error || !data) return [];
-  const items = (data as unknown as { items: ApiBlogItem[] }).items ?? [];
-  return items.map(mapPost);
+  try {
+    const api = await apiServer();
+    const { data, error } = await api.GET("/v1/blog");
+    if (error || !data) return [];
+    const items =
+      (data as unknown as { items?: ApiBlogItem[]; data?: ApiBlogItem[] }).items ??
+      (data as unknown as { items?: ApiBlogItem[]; data?: ApiBlogItem[] }).data ??
+      [];
+    return items.map(mapPost);
+  } catch {
+    return [];
+  }
 }
 
 export async function getBlogPost(slug: string): Promise<BlogPost | undefined> {
   if (env.useMocks) return findMock(slug);
-  const api = await apiServer();
-  const { data, error } = await api.GET("/v1/blog/{slug}", {
-    params: { path: { slug } },
-  });
-  if (error || !data) {
-    // Detail endpoint may not exist yet — fall back to the list entry.
-    const all = await listBlogPosts();
-    return all.find((p) => p.slug === slug);
+  try {
+    const api = await apiServer();
+    const { data, error } = await api.GET("/v1/blog/{slug}", {
+      params: { path: { slug } },
+    });
+    if (error || !data) {
+      // Detail endpoint may not exist yet — fall back to the tenant's own list.
+      const all = await listBlogPosts();
+      return all.find((p) => p.slug === slug);
+    }
+    return mapPost(data as unknown as ApiBlogItem);
+  } catch {
+    return undefined;
   }
-  return mapPost(data as unknown as ApiBlogItem);
 }
 
 export async function getFeaturedPost(): Promise<BlogPost | null> {

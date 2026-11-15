@@ -13,11 +13,17 @@ import { Button } from "@/components/ui/button";
 import { Stepper } from "@/components/ui/stepper";
 import { ShipBar } from "@/components/ui/ship-bar";
 import { formatCop } from "@/lib/format";
-import { TENANT_ORIGEN } from "@/lib/mocks/tenant";
 
 export function CartDrawer() {
-  const { items, isOpen, close, removeItem, updateQty, subtotalCents } = useCart();
-  const threshold = TENANT_ORIGEN.freeShippingThresholdCents;
+  const {
+    items,
+    isOpen,
+    close,
+    removeItem,
+    updateQty,
+    subtotalCents,
+    freeShippingThresholdCents: threshold,
+  } = useCart();
   const pct = Math.min(100, (subtotalCents / threshold) * 100);
   const remainingCents = Math.max(0, threshold - subtotalCents);
 

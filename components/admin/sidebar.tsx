@@ -15,15 +15,28 @@ import {
   Settings,
   ShieldCheck,
   Truck,
-  LogOut,
+  type LucideIcon,
 } from "lucide-react";
+import type { TenantFeatures } from "@/lib/types";
 import { Logo } from "@/components/storefront/logo";
-import {
-  logoutOperatorAction,
-  stopImpersonationAction,
-} from "@/lib/actions/operator-auth";
+import { stopImpersonationAction } from "@/lib/actions/operator-auth";
+import { OperatorLogoutButton } from "./operator-logout-button";
 
-const NAV = [
+type BooleanFeature = Exclude<keyof TenantFeatures, "maxProducts">;
+
+const NAV: {
+  href: string;
+  label: string;
+  icon: LucideIcon;
+  exact?: boolean;
+  /**
+   * Si la tienda no tiene esta capacidad, la entrada no aparece. Solo se usa en
+   * secciones que crean cosas nuevas (promociones, reseñas): pedidos,
+   * suscripciones y catálogo siempre se ven, para atender lo que ya existe y
+   * para que una tienda suspendida o con plan bajo pueda regularizarse.
+   */
+  feature?: BooleanFeature;
+}[] = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { href: "/admin/productos", label: "Productos", icon: Coffee },
   { href: "/admin/colecciones", label: "Colecciones", icon: FolderOpen },
@@ -32,15 +45,18 @@ const NAV = [
   { href: "/admin/clientes", label: "Clientes", icon: Users },
   { href: "/admin/logistica", label: "Logística", icon: Truck },
   { href: "/admin/contenido", label: "Contenido", icon: FileText },
-  { href: "/admin/promociones", label: "Promociones", icon: TicketPercent },
-  { href: "/admin/resenas", label: "Reseñas", icon: Star },
+  { href: "/admin/promociones", label: "Promociones", icon: TicketPercent, feature: "discountCodes" },
+  { href: "/admin/resenas", label: "Reseñas", icon: Star, feature: "reviews" },
   { href: "/admin/configuracion", label: "Configuración", icon: Settings },
   { href: "/admin/auditoria", label: "Auditoría", icon: ShieldCheck },
 ];
 
 export function AdminSidebar({
   operator,
+  features,
 }: {
+  /** Capacidades del plan de la tienda. Sin dato, se muestra todo el menú. */
+  features?: TenantFeatures | null;
   operator: {
     name: string;
     email: string;
@@ -68,7 +84,7 @@ export function AdminSidebar({
       </div>
 
       <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-0.5">
-        {NAV.map((n) => {
+        {NAV.filter((n) => !n.feature || !features || features[n.feature]).map((n) => {
           const active = n.exact ? pathname === n.href : pathname.startsWith(n.href);
           const Icon = n.icon;
           return (
@@ -110,15 +126,7 @@ export function AdminSidebar({
               {operator.role}
             </div>
           </div>
-          <form action={logoutOperatorAction}>
-            <button
-              type="submit"
-              aria-label="Cerrar sesión"
-              className="text-muted-foreground hover:text-foreground"
-            >
-              <LogOut className="size-4" />
-            </button>
-          </form>
+          <OperatorLogoutButton />
         </div>
       </div>
     </aside>

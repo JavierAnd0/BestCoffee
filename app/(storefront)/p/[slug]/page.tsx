@@ -6,13 +6,18 @@ import { Roast } from "@/components/ui/roast";
 import { Stars } from "@/components/ui/stars";
 import { BuyBlock } from "@/components/storefront/buy-block";
 import { ProductCard } from "@/components/storefront/product-card";
+import { ProductGallery } from "@/components/storefront/product-gallery";
 import { getProductBySlug, listRelated } from "@/lib/data/products";
 import { getCurrentTenant } from "@/lib/data/tenant";
+import { requireFeature } from "@/lib/data/feature-guard";
+import { JsonLd } from "@/components/seo/json-ld";
+import { breadcrumbLd, getSiteUrl, productLd } from "@/lib/seo";
 
 const TYPE_LABEL = {
   BLEND: "Mezcla",
   SINGLE_ORIGIN: "Origen único",
   DECAF: "Descafeinado",
+  ACCESSORY: "Accesorio de Barismo",
 } as const;
 
 export async function generateMetadata({
@@ -23,9 +28,23 @@ export async function generateMetadata({
   const { slug } = await params;
   const product = await getProductBySlug(slug);
   if (!product) return { title: "Producto no encontrado" };
+  const image = product.images[0];
+  const tenant = await getCurrentTenant();
   return {
     title: product.name,
     description: product.shortDescription,
+    alternates: { canonical: `/p/${product.slug}` },
+    openGraph: {
+      type: "website",
+      // Definir openGraph aquí reemplaza al del layout: se repiten sitio e idioma.
+      siteName: tenant.brand,
+      locale: "es_CO",
+      url: `/p/${product.slug}`,
+      title: product.name,
+      description: product.shortDescription,
+      // Con foto propia se comparte la del producto; sin ella, la imagen de la tienda.
+      ...(image && { images: [{ url: image.url, alt: image.alt ?? product.name }] }),
+    },
   };
 }
 
@@ -34,14 +53,29 @@ export default async function ProductPage({
 }: {
   params: Promise<{ slug: string }>;
 }) {
+  await requireFeature("catalog");
   const { slug } = await params;
   const product = await getProductBySlug(slug);
   if (!product) notFound();
 
-  const [related, tenant] = await Promise.all([listRelated(product), getCurrentTenant()]);
+  const [related, tenant, siteUrl] = await Promise.all([
+    listRelated(product),
+    getCurrentTenant(),
+    getSiteUrl(),
+  ]);
 
   return (
     <>
+      <JsonLd
+        data={[
+          productLd(product, tenant, siteUrl),
+          breadcrumbLd(siteUrl, [
+            { name: "Inicio", path: "/" },
+            { name: "Catálogo", path: "/catalogo" },
+            { name: product.name, path: `/p/${product.slug}` },
+          ]),
+        ]}
+      />
       <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10">
         <nav className="text-xs text-muted-foreground mb-6">
           Inicio / Catálogo /{" "}
@@ -49,7 +83,7 @@ export default async function ProductPage({
         </nav>
 
         <div className="grid lg:grid-cols-2 gap-12 lg:gap-20">
-          <Gallery alt={product.images[0]?.alt ?? product.name} />
+          <ProductGallery images={product.images} name={product.name} />
 
           <div>
             <Badge variant="outline" className="font-normal uppercase tracking-[0.12em]">
@@ -62,9 +96,11 @@ export default async function ProductPage({
             <div className="mt-3">
               <Stars value={5} count={128} />
             </div>
-            <div className="mt-6">
-              <Roast level={product.roastLevel} />
-            </div>
+            {product.type !== "ACCESSORY" && (
+              <div className="mt-6">
+                <Roast level={product.roastLevel} />
+              </div>
+            )}
             <div className="mt-4 flex flex-wrap gap-2">
               {product.flavorNotes.map((n) => (
                 <Badge key={n} variant="outline" className="font-normal">
@@ -133,31 +169,6 @@ export default async function ProductPage({
         </section>
       )}
     </>
-  );
-}
-
-function Gallery({ alt }: { alt: string }) {
-  return (
-    <div className="space-y-3">
-      <div
-        aria-label={alt}
-        className="aspect-square rounded-lg bg-muted grid place-items-center text-sm text-muted-foreground"
-      >
-        {alt}
-      </div>
-      <div className="grid grid-cols-4 gap-2">
-        {[0, 1, 2, 3].map((i) => (
-          <button
-            key={i}
-            aria-label={`Vista ${i + 1}`}
-            className={
-              "aspect-square rounded-md bg-muted/70 hover:ring-2 hover:ring-foreground/20 transition " +
-              (i === 0 ? "ring-2 ring-foreground" : "")
-            }
-          />
-        ))}
-      </div>
-    </div>
   );
 }
 

@@ -311,6 +311,7 @@ function Result({ product, onReset }: { product: Product; onReset: () => void })
     BLEND: "Mezcla",
     SINGLE_ORIGIN: "Origen único",
     DECAF: "Descafeinado",
+    ACCESSORY: "Accesorio",
   };
 
   return (

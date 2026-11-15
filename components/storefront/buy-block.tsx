@@ -6,14 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Stepper } from "@/components/ui/stepper";
 import { formatCop } from "@/lib/format";
 import type { Product, ProductVariant } from "@/lib/types";
+import { GRIND_LABEL, sortGrinds } from "@/lib/grind";
 import { useCart, buildCartItem } from "./cart-context";
-
-const GRIND_LABEL: Record<ProductVariant["grind"], string> = {
-  WHOLE_BEAN: "Grano entero",
-  ESPRESSO: "Espresso",
-  FILTER: "Filtro",
-  FRENCH_PRESS: "Prensa",
-};
 
 const FREQUENCIES = [
   { days: 7, label: "Cada semana" },
@@ -42,7 +36,7 @@ export function BuyBlock({
     [product.variants],
   );
   const grinds = useMemo(
-    () => Array.from(new Set(product.variants.map((v) => v.grind))),
+    () => sortGrinds(Array.from(new Set(product.variants.map((v) => v.grind)))),
     [product.variants],
   );
 
@@ -120,6 +114,45 @@ export function BuyBlock({
     );
   }
 
+  // Vista específica para Accesorios y Equipos (sin molienda ni suscripción)
+  if (product.type === "ACCESSORY") {
+    return (
+      <div className="space-y-7">
+        <div className="rounded-xl border border-border bg-card p-5 space-y-2 shadow-xs">
+          <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+            Precio unitario
+          </div>
+          <div className="font-display text-3xl font-semibold tabular-nums text-foreground">
+            {formatCop(variant.priceOneTimeCents)}
+          </div>
+          <p className="text-xs text-muted-foreground pt-1">
+            ✓ Garantía oficial de 1 año · Calibrado para barismo
+          </p>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <Stepper value={qty} onChange={setQty} />
+          <Button
+            size="lg"
+            className="flex-1 justify-center h-12 text-base"
+            onClick={() => {
+              cart.addItem({
+                ...buildCartItem(product, variant, "ONCE"),
+                qty,
+              });
+              cart.open();
+            }}
+          >
+            Agregar al carrito · {formatCop(total)}
+          </Button>
+        </div>
+        <p className="text-xs text-muted-foreground text-center">
+          Envío gratis en compras superiores a $120.000 COP
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-7">
       <VariantSection label="Tamaño">
@@ -193,7 +226,7 @@ export function BuyBlock({
         <Button
           size="lg"
           className="flex-1 justify-center h-12 text-base"
-          onClick={() =>
+          onClick={() => {
             cart.addItem({
               ...buildCartItem(
                 product,
@@ -202,8 +235,9 @@ export function BuyBlock({
                 isSub ? freqDays : undefined,
               ),
               qty,
-            })
-          }
+            });
+            cart.open();
+          }}
         >
           Agregar al carrito · {formatCop(total)}
         </Button>
@@ -227,7 +261,7 @@ export function BuyBlock({
         <Button
           size="lg"
           className="flex-1 justify-center h-11 text-base"
-          onClick={() =>
+          onClick={() => {
             cart.addItem({
               ...buildCartItem(
                 product,
@@ -236,8 +270,9 @@ export function BuyBlock({
                 isSub ? freqDays : undefined,
               ),
               qty,
-            })
-          }
+            });
+            cart.open();
+          }}
         >
           Agregar
         </Button>

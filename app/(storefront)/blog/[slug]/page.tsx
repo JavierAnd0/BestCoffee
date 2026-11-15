@@ -4,6 +4,9 @@ import type { Metadata } from "next";
 import { Badge } from "@/components/ui/badge";
 import { getBlogPost, listRelatedPosts } from "@/lib/data/blog";
 import { requireFeature } from "@/lib/data/feature-guard";
+import { getCurrentTenant } from "@/lib/data/tenant";
+import { JsonLd } from "@/components/seo/json-ld";
+import { breadcrumbLd, getSiteUrl } from "@/lib/seo";
 
 export async function generateMetadata({
   params,
@@ -13,7 +16,22 @@ export async function generateMetadata({
   const { slug } = await params;
   const post = await getBlogPost(slug);
   if (!post) return { title: "Artículo no encontrado" };
-  return { title: post.title, description: post.excerpt };
+  const tenant = await getCurrentTenant();
+  return {
+    title: post.title,
+    description: post.excerpt,
+    alternates: { canonical: `/blog/${post.slug}` },
+    openGraph: {
+      type: "article",
+      siteName: tenant.brand,
+      locale: "es_CO",
+      url: `/blog/${post.slug}`,
+      title: post.title,
+      description: post.excerpt,
+      authors: [post.author.name],
+      tags: post.tags,
+    },
+  };
 }
 
 export default async function BlogArticle({
@@ -26,10 +44,36 @@ export default async function BlogArticle({
   const post = await getBlogPost(slug);
   if (!post) notFound();
 
-  const related = await listRelatedPosts(post.slug);
+  const [related, tenant, siteUrl] = await Promise.all([
+    listRelatedPosts(post.slug),
+    getCurrentTenant(),
+    getSiteUrl(),
+  ]);
 
   return (
     <>
+      <JsonLd
+        data={[
+          {
+            "@context": "https://schema.org",
+            "@type": "BlogPosting",
+            headline: post.title,
+            description: post.excerpt,
+            articleSection: post.category,
+            keywords: post.tags.join(", "),
+            inLanguage: "es-CO",
+            url: `${siteUrl}/blog/${post.slug}`,
+            mainEntityOfPage: `${siteUrl}/blog/${post.slug}`,
+            author: { "@type": "Person", name: post.author.name, jobTitle: post.author.role },
+            publisher: { "@id": `${siteUrl}/#organization`, name: tenant.brand },
+          },
+          breadcrumbLd(siteUrl, [
+            { name: "Inicio", path: "/" },
+            { name: "Blog", path: "/blog" },
+            { name: post.title, path: `/blog/${post.slug}` },
+          ]),
+        ]}
+      />
       <article>
         <header className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 pt-12 text-center">
           <Link

@@ -13,8 +13,9 @@ export function AnnounceBar({ messages }: { messages: AnnounceMessage[] }) {
     return () => clearInterval(t);
   }, [messages.length]);
 
-  if (messages.length === 0) return null;
-  const m = messages[i];
+  if (!messages || messages.length === 0) return null;
+  const m = messages[i % messages.length] ?? messages[0];
+  if (!m?.text) return null;
 
   return (
     <div className="bg-foreground text-background text-xs">

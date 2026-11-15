@@ -15,10 +15,20 @@ export function CancelModal({
   open,
   onOpenChange,
   productName,
+  onSkipNext,
+  onPause,
+  onReduceFrequency,
+  onConfirmCancel,
+  pending,
 }: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
   productName: string;
+  onSkipNext?: () => void;
+  onPause?: () => void;
+  onReduceFrequency?: () => void;
+  onConfirmCancel?: () => void;
+  pending?: boolean;
 }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -39,23 +49,46 @@ export function CancelModal({
             title="Saltar el próximo envío"
             body="Retoma automáticamente en el siguiente ciclo."
             actionLabel="Saltar"
+            disabled={pending}
+            onClick={() => {
+              onSkipNext?.();
+              onOpenChange(false);
+            }}
           />
           <Option
             icon={<PauseCircle className="size-4" />}
             title="Pausar la suscripción"
             body="Sin envíos hasta que la reactives."
             actionLabel="Pausar"
+            disabled={pending}
+            onClick={() => {
+              onPause?.();
+              onOpenChange(false);
+            }}
           />
           <Option
             icon={<ChevronDown className="size-4" />}
             title="Reducir la frecuencia"
             body="Recibe con menos frecuencia, por ejemplo cada 8 semanas."
             actionLabel="Cambiar"
+            disabled={pending}
+            onClick={() => {
+              onReduceFrequency?.();
+              onOpenChange(false);
+            }}
           />
         </div>
 
         <DialogFooter className="flex sm:justify-between gap-3">
-          <button className="text-xs text-destructive hover:underline underline-offset-2">
+          <button
+            type="button"
+            disabled={pending}
+            onClick={() => {
+              onConfirmCancel?.();
+              onOpenChange(false);
+            }}
+            className="text-xs text-destructive hover:underline underline-offset-2 disabled:opacity-50"
+          >
             Sí, cancelar de todos modos
           </button>
           <Button onClick={() => onOpenChange(false)}>Conservar suscripción</Button>
@@ -70,11 +103,15 @@ function Option({
   title,
   body,
   actionLabel,
+  onClick,
+  disabled,
 }: {
   icon: React.ReactNode;
   title: string;
   body: string;
   actionLabel: string;
+  onClick?: () => void;
+  disabled?: boolean;
 }) {
   return (
     <div className="flex items-start gap-3 rounded-md border border-border bg-muted/30 p-3">
@@ -85,7 +122,7 @@ function Option({
         <div className="text-sm font-medium">{title}</div>
         <div className="text-xs text-muted-foreground">{body}</div>
       </div>
-      <Button variant="outline" size="sm">
+      <Button variant="outline" size="sm" onClick={onClick} disabled={disabled}>
         {actionLabel}
       </Button>
     </div>

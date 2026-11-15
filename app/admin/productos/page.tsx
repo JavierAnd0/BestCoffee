@@ -14,6 +14,7 @@ const TYPE_LABEL = {
   BLEND: "Mezcla",
   SINGLE_ORIGIN: "Origen único",
   DECAF: "Descafeinado",
+  ACCESSORY: "Accesorio",
 } as const;
 
 const BADGE_LABEL: Record<string, string> = {

@@ -1,23 +1,58 @@
 "use server";
 
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { z } from "zod";
 import { env } from "../env";
 import { resolveActiveTenantSlug } from "../tenant";
+import {
+  clearCustomerSessionCookies,
+  clearNeonAndLegacyCookies,
+  setCustomerSessionCookies,
+} from "../auth/session-store";
+import { sendPasswordResetEmail } from "../email/resend";
 
 export type AuthState = { error: string } | null;
 export type RegisterState = null | { error: string } | { success: true; message: string };
+export type PasswordResetState = null | { error: string } | { sent: true };
+
+// Esquemas mínimos que coinciden con los DTOs reales del backend
+// (CustomerLoginDto / CustomerRegisterDto / ForgotPasswordDto).
+const loginSchema = z.object({
+  email: z.string().trim().min(1, "El correo es requerido.").email("Correo inválido."),
+  password: z.string().min(1, "La contraseña es requerida."),
+  next: z.string().trim().optional(),
+});
+
+const registerSchema = z.object({
+  email: z.string().trim().min(1, "El correo es requerido.").email("Correo inválido."),
+  password: z.string().min(8, "La contraseña debe tener al menos 8 caracteres."),
+  firstName: z.string().trim().optional(),
+  lastName: z.string().trim().optional(),
+  terms: z.string().min(1, "Debes aceptar los Términos de uso y la Política de privacidad."),
+});
+
+const forgotPasswordSchema = z.object({
+  email: z.string().trim().min(1).email("Correo inválido."),
+});
 
 // ── Login ─────────────────────────────────────────────────────────────────────
 export async function loginAction(
   _prev: AuthState,
   formData: FormData,
 ): Promise<AuthState> {
-  const email = String(formData.get("email") ?? "").trim();
-  const password = String(formData.get("password") ?? "");
-  const next = String(formData.get("next") ?? "/cuenta").trim();
+  const parsed = loginSchema.safeParse({
+    email: String(formData.get("email") ?? ""),
+    password: String(formData.get("password") ?? ""),
+    next: String(formData.get("next") ?? "/cuenta"),
+  });
 
-  if (!email) return { error: "El correo es requerido." };
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Datos de ingreso inválidos." };
+  }
+
+  const { email, password } = parsed.data;
+  const next = parsed.data.next ?? "/cuenta";
 
   const tenantSlug = await resolveActiveTenantSlug();
 
@@ -47,25 +82,25 @@ export async function loginAction(
     return { error: message };
   }
 
-  // JWT is delivered in Set-Cookie; store it under our session name
+  // JWT is delivered in Set-Cookie or JSON body; store it under our session name
   const setCookieHeader = res.headers.get("set-cookie") ?? "";
   const rawPair = setCookieHeader.split(";")[0]; // e.g. "customer_token=eyJ..."
   const eqIdx = rawPair.indexOf("=");
-  const tokenValue = eqIdx >= 0 ? rawPair.slice(eqIdx + 1).trim() : "";
+  let tokenValue = eqIdx >= 0 ? rawPair.slice(eqIdx + 1).trim() : "";
+
+  if (!tokenValue) {
+    try {
+      const clonedRes = res.clone();
+      const body = (await clonedRes.json()) as { accessToken?: string; token?: string; customer_token?: string };
+      tokenValue = body?.accessToken || body?.token || body?.customer_token || "";
+    } catch { /* ignore */ }
+  }
 
   if (tokenValue) {
     const store = await cookies();
-    const cookieOpts = {
-      httpOnly: true,
-      secure: !env.isDev,
-      sameSite: "lax" as const,
-      path: "/",
-      maxAge: 60 * 60 * 24 * 30,
-    };
-    // bestcoffee-session: used by middleware (proxy.ts) for customer route protection
-    store.set("bestcoffee-session", tokenValue, cookieOpts);
-    // customer_token: forwarded verbatim to the backend for cookie-based auth guards
-    store.set("customer_token", tokenValue, cookieOpts);
+    // Limpiar sesiones previas de Neon Auth para evitar colisiones entre métodos de ingreso
+    clearNeonAndLegacyCookies(store);
+    setCustomerSessionCookies(store, tokenValue);
   }
 
   const isSafeRelative = next.startsWith("/") && !next.startsWith("//") && !next.startsWith("/\\");
@@ -78,14 +113,19 @@ export async function registerAction(
   _prev: RegisterState,
   formData: FormData,
 ): Promise<RegisterState> {
-  const email = String(formData.get("email") ?? "").trim();
-  const password = String(formData.get("password") ?? "");
-  const firstName = String(formData.get("firstName") ?? "").trim() || undefined;
-  const lastName = String(formData.get("lastName") ?? "").trim() || undefined;
+  const parsed = registerSchema.safeParse({
+    email: String(formData.get("email") ?? ""),
+    password: String(formData.get("password") ?? ""),
+    firstName: String(formData.get("firstName") ?? "") || undefined,
+    lastName: String(formData.get("lastName") ?? "") || undefined,
+    terms: formData.get("terms") ? "on" : "",
+  });
 
-  const terms = formData.get("terms");
-  if (!terms) return { error: "Debes aceptar los Términos de uso y la Política de privacidad." };
-  if (!email || !password) return { error: "El correo y la contraseña son requeridos." };
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Datos de registro inválidos." };
+  }
+
+  const { email, password, firstName, lastName } = parsed.data;
 
   const tenantSlug = await resolveActiveTenantSlug();
 
@@ -123,12 +163,55 @@ export async function registerAction(
   };
 }
 
+// ── Password Recovery ─────────────────────────────────────────────────────────
+export async function requestPasswordResetAction(
+  _prev: PasswordResetState,
+  formData: FormData,
+): Promise<PasswordResetState> {
+  const parsed = forgotPasswordSchema.safeParse({
+    email: String(formData.get("email") ?? ""),
+  });
+  if (!parsed.success) {
+    return { error: "Por favor ingresa un correo electrónico válido." };
+  }
+  const { email } = parsed.data;
+
+  const tenantSlug = await resolveActiveTenantSlug();
+  const h = await headers();
+  const host = h.get("x-forwarded-host") || h.get("host") || "localhost:3000";
+  const proto = h.get("x-forwarded-proto") || (host.includes("localhost") ? "http" : "https");
+  const origin = `${proto}://${host}`;
+
+  let backendHandled = false;
+  try {
+    const res = await fetch(`${env.apiUrlInternal}/v1/auth/customer/forgot-password`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Tenant-Slug": tenantSlug,
+      },
+      body: JSON.stringify({ email }),
+      cache: "no-store",
+    });
+    if (res.ok) backendHandled = true;
+  } catch {
+    // Fallback a envío por Resend
+  }
+
+  if (!backendHandled) {
+    await sendPasswordResetEmail({
+      to: email,
+      resetLink: `${origin}/login?email=${encodeURIComponent(email)}`,
+    });
+  }
+
+  return { sent: true };
+}
+
 // ── Logout ────────────────────────────────────────────────────────────────────
-export async function logoutAction() {
+export async function logoutAction(shouldRedirect: boolean | FormData = true) {
   const store = await cookies();
-  const token =
-    store.get("bestcoffee-session")?.value ??
-    store.get("customer_token")?.value;
+  const token = store.get("customer_token")?.value;
   const tenantSlug = await resolveActiveTenantSlug();
 
   // Notify the backend (best effort — clear cookies regardless)
@@ -148,8 +231,18 @@ export async function logoutAction() {
     });
   } catch { /* ignore */ }
 
-  store.set("bestcoffee-session", "", { maxAge: 0, path: "/" });
-  store.set("customer_token", "", { maxAge: 0, path: "/" });
+  clearCustomerSessionCookies(store);
 
-  redirect("/login");
+  if (env.neonAuthUrl) {
+    try {
+      const { auth } = await import("../auth/server");
+      await auth.signOut();
+    } catch { /* ignore */ }
+  }
+
+  if (shouldRedirect !== false) {
+    redirect("/login");
+  }
+
+  return { success: true };
 }

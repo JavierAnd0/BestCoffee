@@ -1,33 +1,31 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { motion } from "motion/react";
 import { formatCop } from "@/lib/format";
 import type { FeaturedPackContent } from "@/lib/types";
 
 function ImageBlock({ title }: { title: string }) {
   return (
-    <div
-      className="absolute inset-0"
-      style={{
-        background:
-          "linear-gradient(148deg,#0f0603 0%,#2a1208 30%,#562814 58%,#8a4422 80%,#b8703a 100%)",
-      }}
-    >
-      <div
-        className="absolute inset-0"
-        style={{
-          background:
-            "radial-gradient(ellipse at 38% 45%, rgba(200,140,60,0.2) 0%, transparent 58%)",
-        }}
+    <div className="absolute inset-0 bg-neutral-900 overflow-hidden">
+      <Image
+        src="/img/molienda-barista.jpg"
+        alt={title}
+        fill
+        sizes="(min-width: 1024px) 50vw, 100vw"
+        className="object-cover object-center scale-[1.02] hover:scale-105 transition-transform duration-1000 ease-out"
+        priority
       />
+      {/* Sombra y viñeta elegante */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-black/20" />
       <div
         className="absolute inset-0 mix-blend-overlay opacity-[0.048]"
         style={{ backgroundImage: "var(--grain)", backgroundSize: "200px" }}
       />
       {/* Pull-quote text over image */}
-      <div className="absolute bottom-8 left-8 right-8">
-        <p className="font-display text-white/30 text-[clamp(1.1rem,2.5vw,1.5rem)] font-light italic leading-snug select-none">
+      <div className="absolute bottom-8 left-8 right-8 z-10">
+        <p className="font-display text-white/90 text-[clamp(1.1rem,2.5vw,1.5rem)] font-light italic leading-snug drop-shadow-md select-none">
           “{title}”
         </p>
       </div>

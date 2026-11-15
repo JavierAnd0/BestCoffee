@@ -1,11 +1,19 @@
-# BestCoffee · Starter template (front a medida por cliente)
+# BestCoffee · Front a medida por cliente (opcional)
 
-Este repositorio es a la vez la tienda de referencia (**ORÍGEN**) y la **plantilla
-base** para montar el sitio público de cada cliente nuevo de la plataforma.
+> **El modelo por defecto NO es este.** La plataforma sirve todas las tiendas
+> desde **un solo front compartido**, que resuelve la tienda por dominio
+> (`<slug>.<NEXT_PUBLIC_PLATFORM_DOMAIN>`, ver `proxy.ts`). Crear una tienda
+> nueva no requiere clonar nada: se da de alta en el superadmin y ya existe.
+>
+> Esta guía cubre el caso especial: un cliente que paga por un **diseño propio**.
+> Para él se clona este repo como front dedicado, apuntado al mismo backend.
 
-El modelo es **una tienda por deploy**: clonas este front, lo apuntas al backend
-compartido y le dices a qué *tenant* pertenece. Todo el catálogo, pedidos, blog,
-contenido y checkout salen de la API; tú solo personalizas el diseño.
+Este repositorio es a la vez la tienda de referencia (**ORÍGEN**), el front
+compartido y la base para un front dedicado.
+
+En un front dedicado, **una tienda por deploy**: clonas este front, lo apuntas al
+backend compartido y le dices a qué *tenant* pertenece. Todo el catálogo, pedidos,
+blog, contenido y checkout salen de la API; tú solo personalizas el diseño.
 
 > Lo que **no** se reconstruye por cliente: el backend/API, el panel `/admin`
 > (gestión de la tienda) y el panel de superadmin. Esos son compartidos.
@@ -38,7 +46,7 @@ Variables mínimas en `.env.local`:
 
 | Variable | Qué es | Ejemplo |
 |---|---|---|
-| `NEXT_PUBLIC_API_URL` | URL del backend compartido | `https://api.bestcoffee.io` |
+| `NEXT_PUBLIC_API_URL` | URL del backend compartido | `https://bestcoffee-api.vercel.app` |
 | `DEFAULT_TENANT_SLUG` | **slug del tenant de este cliente** | `cafe-roma` |
 | `USE_MOCKS` | `false` para usar la API real | `false` |
 | `AUTH_SECRET` | debe coincidir con el `JWT_SECRET` del backend | `openssl rand -base64 32` |

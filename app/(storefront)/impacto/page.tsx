@@ -1,4 +1,6 @@
+import { requireEditorialPage } from "@/lib/data/feature-guard";
 import type { Metadata } from "next";
+import Image from "next/image";
 import { Eyebrow } from "@/components/ui/eyebrow";
 
 export const metadata: Metadata = { title: "Impacto y sostenibilidad" };
@@ -10,18 +12,30 @@ const NUMBERS = [
   { value: "2 t", label: "Café tostado por mes en lotes pequeños" },
 ];
 
-export default function ImpactoPage() {
+export default async function ImpactoPage() {
+  await requireEditorialPage("impacto");
   return (
     <>
-      <section className="relative isolate h-[420px] grid place-items-center overflow-hidden">
-        <div aria-hidden className="absolute inset-0 bg-gradient-to-br from-[#1f3324] via-[#2f5237] to-[#5b8862]" />
-        <div className="relative text-center text-white px-6">
-          <Eyebrow className="text-white/80">Impacto</Eyebrow>
-          <h1 className="mt-4 font-display text-6xl lg:text-7xl font-semibold tracking-tight">
+      <section className="relative isolate h-[440px] grid place-items-center overflow-hidden">
+        <Image
+          src="/img/sacos-cafe-verde.jpg"
+          alt="Sacos de café arábica lavado en origen"
+          fill
+          priority
+          sizes="100vw"
+          className="object-cover object-center brightness-[0.38]"
+        />
+        <div
+          aria-hidden
+          className="absolute inset-0 bg-gradient-to-t from-background via-black/35 to-black/55"
+        />
+        <div className="relative text-center text-white px-6 max-w-2xl mx-auto space-y-3">
+          <Eyebrow className="text-white/80">Impacto y Comercio Justo</Eyebrow>
+          <h1 className="mt-2 font-display text-5xl lg:text-7xl font-semibold tracking-tight">
             Café que cuida
           </h1>
-          <p className="mt-4 max-w-xl mx-auto text-white/85">
-            Nuestra cadena es lo más corta posible: del productor al tostador, del tostador a ti.
+          <p className="mt-3 max-w-xl mx-auto text-white/85 text-sm sm:text-base leading-relaxed font-light">
+            Nuestra cadena es lo más corta posible: del productor al tostador, del tostador a tu taza.
           </p>
         </div>
       </section>

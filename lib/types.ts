@@ -1,7 +1,7 @@
 // Domain types — mirror future API (NestJS + Prisma) so swapping mock
 // to live data is purely a fetch swap.
 
-export type ProductType = "BLEND" | "SINGLE_ORIGIN" | "DECAF";
+export type ProductType = "BLEND" | "SINGLE_ORIGIN" | "DECAF" | "ACCESSORY";
 export type GrindFormat =
   | "WHOLE_BEAN"
   | "ESPRESSO"
@@ -63,14 +63,51 @@ export interface Collection {
 export interface TenantFeatures {
   blog: boolean;
   catalog: boolean;
+  /** Pedidos: carrito y creación de la orden. */
   checkout: boolean;
+  /** Cobro en línea. Con `checkout` y sin esto: pedidos con pago por fuera. */
+  onlinePayments: boolean;
   customerAccounts: boolean;
   subscriptions: boolean;
   discountCodes: boolean;
   reviews: boolean;
   gifts: boolean;
   customDomain: boolean;
+  accessories: boolean;
   maxProducts: number;
+}
+
+/** Invitación a suscribirse al boletín (configurable por tienda). */
+export interface TenantNewsletter {
+  /** Mostrar la invitación discreta a visitantes sin sesión. */
+  popupEnabled: boolean;
+  /** Oferta de bienvenida vigente (cupón real validado por el backend), si hay. */
+  welcomeOffer: { code: string; label: string } | null;
+}
+
+/** Páginas editoriales con contenido propio de cada marca. */
+export type EditorialPage = "historia" | "impacto" | "sostenibilidad" | "mayoristas" | "tiendas";
+
+/**
+ * Identidad de la tienda. Sale de `Tenant.branding` (JSON editable desde el
+ * superadmin). Todo es opcional: sin dato se usa un valor neutro, nunca el de
+ * otra marca.
+ */
+export interface TenantBranding {
+  /** Color de acento (hex). Sin dato, el del tema base. */
+  accent: string | null;
+  /** Imagen del logo. Sin dato, el nombre de la tienda en texto. */
+  logoUrl: string | null;
+  /** Hero del inicio: escena 3D (propia de la demo) o clásico de texto. */
+  hero: "scene3d" | "classic";
+  contactEmail: string | null;
+  contactPhone: string | null;
+  /** Razón social y NIT para factura y textos legales. */
+  legalName: string | null;
+  legalId: string | null;
+  city: string | null;
+  /** Qué páginas editoriales tiene esta tienda (su contenido es de cada marca). */
+  pages: Record<EditorialPage, boolean>;
 }
 
 export interface Tenant {
@@ -78,9 +115,17 @@ export interface Tenant {
   name: string;
   brand: string;
   tagline: string;
+  branding: TenantBranding;
+  /** Suspendida por cobro (cancelada o inactiva): el sitio no se muestra ni vende. */
+  suspended: boolean;
+  /** Tienda de demostración: muestra el panel para encender y apagar funciones. */
+  demo: boolean;
   tier: "STARTER" | "PRO" | "BUSINESS";
   features: TenantFeatures;
+  newsletter: TenantNewsletter;
   freeShippingThresholdCents: number;
+  /** Tarifa plana de envío cuando no se alcanza el umbral (centavos). */
+  shippingFlatCents: number;
   subscriptionDiscountPct: number;
   currency: "COP";
   paymentProvider?: "mercadopago" | null;

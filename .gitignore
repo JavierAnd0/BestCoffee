@@ -12,6 +12,8 @@
 
 # testing
 /coverage
+/playwright-report/
+/test-results/
 
 # next.js
 /.next/
@@ -23,6 +25,7 @@
 # misc
 .DS_Store
 *.pem
+.pnpm-store/
 
 # debug
 npm-debug.log*
@@ -42,3 +45,15 @@ next-env.d.ts
 
 # AI / editor local folders
 .claude/
+
+# Raw uncompressed 3D renders
+/raw_frames/
+
+# Herramientas de agentes de IA: no pertenecen al repositorio
+/.agents
+/skills-lock.json
+
+# Modelos 3D de terceros que ningún componente usa (licencia sin verificar)
+/public/models/bialetti_moka_pot.glb
+/public/models/coffee_paper_bag_3d_scan.glb
+/public/models/GranoCafeglb.glb

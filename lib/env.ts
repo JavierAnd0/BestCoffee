@@ -37,12 +37,42 @@ export const env = {
 
   // Shared secret for backend → front revalidation webhook. Backend sends
   // this in the X-Revalidate-Secret header when an admin edit lands.
-  revalidateSecret: optional("REVALIDATE_SECRET", "dev-revalidate-secret"),
+  // También autentica al front ante los endpoints internos del backend
+  // (sincronizar sesión, pedido de invitado). Con el valor de desarrollo
+  // cualquiera podría revalidar páginas, así que en producción es obligatorio.
+  revalidateSecret:
+    process.env.NODE_ENV === "production"
+      ? required("REVALIDATE_SECRET")
+      : optional("REVALIDATE_SECRET", "dev-revalidate-secret"),
 
   // Used by NextAuth and to verify JWTs issued by the backend. Same value
-  // must be set in the API service. In production override with a real
-  // 32-byte random secret.
-  authSecret: optional("AUTH_SECRET", "dev-auth-secret-replace-in-prod"),
+  // must be set in the API service. REQUIRED in production — no insecure
+  // default is allowed outside explicit local development; requiredEnv()
+  // below only falls back to a dev-only value when NODE_ENV !== "production".
+  authSecret: requiredEnv("AUTH_SECRET"),
+
+  // Neon Auth (Managed Better Auth)
+  neonAuthUrl: optional(
+    "NEXT_PUBLIC_NEON_AUTH_URL",
+    optional("NEON_AUTH_BASE_URL", ""),
+  ),
+  // Firma la cookie de sesión de Neon Auth: con el valor de desarrollo cualquiera
+  // podría fabricar una sesión válida, así que en producción es obligatorio.
+  neonAuthCookieSecret:
+    process.env.NODE_ENV === "production"
+      ? required("NEON_AUTH_COOKIE_SECRET")
+      : optional("NEON_AUTH_COOKIE_SECRET", "dev-neon-auth-cookie-secret-min-32-chars-long!"),
+
+  // Resend (Transactional Email & Magic Links)
+  resendApiKey: optional("RESEND_API_KEY", ""),
+  resendFromEmail: optional(
+    "RESEND_FROM_EMAIL",
+    "BestCoffee <onboarding@resend.dev>",
+  ),
+  // No hardcoded real email default — REQUIRED in production so a stray
+  // deploy never grants platform-owner rights to whoever owns the fallback
+  // address. Dev falls back to a clearly-fake placeholder.
+  platformOwnerEmail: requiredEnv("PLATFORM_OWNER_EMAIL"),
 
   isDev: process.env.NODE_ENV !== "production",
 };

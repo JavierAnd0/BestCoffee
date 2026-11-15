@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
+import { useState } from "react";
 import { motion } from "motion/react";
 import { Plus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -21,9 +23,13 @@ const TYPE_LABEL: Record<Product["type"], string> = {
   BLEND: "Mezcla",
   SINGLE_ORIGIN: "Origen único",
   DECAF: "Descafeinado",
+  ACCESSORY: "Accesorio",
 };
 
-function roastGradient(level: number): string {
+function roastGradient(level: number, type?: Product["type"]): string {
+  if (type === "ACCESSORY") {
+    return "linear-gradient(158deg,#181c20 0%,#2c3238 45%,#414952 80%,#55606c 100%)";
+  }
   if (level <= 3)
     return "linear-gradient(158deg,#3b2010 0%,#6b3d22 45%,#a86840 80%,#c4935a 100%)";
   if (level <= 5)
@@ -41,6 +47,8 @@ export function ProductCard({
   imageHeight?: number;
 }) {
   const { addItem, open } = useCart();
+  const mainImage = product.images[0];
+  const [imageBroken, setImageBroken] = useState(false);
   const cheapest = product.variants.reduce(
     (a, b) => (a.priceOneTimeCents <= b.priceOneTimeCents ? a : b),
     product.variants[0],
@@ -63,7 +71,7 @@ export function ProductCard({
         {/* Gradient bg */}
         <div
           className="absolute inset-0 transition-transform duration-700 ease-out group-hover:scale-[1.04]"
-          style={{ background: roastGradient(product.roastLevel) }}
+          style={{ background: roastGradient(product.roastLevel, product.type) }}
         />
 
         {/* Centre glow */}
@@ -77,7 +85,7 @@ export function ProductCard({
 
         {/* Grain */}
         <div
-          className="absolute inset-0 pointer-events-none mix-blend-overlay opacity-[0.05]"
+          className="absolute inset-0 pointer-events-none opacity-[0.05]"
           style={{ backgroundImage: "var(--grain)", backgroundSize: "200px" }}
         />
 
@@ -86,12 +94,24 @@ export function ProductCard({
           {product.images[0]?.alt ?? product.name}
         </div>
 
+        {/* Foto principal (si existe y carga) — tapa el degradado */}
+        {mainImage && !imageBroken && (
+          <Image
+            src={mainImage.url}
+            alt={mainImage.alt ?? product.name}
+            fill
+            sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw"
+            className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]"
+            onError={() => setImageBroken(true)}
+          />
+        )}
+
         {/* Badge */}
         {badge && (
           <span className="absolute top-3 left-3 z-10">
             <Badge
               variant="secondary"
-              className="bg-black/35 text-white/85 border-white/8 backdrop-blur-sm text-[10px] rounded-sm"
+              className="bg-black/55 text-white/90 border-white/8 text-[10px] rounded-sm"
             >
               {BADGE_LABEL[badge] ?? badge}
             </Badge>

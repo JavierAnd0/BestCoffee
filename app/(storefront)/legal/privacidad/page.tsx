@@ -1,8 +1,17 @@
 import type { Metadata } from "next";
+import { getCurrentTenant } from "@/lib/data/tenant";
 
-export const metadata: Metadata = { title: "Política de privacidad · ORÍGEN" };
+export const metadata: Metadata = { title: "Política de privacidad" };
 
-export default function PrivacidadPage() {
+export default async function PrivacidadPage() {
+  // Los textos legales usan la identidad de CADA tienda. Lo que no esté
+  // cargado se omite: nunca se muestra la razón social o el NIT de otra marca.
+  const tenant = await getCurrentTenant();
+  const brand = tenant.brand;
+  const legalName = tenant.branding.legalName ?? tenant.brand;
+  const legalId = tenant.branding.legalId;
+  const city = tenant.branding.city;
+  const contact = tenant.branding.contactEmail ?? "nuestra página de contacto";
   return (
     <div className="mx-auto max-w-2xl px-4 sm:px-6 lg:px-8 py-20">
       <header className="mb-12">
@@ -20,7 +29,7 @@ export default function PrivacidadPage() {
         <section className="space-y-3">
           <h2 className="font-display font-semibold text-xl text-foreground">1. Responsable del tratamiento</h2>
           <p>
-            ORÍGEN Café S.A.S., con NIT 900.000.000-0, con domicilio en Bogotá D.C., Colombia,
+            {legalName}{legalId && <>, con NIT {legalId}</>}{city && <>, con domicilio en {city}, Colombia</>},
             es el responsable del tratamiento de los datos personales recopilados a través de este sitio web,
             en cumplimiento de la Ley 1581 de 2012 y el Decreto 1377 de 2013.
           </p>
@@ -55,7 +64,7 @@ export default function PrivacidadPage() {
           <p>
             El tratamiento de tus datos se basa en: (i) la ejecución del contrato de compraventa o
             suscripción, (ii) tu consentimiento explícito cuando aplique, y (iii) el cumplimiento de
-            obligaciones legales a las que está sujeta ORÍGEN.
+            obligaciones legales a las que está sujeta {brand}.
           </p>
         </section>
 
@@ -105,7 +114,7 @@ export default function PrivacidadPage() {
             <li><strong>Presentar quejas</strong> ante la Superintendencia de Industria y Comercio (SIC).</li>
           </ul>
           <p>
-            Para ejercer cualquiera de estos derechos escríbenos a <strong>privacidad@origen.co</strong>
+            Para ejercer cualquiera de estos derechos escríbenos a <strong>{contact}</strong>
             {" "}indicando tu nombre completo, correo registrado y la solicitud específica. Responderemos
             en un plazo máximo de 15 días hábiles.
           </p>
@@ -141,7 +150,7 @@ export default function PrivacidadPage() {
           <h2 className="font-display font-semibold text-xl text-foreground">12. Contacto</h2>
           <p>
             Para cualquier consulta sobre esta política o el tratamiento de tus datos personales,
-            contáctanos en <strong>privacidad@origen.co</strong>.
+            contáctanos en <strong>{contact}</strong>.
           </p>
         </section>
 
