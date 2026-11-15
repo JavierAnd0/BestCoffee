@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { env } from "../env";
 import { customerFetch } from "../api/gateway";
 import {
@@ -60,10 +61,25 @@ function mapCustomer(c: ApiCustomer): MockCustomer {
   };
 }
 
+// Una sola consulta por petición: la comparten el layout de la cuenta (que exige
+// sesión válida) y getCurrentCustomer.
+const fetchMeResult = cache(() => customerFetch<ApiCustomer>("/v1/customers/me"));
+
 async function fetchMe(): Promise<MockCustomer | null> {
-  const res = await customerFetch<ApiCustomer>("/v1/customers/me");
+  const res = await fetchMeResult();
   if (!res.ok || !res.data) return null;
   return mapCustomer(res.data);
+}
+
+/**
+ * ¿La sesión del cliente es válida para el backend? Solo es falso cuando el
+ * backend la RECHAZA (401/403): un token inventado o vencido. Si el backend no
+ * responde, no se expulsa a nadie (el sitio entero estaría caído).
+ */
+export async function hasValidCustomerSession(): Promise<boolean> {
+  if (env.useMocks) return true;
+  const res = await fetchMeResult();
+  return res.ok || (res.status !== 401 && res.status !== 403);
 }
 
 export async function getCurrentCustomer(): Promise<MockCustomer> {
