@@ -11,6 +11,7 @@ import {
 } from "motion/react";
 import Link from "next/link";
 import type { HeroContent } from "@/lib/types";
+import { HeroLoader } from "./hero3d/loader";
 
 // Three.js cannot SSR — defer to client.
 // Interruptor de respaldo: NEXT_PUBLIC_HERO_ENGINE=legacy vuelve a la escena
@@ -23,7 +24,8 @@ const HeroModel =
       })
     : dynamic(() => import("./hero-scene").then((m) => m.HeroScene), {
         ssr: false,
-        loading: () => null,
+        // Mientras baja el código de la escena ya se ve el estado de carga.
+        loading: () => <HeroLoader />,
       });
 
 /* ═══════════════════════════════════════════════════════════
@@ -176,9 +178,14 @@ export function ScrollStory({ content }: { content: HeroContent }) {
   // Mientras la escena oscura está pegada arriba, la cabecera se vuelve transparente (ver globals.css).
   useEffect(() => {
     const root = document.documentElement;
+    let dark: boolean | null = null;
     const update = () => {
       const top = containerRef.current?.getBoundingClientRect().top ?? 1;
-      if (top <= 0 && p.get() < 0.8) root.setAttribute("data-hero-dark", "");
+      const next = top <= 0 && p.get() < 0.8;
+      // Solo se toca el DOM cuando el estado cambia (esto corre en cada cuadro del scroll).
+      if (next === dark) return;
+      dark = next;
+      if (next) root.setAttribute("data-hero-dark", "");
       else root.removeAttribute("data-hero-dark");
     };
     update();
@@ -263,7 +270,7 @@ export function ScrollStory({ content }: { content: HeroContent }) {
 
         {/* ── Subtle analog film grain from globals.css ── */}
         <div
-          className="absolute inset-0 pointer-events-none z-20 opacity-30 mix-blend-overlay"
+          className="absolute inset-0 pointer-events-none z-20 opacity-[0.06]"
           style={{
             backgroundImage: "var(--grain)",
             backgroundSize: "180px 180px",

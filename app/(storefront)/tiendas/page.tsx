@@ -2,9 +2,12 @@ import type { Metadata } from "next";
 import { Eyebrow } from "@/components/ui/eyebrow";
 import { listStoreLocations } from "@/lib/data/static";
 import { StoreLocator } from "@/components/storefront/store-locator";
+import { JsonLd } from "@/components/seo/json-ld";
+import { getSiteUrl } from "@/lib/seo";
+import { getCurrentTenant } from "@/lib/data/tenant";
 
 export const metadata: Metadata = {
-  title: "Nuestras tiendas en Bogotá · ORÍGEN Café",
+  title: "Nuestras tiendas en Bogotá",
   description:
     "Visítanos en nuestras sedes de Chapinero, Usaquén y La Candelaria para probar lanzamientos, recibir asesoría barista y comprar café fresco recién tostado.",
 };
@@ -33,10 +36,50 @@ const FAQS = [
 ];
 
 export default async function TiendasPage() {
-  const stores = await listStoreLocations();
+  const [stores, tenant, siteUrl] = await Promise.all([
+    listStoreLocations(),
+    getCurrentTenant(),
+    getSiteUrl(),
+  ]);
 
   return (
     <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12 sm:py-16 space-y-16">
+      <JsonLd
+        data={[
+          // Una ficha por sede: dirección, teléfono y coordenadas para búsquedas locales.
+          ...stores.map((store) => ({
+            "@context": "https://schema.org",
+            "@type": "CafeOrCoffeeShop",
+            name: `${tenant.brand} · ${store.name}`,
+            description: store.description,
+            url: `${siteUrl}/tiendas`,
+            telephone: store.phone,
+            openingHours: store.hours,
+            parentOrganization: { "@id": `${siteUrl}/#organization` },
+            address: {
+              "@type": "PostalAddress",
+              streetAddress: store.address,
+              addressLocality: store.city,
+              addressCountry: "CO",
+            },
+            geo: {
+              "@type": "GeoCoordinates",
+              latitude: store.coordinates.lat,
+              longitude: store.coordinates.lng,
+            },
+            ...(store.googleMapsUrl && { hasMap: store.googleMapsUrl }),
+          })),
+          {
+            "@context": "https://schema.org",
+            "@type": "FAQPage",
+            mainEntity: FAQS.map((faq) => ({
+              "@type": "Question",
+              name: faq.q,
+              acceptedAnswer: { "@type": "Answer", text: faq.a },
+            })),
+          },
+        ]}
+      />
       {/* Cabecera idéntica a la guía de diseño */}
       <header className="text-center max-w-2xl mx-auto space-y-3">
         <Eyebrow>Localizador</Eyebrow>

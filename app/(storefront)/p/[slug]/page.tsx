@@ -9,6 +9,8 @@ import { ProductCard } from "@/components/storefront/product-card";
 import { ProductGallery } from "@/components/storefront/product-gallery";
 import { getProductBySlug, listRelated } from "@/lib/data/products";
 import { getCurrentTenant } from "@/lib/data/tenant";
+import { JsonLd } from "@/components/seo/json-ld";
+import { breadcrumbLd, getSiteUrl, productLd } from "@/lib/seo";
 
 const TYPE_LABEL = {
   BLEND: "Mezcla",
@@ -25,9 +27,19 @@ export async function generateMetadata({
   const { slug } = await params;
   const product = await getProductBySlug(slug);
   if (!product) return { title: "Producto no encontrado" };
+  const image = product.images[0];
   return {
     title: product.name,
     description: product.shortDescription,
+    alternates: { canonical: `/p/${product.slug}` },
+    openGraph: {
+      type: "website",
+      url: `/p/${product.slug}`,
+      title: product.name,
+      description: product.shortDescription,
+      // Con foto propia se comparte la del producto; sin ella, la imagen de la tienda.
+      ...(image && { images: [{ url: image.url, alt: image.alt ?? product.name }] }),
+    },
   };
 }
 
@@ -40,10 +52,24 @@ export default async function ProductPage({
   const product = await getProductBySlug(slug);
   if (!product) notFound();
 
-  const [related, tenant] = await Promise.all([listRelated(product), getCurrentTenant()]);
+  const [related, tenant, siteUrl] = await Promise.all([
+    listRelated(product),
+    getCurrentTenant(),
+    getSiteUrl(),
+  ]);
 
   return (
     <>
+      <JsonLd
+        data={[
+          productLd(product, tenant, siteUrl),
+          breadcrumbLd(siteUrl, [
+            { name: "Inicio", path: "/" },
+            { name: "Catálogo", path: "/catalogo" },
+            { name: product.name, path: `/p/${product.slug}` },
+          ]),
+        ]}
+      />
       <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10">
         <nav className="text-xs text-muted-foreground mb-6">
           Inicio / Catálogo /{" "}

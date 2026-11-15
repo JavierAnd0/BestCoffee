@@ -148,7 +148,7 @@ function MobileFilters(props: Props) {
 
   return (
     <>
-      <div className="lg:hidden sticky top-[57px] z-20 -mx-4 sm:-mx-6 bg-background/95 backdrop-blur border-b border-border py-2.5 px-4 sm:px-6 flex items-center justify-between gap-2 mb-6">
+      <div className="lg:hidden sticky top-[57px] z-20 -mx-4 sm:-mx-6 bg-background/98 border-b border-border py-2.5 px-4 sm:px-6 flex items-center justify-between gap-2 mb-6">
         <Button variant="outline" size="sm" onClick={() => setOpen(true)}>
           <Filter className="size-3.5 mr-1.5" />
           Filtrar catálogo

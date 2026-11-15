@@ -85,7 +85,7 @@ export function ProductCard({
 
         {/* Grain */}
         <div
-          className="absolute inset-0 pointer-events-none mix-blend-overlay opacity-[0.05]"
+          className="absolute inset-0 pointer-events-none opacity-[0.05]"
           style={{ backgroundImage: "var(--grain)", backgroundSize: "200px" }}
         />
 
@@ -111,7 +111,7 @@ export function ProductCard({
           <span className="absolute top-3 left-3 z-10">
             <Badge
               variant="secondary"
-              className="bg-black/35 text-white/85 border-white/8 backdrop-blur-sm text-[10px] rounded-sm"
+              className="bg-black/55 text-white/90 border-white/8 text-[10px] rounded-sm"
             >
               {BADGE_LABEL[badge] ?? badge}
             </Badge>

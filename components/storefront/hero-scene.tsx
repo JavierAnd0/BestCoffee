@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Environment, Lightformer, PerformanceMonitor, useProgress } from "@react-three/drei";
 import * as THREE from "three";
@@ -19,6 +19,7 @@ import { CupStation } from "./hero3d/cup";
 import { GrinderStation, GroundsFlow } from "./hero3d/grinder";
 import { MokaStation } from "./hero3d/moka";
 import { preloadModels } from "./hero3d/assets";
+import { HeroLoader } from "./hero3d/loader";
 
 /* ═══════════════════════════ CÁMARA ═══════════════════════════
    La cámara sigue el guion de hero3d/shots.ts (planos clave por scroll).   */
@@ -197,6 +198,31 @@ function RimLight({ progress }: { progress: MotionValue<number> }) {
   return <spotLight ref={light} color="#ffb070" angle={0.55} penumbra={0.9} distance={26} decay={1.6} />;
 }
 
+/**
+ * Estado de carga + aviso de "lista". Vive en su propio componente para que el progreso de descarga
+ * (que cambia muchas veces) no vuelva a renderizar el Canvas: la escena solo se entera una vez, al final.
+ */
+function LoadGate({ ready, onReady }: { ready: boolean; onReady: () => void }) {
+  const { active, progress, total } = useProgress();
+
+  useEffect(() => {
+    if (ready) return;
+    // `total === 0`: todo estaba ya en caché (se vuelve al inicio sin recargar) y no hay nada que esperar.
+    if (active || (progress < 100 && total > 0)) return;
+    // Un respiro tras la descarga: el precalentamiento compila y dibuja su cuadro oculto antes de mostrar nada.
+    const t = window.setTimeout(onReady, 1000);
+    return () => window.clearTimeout(t);
+  }, [active, progress, total, ready, onReady]);
+
+  // Red de seguridad: si un recurso se cuelga, la escena entra igual con lo que haya.
+  useEffect(() => {
+    const t = window.setTimeout(onReady, 12000);
+    return () => window.clearTimeout(t);
+  }, [onReady]);
+
+  return <HeroLoader progress={total > 0 ? progress : undefined} hidden={ready} />;
+}
+
 /* ═══════════════════════════ ESCENA ═══════════════════════════ */
 
 export interface HeroSceneProps {
@@ -208,6 +234,8 @@ export function HeroScene({ scrollProgress }: HeroSceneProps = {}) {
   const progress = scrollProgress ?? fallbackProgress;
   const wrapRef = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState(true);
+  const [ready, setReady] = useState(false);
+  const markReady = useCallback(() => setReady(true), []);
   const [mobile, setMobile] = useState(false);
   const [dpr, setDpr] = useState<[number, number]>([1, 1.5]);
   const quality = useMemo(() => (mobile ? MOBILE_QUALITY : DESKTOP_QUALITY), [mobile]);
@@ -234,6 +262,12 @@ export function HeroScene({ scrollProgress }: HeroSceneProps = {}) {
 
   return (
     <div ref={wrapRef} className="relative w-full h-full">
+      <LoadGate ready={ready} onReady={markReady} />
+      {/* La escena entra con un fundido cuando todo está cargado, en vez de aparecer pieza por pieza. */}
+      <div
+        className="absolute inset-0"
+        style={{ opacity: ready ? 1 : 0, transition: "opacity 1100ms ease" }}
+      >
       <QualityContext.Provider value={quality}>
         <Canvas
           frameloop={active ? "always" : "never"}
@@ -312,6 +346,7 @@ export function HeroScene({ scrollProgress }: HeroSceneProps = {}) {
           </Suspense>
         </Canvas>
       </QualityContext.Provider>
+      </div>
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-export const metadata: Metadata = { title: "Política de privacidad · ORÍGEN" };
+export const metadata: Metadata = { title: "Política de privacidad" };
 
 export default function PrivacidadPage() {
   return (

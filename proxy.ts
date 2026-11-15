@@ -18,9 +18,18 @@ const PLATFORM_HOSTS = new Set([
 
 const RESERVED_SUBDOMAINS = new Set(["app", "www", "admin", "api"]);
 
+const SEO_FILES = new Set(["/robots.txt", "/sitemap.xml", "/llms.txt"]);
+
 export const config = {
   // Skip static assets and Next internals; everything else passes through.
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\.).*)"],
+  matcher: [
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.).*)",
+    // Archivos de SEO: llevan punto en el nombre (la regla de arriba los
+    // excluiría), pero necesitan saber qué tienda corresponde al host.
+    "/robots.txt",
+    "/sitemap.xml",
+    "/llms.txt",
+  ],
 };
 
 interface ResponseWithCookies extends Response {
@@ -265,6 +274,11 @@ export default async function middleware(req: NextRequest) {
   // Platform host serves SaaS landing/onboarding under app/platform/*.
   // Rewrite root paths so `/` on the platform shows the platform landing
   // while `/` on a tenant subdomain stays as the storefront home.
+  // Los archivos de SEO se sirven tal cual también en el host de la plataforma.
+  if (SEO_FILES.has(url.pathname)) {
+    return NextResponse.next({ request: { headers: requestHeaders } });
+  }
+
   if (!tenantSlug && !url.pathname.startsWith("/platform")) {
     const rewriteUrl = url.clone();
     rewriteUrl.pathname = `/platform${url.pathname === "/" ? "" : url.pathname}`;

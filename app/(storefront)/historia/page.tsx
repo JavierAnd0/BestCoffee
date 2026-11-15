@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import { Eyebrow } from "@/components/ui/eyebrow";
 
-export const metadata: Metadata = { title: "Nuestra historia · ORÍGEN Café" };
+export const metadata: Metadata = { title: "Nuestra historia" };
 
 export default function HistoriaPage() {
   return (

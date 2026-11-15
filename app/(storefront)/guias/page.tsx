@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Eyebrow } from "@/components/ui/eyebrow";
 import { listBrewGuides } from "@/lib/data/static";
 
-export const metadata: Metadata = { title: "Guías de preparación · ORÍGEN Café" };
+export const metadata: Metadata = { title: "Guías de preparación" };
 
 const GUIDE_IMAGES: Record<string, string> = {
   v60: "/img/products/v60-1.jpg",

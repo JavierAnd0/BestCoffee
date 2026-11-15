@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import { Eyebrow } from "@/components/ui/eyebrow";
 
-export const metadata: Metadata = { title: "Impacto y sostenibilidad · ORÍGEN Café" };
+export const metadata: Metadata = { title: "Impacto y sostenibilidad" };
 
 const NUMBERS = [
   { value: "+40", label: "Familias productoras con relación directa" },

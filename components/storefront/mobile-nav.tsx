@@ -37,7 +37,7 @@ export function MobileNav({ features }: { features?: TenantFeatures }) {
   return (
     <nav
       aria-label="Navegación principal"
-      className="lg:hidden fixed inset-x-0 bottom-0 z-40 bg-background/95 backdrop-blur border-t border-border safe-area-inset"
+      className="lg:hidden fixed inset-x-0 bottom-0 z-40 bg-background/98 border-t border-border safe-area-inset"
     >
       <div className={"grid " + (GRID_COLS[cols] ?? "grid-cols-4")}>
         {ITEMS.map((i) => {

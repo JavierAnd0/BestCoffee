@@ -1,0 +1,40 @@
+import type { MetadataRoute } from "next";
+import { getSiteUrl } from "@/lib/seo";
+
+// Zonas privadas o sin valor de búsqueda: paneles, cuenta, pago y API.
+const PRIVATE = [
+  "/admin",
+  "/platform/superadmin",
+  "/cuenta",
+  "/checkout",
+  "/acceso",
+  "/login",
+  "/registro",
+  "/api/",
+];
+
+// Rastreadores de buscadores con IA. Ya los cubre la regla general; se nombran
+// para dejar explícito que el contenido público puede usarse en sus respuestas.
+const AI_CRAWLERS = [
+  "GPTBot",
+  "OAI-SearchBot",
+  "ChatGPT-User",
+  "ClaudeBot",
+  "Claude-SearchBot",
+  "Claude-User",
+  "PerplexityBot",
+  "Google-Extended",
+  "Applebot-Extended",
+];
+
+export default async function robots(): Promise<MetadataRoute.Robots> {
+  const siteUrl = await getSiteUrl();
+  return {
+    rules: [
+      { userAgent: "*", allow: "/", disallow: PRIVATE },
+      { userAgent: AI_CRAWLERS, allow: "/", disallow: PRIVATE },
+    ],
+    sitemap: `${siteUrl}/sitemap.xml`,
+    host: siteUrl,
+  };
+}
