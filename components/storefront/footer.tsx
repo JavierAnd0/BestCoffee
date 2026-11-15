@@ -6,38 +6,42 @@ import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/toast";
 import { Logo } from "./logo";
 import { subscribeNewsletterAction } from "@/lib/actions/newsletter";
-import type { TenantNewsletter } from "@/lib/types";
+import type { EditorialPage, TenantFeatures, TenantNewsletter } from "@/lib/types";
 
 interface FooterLink {
   label: string;
   href: string;
+  /** Si la tienda no tiene esta capacidad, el enlace no se muestra. */
+  feature?: Exclude<keyof TenantFeatures, "maxProducts">;
+  /** Página editorial: solo si la tienda tiene la suya. */
+  page?: EditorialPage;
 }
 
 const COLUMNS: { title: string; links: FooterLink[] }[] = [
   {
     title: "Tienda",
     links: [
-      { label: "Catálogo", href: "/catalogo" },
-      { label: "Suscripciones", href: "/suscripciones" },
-      { label: "Paquetes", href: "/catalogo?coleccion=paquetes" },
-      { label: "Accesorios", href: "/accesorios" },
-      { label: "Nuestras tiendas", href: "/tiendas" },
+      { label: "Catálogo", href: "/catalogo", feature: "catalog" },
+      { label: "Suscripciones", href: "/suscripciones", feature: "subscriptions" },
+      { label: "Paquetes", href: "/catalogo?coleccion=paquetes", feature: "catalog" },
+      { label: "Accesorios", href: "/accesorios", feature: "accessories" },
+      { label: "Nuestras tiendas", href: "/tiendas", page: "tiendas" },
     ],
   },
   {
     title: "Aprende",
     links: [
       { label: "Guías de preparación", href: "/guias" },
-      { label: "Blog", href: "/blog" },
-      { label: "Origen", href: "/historia" },
+      { label: "Blog", href: "/blog", feature: "blog" },
+      { label: "Origen", href: "/historia", page: "historia" },
     ],
   },
   {
     title: "Empresa",
     links: [
-      { label: "Nuestra historia", href: "/historia" },
-      { label: "Sostenibilidad", href: "/sostenibilidad" },
-      { label: "Mayoristas", href: "/mayoristas" },
+      { label: "Nuestra historia", href: "/historia", page: "historia" },
+      { label: "Sostenibilidad", href: "/sostenibilidad", page: "sostenibilidad" },
+      { label: "Mayoristas", href: "/mayoristas", page: "mayoristas" },
     ],
   },
   {
@@ -55,9 +59,24 @@ interface FooterProps {
   /** Con sesión iniciada ya se recibe el boletín (se gestiona en "Mis datos"). */
   isLoggedIn?: boolean;
   welcomeOffer?: TenantNewsletter["welcomeOffer"];
+  /** Capacidades del plan: ocultan los enlaces a secciones que la tienda no tiene. */
+  features?: TenantFeatures;
+  pages?: Record<EditorialPage, boolean>;
 }
 
-export function Footer({ brand = "ORÍGEN", isLoggedIn = false, welcomeOffer = null }: FooterProps) {
+export function Footer({
+  brand = "",
+  isLoggedIn = false,
+  welcomeOffer = null,
+  features,
+  pages,
+}: FooterProps) {
+  const visible = (l: FooterLink) =>
+    (l.page ? (pages?.[l.page] ?? true) : true) &&
+    (!l.feature ||
+    !features ||
+    // los accesorios son parte del catálogo
+      (features[l.feature] && (l.feature !== "accessories" || features.catalog)));
   const [email, setEmail] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -148,7 +167,7 @@ export function Footer({ brand = "ORÍGEN", isLoggedIn = false, welcomeOffer = n
             <div key={c.title}>
               <p className="eyebrow text-white/30 mb-5">{c.title}</p>
               <ul className="space-y-2.5 text-sm text-white/40 font-light">
-                {c.links.map((link) => (
+                {c.links.filter(visible).map((link) => (
                   <li key={link.label}>
                     <Link
                       href={link.href}

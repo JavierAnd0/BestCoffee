@@ -1,5 +1,7 @@
 import type { MetadataRoute } from "next";
 import { getSiteUrl } from "@/lib/seo";
+import { getTenantSlug } from "@/lib/tenant";
+import { getCurrentTenant } from "@/lib/data/tenant";
 
 // Solo la API se bloquea aquí. Paneles, cuenta, login y pago NO: llevan
 // `X-Robots-Tag: noindex` (next.config.ts), y un rastreador bloqueado por
@@ -23,6 +25,10 @@ const AI_CRAWLERS = [
 
 export default async function robots(): Promise<MetadataRoute.Robots> {
   const siteUrl = await getSiteUrl();
+  // Tienda suspendida por cobro: nada para indexar mientras dure.
+  if ((await getTenantSlug()) && (await getCurrentTenant().catch(() => null))?.suspended) {
+    return { rules: [{ userAgent: "*", disallow: "/" }] };
+  }
   return {
     rules: [
       { userAgent: "*", allow: "/", disallow: PRIVATE },

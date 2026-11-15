@@ -1,3 +1,4 @@
+import { requireEditorialPage } from "@/lib/data/feature-guard";
 import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
@@ -41,7 +42,8 @@ const METRICS = [
   { value: "0", label: "Intermediarios en la compra de café verde" },
 ];
 
-export default function SostenibilidadPage() {
+export default async function SostenibilidadPage() {
+  await requireEditorialPage("sostenibilidad");
   return (
     <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-16">
       {/* Hero */}

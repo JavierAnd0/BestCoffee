@@ -24,6 +24,13 @@ export default async function CheckoutPage() {
       paymentProvider={tenant.paymentProvider ?? null}
       mpPublicKey={tenant.mpPublicKey ?? null}
       useMocks={env.useMocks}
+      // Cobro en línea = el plan lo incluye Y hay una pasarela real conectada.
+      // Sin ella no se piden datos de tarjeta: el pedido queda con pago por fuera.
+      onlinePayments={
+        tenant.features.onlinePayments &&
+        tenant.paymentProvider === "mercadopago" &&
+        Boolean(tenant.mpPublicKey)
+      }
       customer={customer}
       savedAddresses={addresses}
     />

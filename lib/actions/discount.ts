@@ -1,5 +1,6 @@
 "use server";
 
+import { demoHeaders } from "../demo";
 import { env } from "../env";
 import { resolveActiveTenantSlug } from "../tenant";
 
@@ -48,7 +49,7 @@ export async function previewDiscountCodeAction(input: {
   try {
     res = await fetch(`${env.apiUrlInternal}/v1/cart/price`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", "X-Tenant-Slug": tenantSlug },
+      headers: { "Content-Type": "application/json", "X-Tenant-Slug": tenantSlug, ...(await demoHeaders()) },
       body: JSON.stringify({
         items: real.map((i) => ({ variantId: i.variantId, quantity: Math.max(1, i.qty) })),
         mode: input.subscription ? "SUBSCRIPTION" : "ONE_TIME",

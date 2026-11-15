@@ -29,7 +29,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }
 
   const tenant = await getCurrentTenant();
+  // Tienda suspendida por cobro: no anuncia ninguna URL.
+  if (tenant.suspended) return [];
   const f = tenant.features;
+  const pages = tenant.branding.pages;
   const page = (
     path: string,
     priority: number,
@@ -44,12 +47,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...(f.subscriptions ? [page("/suscripciones", 0.8)] : []),
     ...(f.blog ? [page("/blog", 0.7, "weekly")] : []),
     page("/guias", 0.7),
-    page("/quiz", 0.6),
-    page("/tiendas", 0.6),
-    page("/historia", 0.5),
-    page("/impacto", 0.5),
-    page("/sostenibilidad", 0.5),
-    page("/mayoristas", 0.5),
+    ...(f.catalog ? [page("/quiz", 0.6)] : []),
+    // Páginas editoriales: solo las que la tienda tiene (el resto dan 404).
+    ...(pages.tiendas ? [page("/tiendas", 0.6)] : []),
+    ...(pages.historia ? [page("/historia", 0.5)] : []),
+    ...(pages.impacto ? [page("/impacto", 0.5)] : []),
+    ...(pages.sostenibilidad ? [page("/sostenibilidad", 0.5)] : []),
+    ...(pages.mayoristas ? [page("/mayoristas", 0.5)] : []),
     page("/contacto", 0.5),
     page("/envios", 0.4),
     page("/devoluciones", 0.4),

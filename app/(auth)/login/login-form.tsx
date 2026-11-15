@@ -4,6 +4,7 @@ import { useState, useActionState } from "react";
 import Link from "next/link";
 import { Eye, EyeOff, ArrowLeft, Loader2 } from "lucide-react";
 import { Logo } from "@/components/storefront/logo";
+import { useBrand } from "@/components/storefront/brand-context";
 import { loginAction, logoutAction, type AuthState } from "@/lib/actions/auth";
 import { authClient } from "@/lib/auth/client";
 
@@ -28,6 +29,7 @@ export function LoginForm({
   next: string;
   errorParam?: string;
 }) {
+  const { brand } = useBrand();
   const [showPwd, setShowPwd] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [googleError, setGoogleError] = useState<string | null>(
@@ -239,7 +241,7 @@ export function LoginForm({
           <span>·</span>
           <Link href="/legal/terminos" className="hover:text-muted-foreground transition-colors">Términos</Link>
           <span>·</span>
-          <span>© 2026 ORÍGEN</span>
+          <span>© {new Date().getFullYear()} {brand}</span>
         </footer>
       </main>
     </div>

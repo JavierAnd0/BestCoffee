@@ -1,4 +1,7 @@
+import { redirect } from "next/navigation";
 import { getCurrentCustomer } from "@/lib/data/account";
+import { getCustomerSession } from "@/lib/auth/session-store";
+import { env } from "@/lib/env";
 import { requireFeature } from "@/lib/data/feature-guard";
 import { CustomerLogoutButton } from "@/components/storefront/customer-logout-button";
 import { AccountNav } from "@/components/storefront/account-nav";
@@ -6,6 +9,12 @@ import { AccountNav } from "@/components/storefront/account-nav";
 export default async function AccountLayout({ children }: { children: React.ReactNode }) {
   // Las cuentas de cliente son una capacidad de plan (PRO+).
   await requireFeature("customerAccounts");
+  // El proxy solo comprueba que exista alguna cookie de sesión. Aquí se exige una
+  // sesión real (token emitido por el backend o identidad Neon verificada): sin
+  // ella no se pinta el panel, ni siquiera vacío.
+  if (!env.useMocks && !(await getCustomerSession()).token) {
+    redirect("/login?next=/cuenta");
+  }
   const customer = await getCurrentCustomer();
   return (
     <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-12 grid lg:grid-cols-[240px_1fr] gap-12">

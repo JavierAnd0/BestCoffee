@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { Check, Truck, Coffee } from "lucide-react";
@@ -15,7 +16,9 @@ export default async function ConfirmationPage({
 }) {
   await requireFeature("checkout");
   const { orderId: rawOrderId } = await searchParams;
-  const orderId = rawOrderId?.trim() || "ORG-10428";
+  const orderId = rawOrderId?.trim();
+  // Sin número de pedido real no hay nada que confirmar.
+  if (!orderId) redirect("/");
 
   return (
     <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 py-20 text-center">

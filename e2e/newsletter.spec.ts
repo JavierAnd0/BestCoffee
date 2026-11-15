@@ -1,4 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
+import { MOCKS, NEEDS_BACKEND } from "./env";
 
 /**
  * Avanza el reloj falso hasta que se cumpla el criterio de la invitación.
@@ -7,12 +8,19 @@ import { test, expect, type Page } from "@playwright/test";
  */
 async function waitUntilPromptShows(page: Page) {
   const card = page.getByRole("complementary", { name: /Boletín/i });
-  // La invitación nunca se abre sobre el hero animado: primero se pasa de largo (el hero mide 500vh).
-  await page.evaluate(() => window.scrollTo(0, window.innerHeight * 5.4));
   await expect(async () => {
+    // La invitación nunca se abre sobre el hero animado: se pasa de largo (mide 500vh).
+    // El scroll se repite en cada intento: si el primero ocurre antes de que la página
+    // termine de hidratar (máquina lenta de CI), nadie escucha ese evento y la prueba
+    // dependía de una carrera. Un pequeño vaivén garantiza un evento de scroll nuevo.
+    await page.evaluate(() => {
+      const y = window.innerHeight * 5.4;
+      window.scrollTo({ top: y - 2, behavior: "instant" });
+      window.scrollTo({ top: y, behavior: "instant" });
+    });
     await page.clock.fastForward(15_000);
-    await expect(card).toBeVisible({ timeout: 500 });
-  }).toPass({ timeout: 20_000 });
+    await expect(card).toBeVisible({ timeout: 1_000 });
+  }).toPass({ timeout: 45_000 });
   return card;
 }
 
@@ -21,6 +29,9 @@ async function waitUntilPromptShows(page: Page) {
  * sesión, y con la oferta real del tenant (cupón validado por el backend).
  */
 test.describe("Newsletter — invitación discreta", () => {
+  // El hero 3D y la compilación en frío del servidor de desarrollo son lentos en CI.
+  test.describe.configure({ timeout: 90_000 });
+
   test.beforeEach(async ({ page }) => {
     // Reloj controlado: la invitación espera ≥8 s y 45 % de scroll (o 40 s).
     await page.clock.install();
@@ -103,6 +114,8 @@ test.describe("Newsletter — clientes con sesión", () => {
   const password = "Prueba#12345";
 
   test("no ven la invitación y gestionan su preferencia en Mis datos", async ({ page }) => {
+    // Inicia sesión con contraseña y guarda una preferencia: ambas cosas las hace el backend.
+    test.skip(MOCKS, NEEDS_BACKEND);
     await page.clock.install();
     await page.goto("/login");
     await page.getByLabel(/correo/i).first().fill(email);

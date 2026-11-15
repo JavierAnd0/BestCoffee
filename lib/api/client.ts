@@ -81,6 +81,15 @@ export async function apiServer() {
           : customerToken,
     ),
   );
+  // Estado de la tienda demo del visitante (el backend lo ignora en cualquier otra tienda).
+  const demo = c.get("bc_demo")?.value;
+  if (demo && demo.length <= 600) {
+    client.use({
+      onRequest({ request }) {
+        request.headers.set("x-demo-features", demo);
+      },
+    });
+  }
   return client;
 }
 

@@ -1,6 +1,6 @@
 "use server";
 
-import { cookies } from "next/headers";
+import { demoHeaders } from "../demo";
 import { z } from "zod";
 import { env } from "../env";
 import { resolveActiveTenantSlug } from "../tenant";
@@ -69,51 +69,21 @@ export async function placeOrderAction(
 
     // Obtener sesión sincronizada del cliente actual
     const { token: syncedToken, tenantSlug: headerTenantSlug } = await authHeaders();
-    const store = await cookies();
 
-    let token = syncedToken;
+    const token = syncedToken;
     const tenantSlug =
       headerTenantSlug ||
       (await resolveActiveTenantSlug()) ||
       env.defaultTenantSlug;
 
-    // Si no hay token de autenticación (invitado o primera compra),
-    // creamos o sincronizamos el cliente en el backend para asociar el pedido
-    if (!token && input.contact.email) {
-      try {
-        const guestName = `${input.shipping.firstName || ""} ${input.shipping.lastName || ""}`.trim() || undefined;
-        const syncRes = await fetch(`${env.apiUrlInternal}/v1/auth/customer/neon-sync`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "X-Tenant-Slug": tenantSlug,
-            "x-internal-secret": env.revalidateSecret,
-          },
-          body: JSON.stringify({
-            email: input.contact.email,
-            name: guestName,
-          }),
-          cache: "no-store",
-        });
-        if (syncRes.ok) {
-          const syncData = (await syncRes.json()) as { accessToken?: string };
-          if (syncData.accessToken) {
-            token = syncData.accessToken;
-            // Emitimos la cookie para que el cliente quede autenticado para ver su pedido
-            store.set("customer_token", syncData.accessToken, {
-              path: "/",
-              httpOnly: true,
-              secure: !env.isDev,
-              sameSite: "lax",
-              maxAge: 60 * 60 * 24 * 30,
-            });
-          }
-        }
-      } catch {
-        /* ignore */
-      }
-    }
+    // Sin sesión = compra de invitado. NO se pide ni se guarda una sesión para
+    // el correo del formulario: nadie ha verificado que sea de quien compra, y
+    // hacerlo permitía entrar a la cuenta de otro cliente con solo escribir su
+    // correo. El pedido se crea por el endpoint de invitado (más abajo).
+    const guestName =
+      `${input.shipping.firstName || ""} ${input.shipping.lastName || ""}`.trim() || undefined;
 
+    const demoExtra = await demoHeaders();
     const hasSubscription = input.items.some((i) => i.mode === "SUBSCRIPTION");
 
     // Si algún item tiene variantId mock (ej. accesorios 'v_...'),
@@ -183,21 +153,36 @@ export async function placeOrderAction(
 
     let res: Response;
     try {
-      res = await fetch(`${env.apiUrlInternal}/v1/orders`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Tenant-Slug": tenantSlug,
-          ...(token
-            ? {
-                Authorization: `Bearer ${token}`,
-                Cookie: `customer_token=${token}`,
-              }
-            : {}),
-        },
-        body: JSON.stringify(body),
-        cache: "no-store",
-      });
+      res = token
+        ? await fetch(`${env.apiUrlInternal}/v1/orders`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "X-Tenant-Slug": tenantSlug,
+              ...demoExtra,
+              Authorization: `Bearer ${token}`,
+              Cookie: `customer_token=${token}`,
+            },
+            body: JSON.stringify(body),
+            cache: "no-store",
+          })
+        : // Invitado: llamada servidor a servidor con el secreto interno. El
+          // backend asocia el pedido al correo y no devuelve ninguna sesión.
+          await fetch(`${env.apiUrlInternal}/v1/orders/guest`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "X-Tenant-Slug": tenantSlug,
+              ...demoExtra,
+              "x-internal-secret": env.revalidateSecret,
+            },
+            body: JSON.stringify({
+              ...body,
+              email: parsed.data.contact.email,
+              name: guestName,
+            }),
+            cache: "no-store",
+          });
     } catch (err) {
       console.error("placeOrderAction: fetch al backend falló:", err);
       return {

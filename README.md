@@ -42,7 +42,7 @@ El front consume el API via `lib/api/client.ts` (`apiServer()` en RSC, `apiClien
 1. **Backend** publica `/v1/X` y lo expone en `/v1/docs-json` (Swagger).
 2. **Front** regenera los tipos:
    ```bash
-   API_URL=https://bestcoffee-api-production.up.railway.app pnpm api:types
+   API_URL=https://bestcoffee-api.vercel.app pnpm api:types
    ```
 3. Edita `lib/data/<domain>.ts` y reemplaza el cuerpo de la función:
    ```ts
@@ -88,5 +88,24 @@ pnpm lint          # eslint
 
 ## Despliegue
 
-Vercel. Conectar el repo, definir env vars, deploy automático en cada push a `main`. Preview deployments para PRs.
+Vercel, proyecto `bestcoffee`, conectado a este repo: cada push a `main` despliega a
+producción y cada PR genera una vista previa. Producción actual:
+https://bestcoffee-nine.vercel.app (solo la tienda demo ORÍGEN, hasta tener dominio propio).
+
+**Un solo front para todas las tiendas.** La tienda se resuelve por dominio en
+`proxy.ts`: `<slug>.<NEXT_PUBLIC_PLATFORM_DOMAIN>` es una tienda, el dominio raíz es
+la landing de la plataforma, y cualquier otro host sirve `DEFAULT_TENANT_SLUG`.
+Un front dedicado por cliente es la excepción (ver `STARTER_TEMPLATE.md`).
+
+Variables obligatorias en producción (el arranque falla si faltan): `AUTH_SECRET`,
+`REVALIDATE_SECRET`, `NEON_AUTH_COOKIE_SECRET`, `PLATFORM_OWNER_EMAIL`.
+
+### Pruebas e2e
+
+`pnpm test:e2e` corre Playwright. En CI el front usa `USE_MOCKS=true` sin backend, y
+lo que solo el backend real puede comprobar se omite de forma explícita (ver
+`e2e/env.ts`). Para la suite completa, levantar el backend con la demo sembrada y
+correr sin `USE_MOCKS` en el entorno.
+
+El estado del plan hacia producción vive en `docs/PLAN-CIERRE.md` del repo del backend.
 

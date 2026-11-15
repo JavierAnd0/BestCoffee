@@ -1,3 +1,4 @@
+import { getCurrentTenant } from "@/lib/data/tenant";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { Badge } from "@/components/ui/badge";
@@ -17,7 +18,11 @@ export default async function BlogIndex({
   await requireFeature("blog");
   const { categoria } = (await searchParams) ?? {};
   const activeCategory = categoria || "Todos";
-  const [featured, all] = await Promise.all([getFeaturedPost(), listBlogPosts()]);
+  const [tenant, featured, all] = await Promise.all([
+    getCurrentTenant(),
+    getFeaturedPost(),
+    listBlogPosts(),
+  ]);
 
   const filtered =
     activeCategory === "Todos"
@@ -43,7 +48,7 @@ export default async function BlogIndex({
         />
         <div className="relative text-center text-white px-6">
           <div className="text-[11px] uppercase tracking-[0.18em] opacity-80">
-            El blog de ORÍGEN
+            El blog de {tenant.brand}
           </div>
           <h1 className="mt-4 font-display text-6xl lg:text-7xl font-semibold tracking-tight">
             Café y comunidad

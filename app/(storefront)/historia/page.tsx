@@ -1,10 +1,12 @@
+import { requireEditorialPage } from "@/lib/data/feature-guard";
 import type { Metadata } from "next";
 import Image from "next/image";
 import { Eyebrow } from "@/components/ui/eyebrow";
 
 export const metadata: Metadata = { title: "Nuestra historia" };
 
-export default function HistoriaPage() {
+export default async function HistoriaPage() {
+  await requireEditorialPage("historia");
   return (
     <>
       <section className="relative isolate h-[440px] grid place-items-center overflow-hidden">

@@ -37,7 +37,13 @@ export const env = {
 
   // Shared secret for backend → front revalidation webhook. Backend sends
   // this in the X-Revalidate-Secret header when an admin edit lands.
-  revalidateSecret: optional("REVALIDATE_SECRET", "dev-revalidate-secret"),
+  // También autentica al front ante los endpoints internos del backend
+  // (sincronizar sesión, pedido de invitado). Con el valor de desarrollo
+  // cualquiera podría revalidar páginas, así que en producción es obligatorio.
+  revalidateSecret:
+    process.env.NODE_ENV === "production"
+      ? required("REVALIDATE_SECRET")
+      : optional("REVALIDATE_SECRET", "dev-revalidate-secret"),
 
   // Used by NextAuth and to verify JWTs issued by the backend. Same value
   // must be set in the API service. REQUIRED in production — no insecure
@@ -50,10 +56,12 @@ export const env = {
     "NEXT_PUBLIC_NEON_AUTH_URL",
     optional("NEON_AUTH_BASE_URL", ""),
   ),
-  neonAuthCookieSecret: optional(
-    "NEON_AUTH_COOKIE_SECRET",
-    "dev-neon-auth-cookie-secret-min-32-chars-long!",
-  ),
+  // Firma la cookie de sesión de Neon Auth: con el valor de desarrollo cualquiera
+  // podría fabricar una sesión válida, así que en producción es obligatorio.
+  neonAuthCookieSecret:
+    process.env.NODE_ENV === "production"
+      ? required("NEON_AUTH_COOKIE_SECRET")
+      : optional("NEON_AUTH_COOKIE_SECRET", "dev-neon-auth-cookie-secret-min-32-chars-long!"),
 
   // Resend (Transactional Email & Magic Links)
   resendApiKey: optional("RESEND_API_KEY", ""),

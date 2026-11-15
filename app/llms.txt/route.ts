@@ -55,7 +55,11 @@ export async function GET() {
   }
 
   const tenant = await getCurrentTenant();
+  if (tenant.suspended) {
+    return text(`# ${tenant.brand}\n\n> Tienda temporalmente no disponible.\n`);
+  }
   const f = tenant.features;
+  const pages = tenant.branding.pages;
   const [products, posts, guides] = await Promise.all([
     f.catalog ? safe(listProducts) : [],
     f.blog ? safe(listBlogPosts) : [],
@@ -82,11 +86,15 @@ export async function GET() {
   if (f.catalog) out.push(`- [Catálogo](${siteUrl}/catalogo): todos los cafés y accesorios con precio.`);
   if (f.subscriptions) out.push(`- [Suscripciones](${siteUrl}/suscripciones): café recurrente a domicilio.`);
   out.push(`- [Guías de preparación](${siteUrl}/guias): métodos paso a paso.`);
-  out.push(`- [Quiz](${siteUrl}/quiz): recomendación de café según gustos.`);
-  out.push(`- [Tiendas](${siteUrl}/tiendas): sedes físicas, direcciones y horarios.`);
+  if (f.catalog) out.push(`- [Quiz](${siteUrl}/quiz): recomendación de café según gustos.`);
+  if (pages.tiendas) out.push(`- [Tiendas](${siteUrl}/tiendas): sedes físicas, direcciones y horarios.`);
   if (f.blog) out.push(`- [Blog](${siteUrl}/blog): artículos sobre origen, tueste y preparación.`);
   out.push(`- [Envíos](${siteUrl}/envios) y [Devoluciones](${siteUrl}/devoluciones): políticas.`);
-  out.push(`- [Mayoristas](${siteUrl}/mayoristas) y [Contacto](${siteUrl}/contacto).`);
+  out.push(
+    pages.mayoristas
+      ? `- [Mayoristas](${siteUrl}/mayoristas) y [Contacto](${siteUrl}/contacto).`
+      : `- [Contacto](${siteUrl}/contacto).`,
+  );
   out.push("");
 
   if (products.length) {

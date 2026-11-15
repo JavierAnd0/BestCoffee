@@ -114,3 +114,67 @@ export async function impersonateTenantAction(
 
   return { ok: true };
 }
+
+// ── Dominios propios de una tienda ───────────────────────────────────────────
+
+export interface DomainVerification {
+  type: "TXT";
+  host: string;
+  value: string;
+}
+
+export type DomainActionState =
+  | { ok: true; domain?: string; verified?: boolean; verification?: DomainVerification; reason?: string }
+  | { ok: false; error: string };
+
+export async function addTenantDomainAction(
+  tenantId: string,
+  domain: string,
+): Promise<DomainActionState> {
+  const res = await operatorFetch<{ domain: string; verification: DomainVerification }>(
+    `/v1/platform/tenants/${tenantId}/domains`,
+    { method: "POST", body: { domain } },
+  );
+  if (!res.ok) {
+    return { ok: false, error: res.error || "No se pudo registrar el dominio." };
+  }
+  if (!res.data) return { ok: false, error: "Respuesta inválida del servidor." };
+  revalidatePath(`/platform/superadmin/tenants/${tenantId}`);
+  return { ok: true, domain: res.data.domain, verified: false, verification: res.data.verification };
+}
+
+export async function verifyTenantDomainAction(
+  tenantId: string,
+  domainId: string,
+): Promise<DomainActionState> {
+  const res = await operatorFetch<{
+    domain: string;
+    verified: boolean;
+    reason?: string;
+    verification: DomainVerification;
+  }>(`/v1/platform/tenants/${tenantId}/domains/${domainId}/verify`, { method: "POST" });
+  if (!res.ok) {
+    return { ok: false, error: res.error || "No se pudo verificar el dominio." };
+  }
+  if (!res.data) return { ok: false, error: "Respuesta inválida del servidor." };
+  revalidatePath(`/platform/superadmin/tenants/${tenantId}`);
+  return {
+    ok: true,
+    domain: res.data.domain,
+    verified: res.data.verified,
+    verification: res.data.verification,
+    reason: res.data.reason,
+  };
+}
+
+export async function removeTenantDomainAction(
+  tenantId: string,
+  domainId: string,
+): Promise<DomainActionState> {
+  const res = await operatorFetch(`/v1/platform/tenants/${tenantId}/domains/${domainId}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) return { ok: false, error: res.error || "No se pudo quitar el dominio." };
+  revalidatePath(`/platform/superadmin/tenants/${tenantId}`);
+  return { ok: true };
+}

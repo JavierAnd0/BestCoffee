@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ScrollStory } from "@/components/storefront/scroll-story";
+import { HeroClassic } from "@/components/storefront/hero-classic";
 import { FeaturedPack } from "@/components/storefront/featured-pack";
 import { QuizBand } from "@/components/storefront/quiz-band";
 import { Spotlight } from "@/components/storefront/spotlight";
@@ -16,7 +17,8 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function StorefrontHome() {
-  const [hero, spotlight, featuredPack, bestsellers] = await Promise.all([
+  const [tenant, hero, spotlight, featuredPack, bestsellers] = await Promise.all([
+    getCurrentTenant(),
     getHomeHero(),
     getHomeSpotlight(),
     getFeaturedPack(),
@@ -26,7 +28,25 @@ export default async function StorefrontHome() {
 
   return (
     <>
-      {hero && <ScrollStory content={hero} />}
+      {/* La escena 3D es de la demo; las demás tiendas usan el hero clásico. */}
+      {tenant.branding.hero === "scene3d" && hero ? (
+        <ScrollStory content={hero} />
+      ) : (
+        // Sin contenido cargado todavía, la portada se arma con la marca.
+        <HeroClassic
+          content={
+            hero ?? {
+              eyebrow: tenant.tagline,
+              title: tenant.brand,
+              ctaPrimaryLabel: tenant.features.catalog ? "Ver catálogo" : "Contáctanos",
+              ctaPrimaryHref: tenant.features.catalog ? "/catalogo" : "/contacto",
+              imageAlt: tenant.brand,
+            }
+          }
+          brand={tenant.brand}
+          tagline={tenant.tagline}
+        />
+      )}
 
       {featuredPack && <FeaturedPack content={featuredPack} />}
 

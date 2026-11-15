@@ -1,3 +1,4 @@
+import { requireEditorialPage } from "@/lib/data/feature-guard";
 import type { Metadata } from "next";
 import Image from "next/image";
 import { Eyebrow } from "@/components/ui/eyebrow";
@@ -11,7 +12,8 @@ const NUMBERS = [
   { value: "2 t", label: "Café tostado por mes en lotes pequeños" },
 ];
 
-export default function ImpactoPage() {
+export default async function ImpactoPage() {
+  await requireEditorialPage("impacto");
   return (
     <>
       <section className="relative isolate h-[440px] grid place-items-center overflow-hidden">

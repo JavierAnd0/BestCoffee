@@ -40,7 +40,7 @@ const STEPS = [
   {
     step: "02",
     title: "Contáctanos con tu número de orden",
-    body: "Escríbenos a hola@bestcoffee.io o por WhatsApp indicando tu número de pedido y la descripción de la novedad.",
+    body: "Escríbenos por nuestros canales de contacto indicando tu número de pedido y la descripción de la novedad.",
   },
   {
     step: "03",

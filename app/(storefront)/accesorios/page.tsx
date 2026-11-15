@@ -33,6 +33,7 @@ const PERKS = [
 
 export default async function AccesoriosPage() {
   // Guard de feature del tenant: si la tienda no vende accesorios, redirige a /catalogo
+  await requireFeature("catalog");
   await requireFeature("accessories");
 
   const accessories = await listAccessories();

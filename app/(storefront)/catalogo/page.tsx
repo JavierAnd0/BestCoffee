@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import { requireFeature } from "@/lib/data/feature-guard";
 import { ProductCard } from "@/components/storefront/product-card";
 import {
   CatalogFilters,
@@ -40,6 +41,8 @@ export default async function CatalogoPage({
     page?: string;
   }>;
 }) {
+  // El catálogo es una capacidad de plan: una tienda "solo landing" no lo tiene.
+  await requireFeature("catalog");
   const {
     coleccion,
     categoria,

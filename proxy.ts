@@ -180,7 +180,7 @@ export default async function middleware(req: NextRequest) {
         try {
           const hostHeader = req.headers.get("host") ?? "";
           const host = hostHeader.split(":")[0].toLowerCase();
-          const tenantSlug = resolveTenantSlug(host) || "origen";
+          const tenantSlug = (await resolveTenantSlug(host)) || "origen";
           const apiUrl = process.env.API_URL_INTERNAL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
           const syncRes = await fetch(`${apiUrl}/v1/auth/customer/neon-sync`, {
@@ -189,7 +189,9 @@ export default async function middleware(req: NextRequest) {
               "Content-Type": "application/json",
               "X-Tenant-Slug": tenantSlug,
               "x-internal-secret":
-                process.env.REVALIDATE_SECRET || "dev-revalidate-secret",
+                process.env.REVALIDATE_SECRET ||
+                // Sin valor por defecto en producción: si falta, el backend rechaza.
+                (process.env.NODE_ENV === "production" ? "" : "dev-revalidate-secret"),
             },
             body: JSON.stringify({ email, name }),
             cache: "no-store",
@@ -261,7 +263,7 @@ export default async function middleware(req: NextRequest) {
   const hostHeader = req.headers.get("host") ?? "";
   const host = hostHeader.split(":")[0].toLowerCase();
 
-  const tenantSlug = resolveTenantSlug(host);
+  const tenantSlug = await resolveTenantSlug(host);
 
   const requestHeaders = new Headers(req.headers);
   requestHeaders.set("x-host", host);
@@ -297,7 +299,44 @@ export default async function middleware(req: NextRequest) {
   return NextResponse.next({ request: { headers: requestHeaders } });
 }
 
-function resolveTenantSlug(host: string): string | null {
+// Dominio propio → tienda. Solo cuenta si el backend lo tiene VERIFICADO (el
+// dueño demostró el dominio con un registro TXT). Caché corta en memoria para
+// no consultar al backend en cada visita; los fallos se cachean menos tiempo.
+const customDomainCache = new Map<string, { slug: string | null; exp: number }>();
+const DOMAIN_TTL_MS = 60_000;
+const DOMAIN_MISS_TTL_MS = 15_000;
+
+async function resolveCustomDomain(host: string): Promise<string | null> {
+  const now = Date.now();
+  const cached = customDomainCache.get(host);
+  if (cached && cached.exp > now) return cached.slug;
+
+  let slug: string | null = null;
+  let ttl = DOMAIN_MISS_TTL_MS;
+  try {
+    const apiUrl =
+      process.env.API_URL_INTERNAL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+    const res = await fetch(`${apiUrl}/v1/tenant-domains/resolve?host=${encodeURIComponent(host)}`, {
+      cache: "no-store",
+      signal: AbortSignal.timeout(2500),
+    });
+    if (res.ok) {
+      const data = (await res.json()) as { slug?: string };
+      if (typeof data.slug === "string" && /^[a-z0-9-]+$/.test(data.slug)) {
+        slug = data.slug;
+        ttl = DOMAIN_TTL_MS;
+      }
+    }
+  } catch {
+    // Backend no disponible: se trata como "no es un dominio de tienda".
+  }
+  customDomainCache.set(host, { slug, exp: now + ttl });
+  // Evita que la caché crezca sin límite con hosts arbitrarios.
+  if (customDomainCache.size > 500) customDomainCache.clear();
+  return slug;
+}
+
+async function resolveTenantSlug(host: string): Promise<string | null> {
   if (PLATFORM_HOSTS.has(host)) {
     // In local dev, plain `localhost` (no subdomain) falls back to the default
     // tenant so the storefront works at http://localhost:3000 without needing
@@ -316,10 +355,15 @@ function resolveTenantSlug(host: string): string | null {
     return sub;
   }
 
-  // Any other host (the deploy's own *.vercel.app URL, a preview URL, or a
-  // domain pointed at a single-store deploy) is NOT parsed for a slug — taking
-  // its first label would resolve `tienda.caferoma.com` to a tenant named
-  // "tienda". It serves DEFAULT_TENANT_SLUG when the deploy pins one, and the
-  // platform shell otherwise.
+  // Otro host: primero, ¿es el dominio propio VERIFICADO de una tienda? (nunca se
+  // infiere de su primer segmento: `tienda.caferoma.com` no es la tienda "tienda").
+  // La URL del propio despliegue (*.vercel.app) nunca es un dominio de cliente:
+  // no se gasta una consulta al backend (con hasta 2,5 s de espera) en cada visita.
+  const own = host.endsWith(".vercel.app") ? null : await resolveCustomDomain(host);
+  if (own) return own;
+
+  // Si no, es la URL del propio deploy (*.vercel.app), una vista previa, o un
+  // dominio apuntado a un deploy de una sola tienda: sirve DEFAULT_TENANT_SLUG si
+  // el deploy la fija, y la presentación de la plataforma en caso contrario.
   return process.env.DEFAULT_TENANT_SLUG || null;
 }

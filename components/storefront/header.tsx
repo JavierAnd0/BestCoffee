@@ -6,36 +6,42 @@ import { useState } from "react";
 import { Search, User, ShoppingBag, Menu, X } from "lucide-react";
 import { Logo } from "./logo";
 import { useCart } from "./cart-context";
-import type { TenantFeatures } from "@/lib/types";
+import type { TenantFeatures, TenantBranding } from "@/lib/types";
 
 type NavLink = { href: string; label: string };
 
 // Links que dependen de una feature. Si la tienda no la tiene (tier bajo),
 // el enlace no se muestra para no llevar a páginas vacías o bloqueadas.
-function buildLinks(features?: TenantFeatures) {
+type Pages = TenantBranding["pages"];
+
+function buildLinks(features?: TenantFeatures, pages?: Pages) {
+  // Páginas editoriales: solo si la tienda tiene las suyas.
+  const has = (p: keyof Pages) => pages?.[p] ?? true;
+  const catalog = features?.catalog ?? true;
   const subs = features?.subscriptions ?? true;
-  const accessories = features?.accessories ?? true;
+  const accessories = catalog && (features?.accessories ?? true);
+  const blog = features?.blog ?? true;
 
   const left: NavLink[] = [
-    { href: "/catalogo", label: "Catálogo" },
+    ...(catalog ? [{ href: "/catalogo", label: "Catálogo" }] : []),
     ...(subs ? [{ href: "/suscripciones", label: "Suscripciones" }] : []),
     ...(accessories ? [{ href: "/accesorios", label: "Accesorios" }] : []),
-    { href: "/tiendas", label: "Tiendas" },
+    ...(has("tiendas") ? [{ href: "/tiendas", label: "Tiendas" }] : []),
   ];
 
-  const right: NavLink[] = [{ href: "/blog", label: "Aprende" }];
+  const right: NavLink[] = blog ? [{ href: "/blog", label: "Aprende" }] : [];
 
   const mobile: NavLink[] = [
-    { href: "/catalogo", label: "Catálogo" },
+    ...(catalog ? [{ href: "/catalogo", label: "Catálogo" }] : []),
     ...(subs ? [{ href: "/suscripciones", label: "Suscripciones" }] : []),
     ...(accessories ? [{ href: "/accesorios", label: "Accesorios" }] : []),
-    { href: "/quiz", label: "Encuentra tu café" },
-    { href: "/blog", label: "Blog" },
+    ...(catalog ? [{ href: "/quiz", label: "Encuentra tu café" }] : []),
+    ...(blog ? [{ href: "/blog", label: "Blog" }] : []),
     { href: "/guias", label: "Guías de preparación" },
-    { href: "/tiendas", label: "Tiendas" },
-    { href: "/historia", label: "Nuestra historia" },
-    { href: "/impacto", label: "Impacto" },
-    { href: "/mayoristas", label: "Mayoristas" },
+    ...(has("tiendas") ? [{ href: "/tiendas", label: "Tiendas" }] : []),
+    ...(has("historia") ? [{ href: "/historia", label: "Nuestra historia" }] : []),
+    ...(has("impacto") ? [{ href: "/impacto", label: "Impacto" }] : []),
+    ...(has("mayoristas") ? [{ href: "/mayoristas", label: "Mayoristas" }] : []),
   ];
 
   return { left, right, mobile };
@@ -44,9 +50,11 @@ function buildLinks(features?: TenantFeatures) {
 export function Header({
   brand,
   features,
+  branding,
 }: {
   brand?: string;
   features?: TenantFeatures;
+  branding?: TenantBranding;
 }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -56,7 +64,7 @@ export function Header({
   const [searchQuery, setSearchQuery] = useState("");
 
   const { left: LEFT_LINKS, right: RIGHT_LINKS, mobile: MOBILE_LINKS } =
-    buildLinks(features);
+    buildLinks(features, branding?.pages);
   // Catálogo de solo lectura (STARTER): sin carrito. Cuentas de cliente: PRO+.
   const showCart = features?.checkout ?? true;
   const showAccount = features?.customerAccounts ?? true;
@@ -83,7 +91,7 @@ export function Header({
           >
             <Menu className="size-5" />
           </button>
-          <Logo size={20} brand={brand} />
+          <Logo size={20} brand={brand} logoUrl={branding?.logoUrl} />
           {showCart ? (
             <button
               onClick={open}
@@ -115,7 +123,7 @@ export function Header({
             ))}
           </nav>
           <div className="flex justify-center">
-            <Logo size={22} brand={brand} />
+            <Logo size={22} brand={brand} logoUrl={branding?.logoUrl} />
           </div>
           <div className="flex items-center justify-end gap-3 text-sm">
             {RIGHT_LINKS.map((l) => (
@@ -203,7 +211,7 @@ export function Header({
           aria-label="Menú"
         >
           <div className="flex items-center justify-between px-4 py-4 border-b border-border">
-            <Logo size={20} brand={brand} />
+            <Logo size={20} brand={brand} logoUrl={branding?.logoUrl} />
             <button
               onClick={() => setMenuOpen(false)}
               aria-label="Cerrar menú"

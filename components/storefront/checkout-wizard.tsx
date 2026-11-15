@@ -84,12 +84,15 @@ export function CheckoutWizard({
   paymentProvider,
   mpPublicKey,
   useMocks = false,
+  onlinePayments = true,
   customer,
   savedAddresses = [],
 }: {
   paymentProvider?: string | null;
   mpPublicKey?: string | null;
   useMocks?: boolean;
+  /** false = la tienda recibe pedidos y cobra por fuera (sin pasarela). */
+  onlinePayments?: boolean;
   customer?: MockCustomer | null;
   savedAddresses?: MockAddress[];
 }) {
@@ -143,7 +146,9 @@ export function CheckoutWizard({
   const [shippingError, setShippingError] = useState<string | null>(null);
 
   // Método de pago
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethodType>("card");
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethodType>(
+    onlinePayments ? "card" : "cash_on_delivery",
+  );
   const [cardData, setCardData] = useState({
     number: "",
     expiry: "",
@@ -289,7 +294,12 @@ export function CheckoutWizard({
     router.push(`/checkout/confirmacion?orderId=${encodeURIComponent(result.orderId)}`);
   };
 
-  const isMp = paymentProvider === "mercadopago" && !!mpPublicKey;
+  const isMp = onlinePayments && paymentProvider === "mercadopago" && !!mpPublicKey;
+
+  // Una suscripción necesita cuenta propia (cobros recurrentes): un invitado
+  // debe iniciar sesión antes de pagar, en vez de toparse con un error al final.
+  const subscriptionNeedsLogin =
+    !useMocks && !customer?.email && cart.items.some((i) => i.mode === "SUBSCRIPTION");
 
   // Estado Carrito Vacío
   if (cart.items.length === 0) {
@@ -559,8 +569,8 @@ export function CheckoutWizard({
             />
           ) : (
             <div className="space-y-4">
-              {/* Selector de métodos de pago */}
-              <div className="grid grid-cols-3 gap-2">
+              {/* Selector de métodos de pago (solo si la tienda cobra en línea) */}
+              <div className={onlinePayments ? "grid grid-cols-3 gap-2" : "hidden"}>
                 <button
                   type="button"
                   onClick={() => setPaymentMethod("card")}
@@ -710,23 +720,49 @@ export function CheckoutWizard({
                 <div className="rounded-xl border border-border bg-card p-4 space-y-2 text-xs leading-relaxed text-muted-foreground">
                   <p className="font-semibold text-foreground text-sm flex items-center gap-1.5">
                     <Banknote className="size-4 text-primary" />
-                    Pago en destino
+                    {onlinePayments ? "Pago en destino" : "Pago al coordinar tu pedido"}
                   </p>
-                  <p>
-                    Entrega tu pago en efectivo o mediante datáfono inalámbrico cuando recibas tu pedido en tu domicilio.
-                  </p>
-                  <p className="text-[11px] text-primary">
-                    Disponible para despachos en Bogotá D.C. y Medellín.
-                  </p>
+                  {onlinePayments ? (
+                    <>
+                      <p>
+                        Entrega tu pago en efectivo o mediante datáfono inalámbrico cuando recibas tu pedido en tu domicilio.
+                      </p>
+                      <p className="text-[11px] text-primary">
+                        Disponible para despachos en Bogotá D.C. y Medellín.
+                      </p>
+                    </>
+                  ) : (
+                    <p>
+                      Esta tienda no cobra en línea. Al confirmar recibimos tu pedido y te contactamos
+                      para acordar el pago (transferencia o contra entrega) y la entrega.
+                    </p>
+                  )}
                 </div>
               )}
+            </div>
+          )}
+
+          {subscriptionNeedsLogin && (
+            <div
+              role="alert"
+              className="mt-6 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-900"
+            >
+              Para suscribirte necesitas una cuenta.{" "}
+              <a href="/login?next=/checkout" className="underline font-medium">
+                Inicia sesión
+              </a>{" "}
+              o{" "}
+              <a href="/registro" className="underline font-medium">
+                crea tu cuenta
+              </a>{" "}
+              y vuelve aquí: tu carrito se conserva.
             </div>
           )}
 
           <Button
             size="lg"
             className="mt-6 w-full h-12 text-base justify-center gap-2"
-            disabled={placing}
+            disabled={placing || subscriptionNeedsLogin}
             onClick={isMp ? submitMpForm : handlePlainPay}
           >
             {placing ? (

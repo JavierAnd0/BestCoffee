@@ -5,6 +5,19 @@ export const TENANT_ORIGEN: Tenant = {
   name: "ORÍGEN",
   brand: "ORÍGEN",
   tagline: "Tostadores de café de especialidad",
+  branding: {
+    accent: "#b85c32",
+    logoUrl: null,
+    hero: "scene3d",
+    contactEmail: "hola@bestcoffee.io",
+    contactPhone: "+57 300 123 4567",
+    legalName: "ORÍGEN Café S.A.S.",
+    legalId: "900.123.456-7",
+    city: "Bogotá",
+    pages: { historia: true, impacto: true, sostenibilidad: true, mayoristas: true, tiendas: true },
+  },
+  suspended: false,
+  demo: false,
   tier: "PRO",
   features: {
     blog: true,
@@ -17,6 +30,7 @@ export const TENANT_ORIGEN: Tenant = {
     gifts: false,
     customDomain: false,
     accessories: true,
+    onlinePayments: true,
     maxProducts: 50,
   },
   newsletter: {

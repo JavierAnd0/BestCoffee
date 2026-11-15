@@ -18,11 +18,14 @@ const display = Cormorant_Garamond({
 });
 
 export const metadata: Metadata = {
+  // Raíz neutra: es común a la plataforma, los paneles y TODAS las tiendas.
+  // Cada tienda pone su propia marca en el layout del storefront; aquí no va
+  // el nombre de ninguna.
   title: {
-    default: "ORÍGEN — Café de especialidad",
-    template: "%s · ORÍGEN",
+    default: "BestCoffee",
+    template: "%s",
   },
-  description: "Tostadores de café de especialidad. Tostado en lotes pequeños, enviado fresco.",
+  description: "Tiendas en línea de café de especialidad.",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

@@ -1,6 +1,6 @@
-import { redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { getCurrentTenant } from "./tenant";
-import type { TenantFeatures } from "../types";
+import type { EditorialPage, TenantFeatures } from "../types";
 
 type BooleanFeature = {
   [K in keyof TenantFeatures]: TenantFeatures[K] extends boolean ? K : never;
@@ -12,6 +12,7 @@ const FALLBACK: Record<BooleanFeature, string> = {
   blog: "/",
   catalog: "/",
   checkout: "/catalogo",
+  onlinePayments: "/catalogo",
   subscriptions: "/catalogo",
   customerAccounts: "/",
   discountCodes: "/catalogo",
@@ -41,4 +42,14 @@ export async function requireFeature(
   if (!tenant.features[feature]) {
     redirect(fallback ?? FALLBACK[feature]);
   }
+}
+
+/**
+ * Páginas editoriales (historia, impacto, sedes…): su contenido es de cada
+ * marca. Si la tienda no tiene la suya, la ruta no existe (404), en vez de
+ * mostrar el texto de otra marca.
+ */
+export async function requireEditorialPage(page: EditorialPage): Promise<void> {
+  const tenant = await getCurrentTenant();
+  if (!tenant.branding.pages[page]) notFound();
 }

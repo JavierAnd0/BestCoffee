@@ -11,7 +11,9 @@ type Tier = "STARTER" | "PRO" | "BUSINESS";
 export interface TierFeatures {
   blog: boolean;
   catalog: boolean;
+  accessories: boolean;
   checkout: boolean;
+  onlinePayments: boolean;
   customerAccounts: boolean;
   subscriptions: boolean;
   discountCodes: boolean;
@@ -27,7 +29,13 @@ type BooleanFeatureKey = Exclude<keyof TierFeatures, "maxProducts">;
 const FEATURE_META: { key: BooleanFeatureKey; label: string; help: string }[] = [
   { key: "blog", label: "Blog", help: "Publicar artículos y guías" },
   { key: "catalog", label: "Catálogo", help: "Mostrar productos y precios" },
-  { key: "checkout", label: "Compra en línea", help: "Carrito y pago" },
+  { key: "accessories", label: "Accesorios", help: "Vender accesorios además del café" },
+  { key: "checkout", label: "Pedidos", help: "Carrito y recepción de pedidos" },
+  {
+    key: "onlinePayments",
+    label: "Pagos en línea",
+    help: "Cobro con pasarela. Apagado: pedidos con pago por fuera",
+  },
   { key: "customerAccounts", label: "Cuentas de cliente", help: "Registro y login de compradores" },
   { key: "subscriptions", label: "Suscripciones", help: "Suscripciones de café recurrentes" },
   { key: "discountCodes", label: "Códigos de descuento", help: "Cupones y promociones" },

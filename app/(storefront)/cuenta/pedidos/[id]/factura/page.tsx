@@ -30,7 +30,7 @@ export default async function InvoicePage({ params }: Props) {
     ? order.items
     : [
         {
-          name: "Café de Especialidad ORÍGEN",
+          name: "Café de especialidad",
           variant: "250 g · Grano Entero",
           qty: order.itemsCount,
           priceCents: order.totalCents,
@@ -66,14 +66,32 @@ export default async function InvoicePage({ params }: Props) {
                 <Coffee className="size-5" />
               </span>
               <span className="font-display text-2xl font-bold tracking-tight uppercase">
-                {tenant.name || "ORÍGEN Café"}
+                {tenant.name}
               </span>
             </div>
             <p className="text-xs text-muted-foreground leading-relaxed max-w-xs">
-              <strong>ORÍGEN Café S.A.S.</strong><br />
-              NIT: 900.123.456-7 · Régimen Responsable de IVA<br />
-              Cra 13 #57-32, Chapinero · Bogotá D.C., Colombia<br />
-              contacto@cafeorigen.co · Tel: +57 (601) 745-9823
+              {/* Datos fiscales de la tienda. Sin NIT cargado no se inventa uno. */}
+              <strong>{tenant.branding.legalName ?? tenant.name}</strong>
+              {tenant.branding.legalId && (
+                <>
+                  <br />
+                  NIT: {tenant.branding.legalId}
+                </>
+              )}
+              {tenant.branding.city && (
+                <>
+                  <br />
+                  {tenant.branding.city}, Colombia
+                </>
+              )}
+              {(tenant.branding.contactEmail || tenant.branding.contactPhone) && (
+                <>
+                  <br />
+                  {[tenant.branding.contactEmail, tenant.branding.contactPhone]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </>
+              )}
             </p>
           </div>
 
@@ -218,14 +236,20 @@ export default async function InvoicePage({ params }: Props) {
         {/* Pie de página de la factura */}
         <div className="text-center pt-8 border-t border-border/60 text-xs text-muted-foreground space-y-1">
           <p className="font-medium text-foreground">
-            ¡Gracias por apoyar el café de especialidad colombiano con {tenant.name || "ORÍGEN"}!
+            ¡Gracias por apoyar el café de especialidad colombiano con {tenant.name}!
           </p>
-          <p className="text-[11px]">
-            Para soporte o dudas sobre tu facturación, escríbenos a{" "}
-            <a href="mailto:soporte@cafeorigen.co" className="underline hover:text-foreground">
-              soporte@cafeorigen.co
-            </a>
-          </p>
+          {tenant.branding.contactEmail && (
+            <p className="text-[11px]">
+              Para soporte o dudas sobre tu facturación, escríbenos a{" "}
+              <a
+                href={`mailto:${tenant.branding.contactEmail}`}
+                className="underline hover:text-foreground"
+              >
+                {tenant.branding.contactEmail}
+              </a>
+              .
+            </p>
+          )}
         </div>
       </div>
     </div>

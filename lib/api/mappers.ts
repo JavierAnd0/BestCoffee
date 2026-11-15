@@ -8,6 +8,8 @@ import type {
   TenantFeatures,
   AnnounceMessage,
   HeroContent,
+  EditorialPage,
+  TenantBranding,
 } from "../types";
 
 // ── Minimal shapes of what the API returns (only the fields we read) ─────────
@@ -50,7 +52,9 @@ export interface ApiTenant {
   name: string;
   tier?: string;
   features?: Record<string, unknown>;
-  branding?: { accent?: string; primary?: string; font?: string };
+  branding?: Record<string, unknown> | null;
+  suspended?: boolean;
+  demo?: boolean;
   paymentProvider?: string | null;
   mpPublicKey?: string | null;
   newsletter?: {
@@ -111,43 +115,75 @@ export function mapProduct(p: ApiProduct): Product {
   };
 }
 
-// Baseline por tier, espejo de TIER_FEATURES del backend. Solo se usa como
-// fallback si el backend (versión vieja) no envía `features` ya resueltas.
-const TIER_FALLBACK: Record<string, TenantFeatures> = {
-  STARTER: {
-    blog: true, catalog: true, checkout: false, customerAccounts: false,
-    subscriptions: false, discountCodes: false, reviews: false,
-    gifts: false, customDomain: false, accessories: true, maxProducts: 10,
-  },
-  PRO: {
-    blog: true, catalog: true, checkout: true, customerAccounts: true,
-    subscriptions: true, discountCodes: true, reviews: true,
-    gifts: false, customDomain: false, accessories: true, maxProducts: 50,
-  },
-  BUSINESS: {
-    blog: true, catalog: true, checkout: true, customerAccounts: true,
-    subscriptions: true, discountCodes: true, reviews: true,
-    gifts: true, customDomain: true, accessories: true, maxProducts: -1,
-  },
+// Las capacidades las resuelve el backend (GET /v1/tenants/current las manda ya
+// calculadas: tier + overrides). Aquí no hay copia de la tabla por tier. Si una
+// clave no llega, se asume lo mínimo —solo presencia—: nunca se abre una
+// función de pago por un dato ausente.
+const MINIMAL_FEATURES: TenantFeatures = {
+  blog: true,
+  catalog: true,
+  accessories: true,
+  checkout: false,
+  onlinePayments: false,
+  customerAccounts: false,
+  subscriptions: false,
+  discountCodes: false,
+  reviews: false,
+  gifts: false,
+  customDomain: false,
+  maxProducts: 10,
 };
 
-function resolveFeatures(tier: string, raw: Record<string, unknown>): TenantFeatures {
-  const base = TIER_FALLBACK[tier] ?? TIER_FALLBACK.STARTER;
-  const bool = (k: keyof TenantFeatures) =>
-    typeof raw[k] === "boolean" ? (raw[k] as boolean) : (base[k] as boolean);
+function resolveFeatures(raw: Record<string, unknown>): TenantFeatures {
+  const out = { ...MINIMAL_FEATURES };
+  for (const key of Object.keys(MINIMAL_FEATURES) as (keyof TenantFeatures)[]) {
+    const value = raw[key];
+    if (typeof value === typeof MINIMAL_FEATURES[key]) {
+      (out[key] as boolean | number) = value as boolean | number;
+    }
+  }
+  return out;
+}
+
+// La tienda demo es la dueña del contenido editorial y de la escena 3D que
+// viven en este repo. Para cualquier otra tienda esos valores van apagados
+// salvo que su `branding` los active: nunca se muestra la historia, las sedes
+// o el hero de otra marca.
+const DEMO_SLUG = "origen";
+const EDITORIAL_PAGES: EditorialPage[] = [
+  "historia",
+  "impacto",
+  "sostenibilidad",
+  "mayoristas",
+  "tiendas",
+];
+
+const text = (v: unknown): string | null =>
+  typeof v === "string" && v.trim() ? v.trim() : null;
+/** Solo colores hex: el valor termina en una variable CSS. */
+const hexColor = (v: unknown): string | null =>
+  typeof v === "string" && /^#[0-9a-f]{3,8}$/i.test(v.trim()) ? v.trim() : null;
+/** Solo https o rutas locales (nunca `//host`): el valor termina en un `src`. */
+const imageUrl = (v: unknown): string | null =>
+  typeof v === "string" && /^(https:\/\/|\/(?!\/))[^\s"'<>]+$/.test(v.trim()) ? v.trim() : null;
+
+export function mapBranding(slug: string, raw: Record<string, unknown> | null | undefined): TenantBranding {
+  const b = raw ?? {};
+  const isDemo = slug === DEMO_SLUG;
+  const pagesRaw = (b.pages && typeof b.pages === "object" ? b.pages : {}) as Record<string, unknown>;
+  const pages = Object.fromEntries(
+    EDITORIAL_PAGES.map((p) => [p, typeof pagesRaw[p] === "boolean" ? (pagesRaw[p] as boolean) : isDemo]),
+  ) as Record<EditorialPage, boolean>;
   return {
-    blog: bool("blog"),
-    catalog: bool("catalog"),
-    checkout: bool("checkout"),
-    customerAccounts: bool("customerAccounts"),
-    subscriptions: bool("subscriptions"),
-    discountCodes: bool("discountCodes"),
-    reviews: bool("reviews"),
-    gifts: bool("gifts"),
-    customDomain: bool("customDomain"),
-    accessories: bool("accessories"),
-    maxProducts:
-      typeof raw.maxProducts === "number" ? raw.maxProducts : base.maxProducts,
+    accent: hexColor(b.accent),
+    logoUrl: imageUrl(b.logoUrl),
+    hero: b.hero === "scene3d" || b.hero === "classic" ? b.hero : isDemo ? "scene3d" : "classic",
+    contactEmail: text(b.contactEmail),
+    contactPhone: text(b.contactPhone),
+    legalName: text(b.legalName),
+    legalId: text(b.legalId),
+    city: text(b.city),
+    pages,
   };
 }
 
@@ -160,9 +196,12 @@ export function mapTenant(t: ApiTenant): Tenant {
     slug: t.slug,
     name: t.name,
     brand: t.name,
-    tagline: "Tostadores de café de especialidad",
+    tagline: text(t.branding?.tagline) ?? "Tostadores de café de especialidad",
+    branding: mapBranding(t.slug, t.branding),
+    suspended: t.suspended === true,
+    demo: t.demo === true,
     tier,
-    features: resolveFeatures(tier, features),
+    features: resolveFeatures(features),
     newsletter: {
       popupEnabled: t.newsletter?.popupEnabled ?? true,
       welcomeOffer:
@@ -179,7 +218,9 @@ export function mapTenant(t: ApiTenant): Tenant {
     shippingFlatCents: num("shippingFlatCents", 12_000_00),
     subscriptionDiscountPct: num("subscriptionDiscountPct", 10),
     currency: "COP",
-    paymentProvider: (t.paymentProvider as Tenant["paymentProvider"]) ?? null,
+    // El backend manda el enum en mayúsculas ("MERCADOPAGO"); aquí se compara en
+    // minúsculas. Sin normalizar, los campos de MercadoPago nunca aparecían.
+    paymentProvider: t.paymentProvider?.toLowerCase() === "mercadopago" ? "mercadopago" : null,
     mpPublicKey: t.mpPublicKey ?? null,
   };
 }

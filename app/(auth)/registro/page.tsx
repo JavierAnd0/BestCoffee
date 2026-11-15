@@ -4,6 +4,7 @@ import { useState, useActionState } from "react";
 import Link from "next/link";
 import { Eye, EyeOff, ArrowLeft, Loader2, Check } from "lucide-react";
 import { Logo } from "@/components/storefront/logo";
+import { useBrand } from "@/components/storefront/brand-context";
 import { registerAction, logoutAction, type RegisterState } from "@/lib/actions/auth";
 import { authClient } from "@/lib/auth/client";
 
@@ -14,6 +15,7 @@ const PASSWORD_RULES = [
 ];
 
 export default function RegistroPage() {
+  const { brand } = useBrand();
   const [showPwd, setShowPwd] = useState(false);
   const [pwd, setPwd] = useState("");
   const [googleLoading, setGoogleLoading] = useState(false);
@@ -149,7 +151,7 @@ export default function RegistroPage() {
               </span>
               <div>
                 <h1 className="font-display font-semibold tracking-tight" style={{ fontSize: "1.75rem" }}>
-                  ¡Bienvenido a ORÍGEN!
+                  ¡Bienvenido a {brand}!
                 </h1>
                 <p className="mt-2 text-sm text-muted-foreground">
                   {"message" in state ? state.message : "Revisa tu correo para verificar tu dirección."}
@@ -356,7 +358,7 @@ export default function RegistroPage() {
           <span>·</span>
           <Link href="/legal/terminos" className="hover:text-muted-foreground transition-colors">Términos</Link>
           <span>·</span>
-          <span>© 2026 ORÍGEN</span>
+          <span>© {new Date().getFullYear()} {brand}</span>
         </footer>
       </main>
     </div>

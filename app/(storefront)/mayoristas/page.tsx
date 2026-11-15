@@ -1,3 +1,4 @@
+import { requireEditorialPage } from "@/lib/data/feature-guard";
 import type { Metadata } from "next";
 import Image from "next/image";
 import { Eyebrow } from "@/components/ui/eyebrow";
@@ -24,7 +25,8 @@ const PERKS = [
   },
 ];
 
-export default function MayoristasPage() {
+export default async function MayoristasPage() {
+  await requireEditorialPage("mayoristas");
   return (
     <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 py-16">
       <header className="mb-10 text-center max-w-2xl mx-auto">

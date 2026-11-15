@@ -58,7 +58,7 @@ export default async function OrderDetailPage({ params }: Props) {
 
   const items = order.items?.length
     ? order.items
-    : [{ name: "Café ORÍGEN", variant: "250 g · Grano entero", qty: order.itemsCount, priceCents: order.totalCents }];
+    : [{ name: "Café de especialidad", variant: "250 g · Grano entero", qty: order.itemsCount, priceCents: order.totalCents }];
 
   const subtotal = order.subtotalCents ?? items.reduce((s, it) => s + it.priceCents * it.qty, 0);
   const total = order.totalCents;

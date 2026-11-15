@@ -13,6 +13,8 @@ import { getCurrentTenant } from "@/lib/data/tenant";
 import { getTenantSlug } from "@/lib/tenant";
 import { env } from "@/lib/env";
 import { JsonLd } from "@/components/seo/json-ld";
+import { BrandProvider } from "@/components/storefront/brand-context";
+import { DemoPanel } from "@/components/storefront/demo-panel";
 import { getSiteUrl, organizationLd, tenantDescription, websiteLd } from "@/lib/seo";
 
 // Título por tienda: cada cafetería muestra su propia marca, no la de la demo.
@@ -37,7 +39,8 @@ export async function generateMetadata(): Promise<Metadata> {
       // Sin title/description: cada página aporta los suyos.
     },
     twitter: { card: "summary_large_image" },
-    robots: { index: true, follow: true },
+    // Suspendida por cobro: se sirve "tienda no disponible" y no debe indexarse.
+    robots: tenant.suspended ? { index: false, follow: false } : { index: true, follow: true },
   };
 }
 
@@ -53,9 +56,41 @@ export default async function StorefrontLayout({
   const isLoggedIn = Boolean((await cookies()).get("customer_token")?.value);
   const siteUrl = await getSiteUrl();
 
+  // Tienda suspendida por cobro: no se muestra el sitio ni se vende. El panel
+  // de operador sigue accesible para que el dueño pueda regularizar.
+  if (tenant.suspended) {
+    return (
+      <main className="min-h-screen grid place-items-center px-6 text-center">
+        <div className="max-w-md space-y-4">
+          <p className="eyebrow text-muted-foreground">{tenant.brand}</p>
+          <h1 className="font-display text-4xl font-semibold tracking-tight">
+            Tienda no disponible
+          </h1>
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            Esta tienda está temporalmente fuera de servicio. Si eres el propietario, ingresa al
+            panel para revisar el estado de tu plan.
+          </p>
+          <a href="/acceso" className="inline-block text-sm underline underline-offset-4">
+            Acceso de operadores
+          </a>
+        </div>
+      </main>
+    );
+  }
+
   return (
-    <div data-tenant={slug} className="flex flex-col min-h-screen">
+    <div
+      data-tenant={slug}
+      className="flex flex-col min-h-screen"
+      // Color de acento de la tienda (validado como hex en el mapper).
+      style={
+        tenant.branding.accent
+          ? ({ "--accent": tenant.branding.accent } as React.CSSProperties)
+          : undefined
+      }
+    >
       <JsonLd data={[organizationLd(tenant, siteUrl), websiteLd(tenant, siteUrl)]} />
+      <BrandProvider brand={tenant.brand} logoUrl={tenant.branding.logoUrl}>
       <CartProvider
         tenantSlug={slug}
         freeShippingThresholdCents={tenant.freeShippingThresholdCents}
@@ -68,7 +103,7 @@ export default async function StorefrontLayout({
           Saltar al contenido
         </a>
         <AnnounceBar messages={announce} />
-        <Header brand={tenant.brand} features={tenant.features} />
+        <Header brand={tenant.brand} features={tenant.features} branding={tenant.branding} />
         <main id="main" className="flex-1 pb-24 lg:pb-0">
           {children}
         </main>
@@ -76,10 +111,13 @@ export default async function StorefrontLayout({
           brand={tenant.brand}
           isLoggedIn={isLoggedIn}
           welcomeOffer={tenant.newsletter.welcomeOffer}
+          features={tenant.features}
+          pages={tenant.branding.pages}
         />
         <CartDrawer />
         <MobileNav features={tenant.features} />
-        {tenant.newsletter.popupEnabled && !isLoggedIn && (
+        {/* En la demo no se muestra: compite con el panel de interruptores. */}
+        {tenant.newsletter.popupEnabled && !isLoggedIn && !tenant.demo && (
           <NewsletterPrompt
             brand={tenant.brand}
             tenantSlug={slug}
@@ -87,7 +125,9 @@ export default async function StorefrontLayout({
           />
         )}
         <Toaster />
+        {tenant.demo && <DemoPanel features={tenant.features} />}
       </CartProvider>
+      </BrandProvider>
     </div>
   );
 }

@@ -1,3 +1,4 @@
+import { requireEditorialPage } from "@/lib/data/feature-guard";
 import type { Metadata } from "next";
 import { Eyebrow } from "@/components/ui/eyebrow";
 import { listStoreLocations } from "@/lib/data/static";
@@ -36,6 +37,7 @@ const FAQS = [
 ];
 
 export default async function TiendasPage() {
+  await requireEditorialPage("tiendas");
   const [stores, tenant, siteUrl] = await Promise.all([
     listStoreLocations(),
     getCurrentTenant(),

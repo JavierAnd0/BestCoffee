@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { del } from "@vercel/blob";
 import { env } from "../env";
 import { operatorFetch } from "../api/gateway";
-import { getOperatorSession } from "../auth/session-store";
+import { hasValidOperatorSession } from "../auth/operator-guard";
 import type { ProductImage } from "../types";
 
 // Server actions para la galería de un producto. El archivo ya está en Vercel
@@ -73,11 +73,21 @@ export async function removeProductImageAction(
   return { ok: true, data: undefined };
 }
 
-/** Borra el archivo de Vercel Blob. Ignora URLs que no son de Blob (p.ej. /img/...). */
+/**
+ * Borra el archivo de Vercel Blob. Ignora URLs que no son de Blob (p.ej. /img/...)
+ * y solo toca imágenes de producto. Exige un operador REAL: una cookie escrita a
+ * mano no basta (esta función es una acción de servidor invocable desde fuera).
+ */
 export async function deleteBlobAction(url: string): Promise<void> {
-  if (!url.includes(".blob.vercel-storage.com")) return;
-  const { token } = await getOperatorSession();
-  if (!token) return;
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    return;
+  }
+  if (parsed.protocol !== "https:" || !parsed.hostname.endsWith(".blob.vercel-storage.com")) return;
+  if (!parsed.pathname.startsWith("/products/")) return;
+  if (!(await hasValidOperatorSession())) return;
   try {
     await del(url);
   } catch {

@@ -9,6 +9,7 @@ import { ProductCard } from "@/components/storefront/product-card";
 import { ProductGallery } from "@/components/storefront/product-gallery";
 import { getProductBySlug, listRelated } from "@/lib/data/products";
 import { getCurrentTenant } from "@/lib/data/tenant";
+import { requireFeature } from "@/lib/data/feature-guard";
 import { JsonLd } from "@/components/seo/json-ld";
 import { breadcrumbLd, getSiteUrl, productLd } from "@/lib/seo";
 
@@ -52,6 +53,7 @@ export default async function ProductPage({
 }: {
   params: Promise<{ slug: string }>;
 }) {
+  await requireFeature("catalog");
   const { slug } = await params;
   const product = await getProductBySlug(slug);
   if (!product) notFound();

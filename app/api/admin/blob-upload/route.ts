@@ -1,5 +1,5 @@
 import { handleUpload, type HandleUploadBody } from "@vercel/blob/client";
-import { cookies } from "next/headers";
+import { hasValidOperatorSession } from "@/lib/auth/operator-guard";
 import { NextResponse } from "next/server";
 
 // Emite tokens para que el navegador suba imágenes de producto directo a
@@ -16,12 +16,9 @@ export async function POST(request: Request): Promise<NextResponse> {
       body,
       request,
       onBeforeGenerateToken: async (pathname) => {
-        // Solo operadores autenticados del panel pueden subir.
-        const c = await cookies();
-        const session =
-          c.get("bestcoffee-impersonation")?.value ??
-          c.get("bestcoffee-operator-session")?.value;
-        if (!session) throw new Error("No autorizado");
+        // Solo un operador REAL puede subir: la cookie no basta (se escribe a mano),
+        // el token se comprueba contra el backend.
+        if (!(await hasValidOperatorSession())) throw new Error("No autorizado");
         if (!pathname.startsWith("products/")) throw new Error("Ruta inválida");
 
         return {

@@ -1,11 +1,13 @@
 import { test, expect } from "@playwright/test";
+import { MOCKS } from "./env";
 
 test.describe("Flujo de Compra Completo — Cliente y Usuario", () => {
   test("1. PDP permite configurar tamaño, molienda, agregar al carrito y abre el drawer", async ({
     page,
   }) => {
-    await page.goto("/p/blend-casa");
-    await expect(page.locator("h1")).toContainText(/Blend de la Casa/i);
+    // "sierra-nevada" existe tanto en los datos simulados como en la demo real.
+    await page.goto("/p/sierra-nevada");
+    await expect(page.locator("h1")).toContainText(/Sierra Nevada/i);
 
     // Selección de molienda y tamaño si están disponibles
     const grindButton = page.getByRole("button", { name: /Grano/i }).first();
@@ -21,7 +23,7 @@ test.describe("Flujo de Compra Completo — Cliente y Usuario", () => {
     // El drawer del carrito debe abrirse automáticamente
     const drawerTitle = page.getByRole("heading", { name: /Tu carrito/i });
     await expect(drawerTitle).toBeVisible();
-    await expect(page.locator("body")).toContainText("Blend de la Casa");
+    await expect(page.locator("body")).toContainText("Sierra Nevada");
 
     // Botón "Ir a pagar" visible en el carrito
     const checkoutBtn = page.locator('a[href="/checkout"]').first();
@@ -31,7 +33,7 @@ test.describe("Flujo de Compra Completo — Cliente y Usuario", () => {
   test("2. El carrito permite modificar cantidades y avanza fluidamente al checkout", async ({
     page,
   }) => {
-    await page.goto("/p/blend-casa");
+    await page.goto("/p/sierra-nevada");
 
     // Agregar producto
     const addToCartBtn = page.getByRole("button", { name: /Agregar al carrito/i }).first();
@@ -107,10 +109,13 @@ test.describe("Flujo de Compra Completo — Cliente y Usuario", () => {
       await page.getByRole("button", { name: "Aplicar" }).click();
       await expect(page.locator("body")).toContainText(/inválido|no reconocido|expirado|no aplica/i);
 
-      // El cupón de bienvenida real de la demo se aplica
-      await couponInput.fill("BIENVENIDO10");
-      await page.getByRole("button", { name: "Aplicar" }).click();
-      await expect(page.locator("body")).toContainText(/Cupón:\s*BIENVENIDO10/i);
+      // El cupón de bienvenida real de la demo se aplica. Solo con backend:
+      // en modo mocks no hay quien valide el código.
+      if (!MOCKS) {
+        await couponInput.fill("BIENVENIDO10");
+        await page.getByRole("button", { name: "Aplicar" }).click();
+        await expect(page.locator("body")).toContainText(/Cupón:\s*BIENVENIDO10/i);
+      }
     }
 
     // Continuar a método de pago

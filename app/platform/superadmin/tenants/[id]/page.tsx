@@ -9,6 +9,8 @@ import {
   type TierFeatures,
 } from "@/components/platform/tenant-settings-form";
 import { TenantBillingForm } from "@/components/platform/tenant-billing-form";
+import { TenantDomainsForm } from "@/components/platform/tenant-domains-form";
+import { TenantBrandingForm } from "@/components/platform/tenant-branding-form";
 import { BillingSummary } from "@/components/platform/billing-summary";
 import {
   type BillingStatus,
@@ -122,6 +124,16 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
         />
       </Section>
 
+      {/* Identidad de la tienda: logo, color, contacto, datos legales y páginas */}
+      <Section title="Marca y contenido">
+        <TenantBrandingForm
+          tenantId={tenant.id}
+          slug={tenant.slug}
+          tagline={typeof tenant.branding?.tagline === "string" ? tenant.branding.tagline : ""}
+          branding={tenant.branding ?? {}}
+        />
+      </Section>
+
       {/* Facturación hacia la plataforma — vista de control + edición */}
       <Section title="Control de cobros">
         <BillingSummary
@@ -157,20 +169,15 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
       <div className="grid md:grid-cols-1 gap-6">
         {/* Dominios */}
         <Section title="Dominios">
-          {tenant.domains.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Sin dominios configurados</p>
-          ) : (
-            tenant.domains.map((d) => (
-              <Row key={d.id} label={d.isPrimary ? "Principal" : "Adicional"}>
-                <span className="font-mono text-xs">{d.domain}</span>
-                {d.verified ? (
-                  <Badge className="ml-2 bg-green-500/10 text-green-700 border-green-500/20">Verificado</Badge>
-                ) : (
-                  <Badge className="ml-2 bg-muted text-muted-foreground border-border">Pendiente</Badge>
-                )}
-              </Row>
-            ))
-          )}
+          <TenantDomainsForm
+            tenantId={tenant.id}
+            domains={tenant.domains}
+            enabled={
+              typeof tenant.features?.customDomain === "boolean"
+                ? tenant.features.customDomain
+                : tenant.tier === "BUSINESS"
+            }
+          />
         </Section>
       </div>
 
@@ -203,11 +210,3 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
-function Row({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="flex items-start justify-between gap-4 text-sm">
-      <span className="text-muted-foreground shrink-0">{label}</span>
-      <span className="text-right">{children}</span>
-    </div>
-  );
-}

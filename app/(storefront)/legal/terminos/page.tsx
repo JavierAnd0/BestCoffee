@@ -1,8 +1,18 @@
 import type { Metadata } from "next";
+import { getCurrentTenant } from "@/lib/data/tenant";
+import { getSiteUrl } from "@/lib/seo";
 
 export const metadata: Metadata = { title: "Términos de uso" };
 
-export default function TerminosPage() {
+export default async function TerminosPage() {
+  // Los textos legales usan la identidad de CADA tienda. Lo que no esté
+  // cargado se omite: nunca se muestra la razón social o el NIT de otra marca.
+  const [tenant, siteUrl] = await Promise.all([getCurrentTenant(), getSiteUrl()]);
+  const brand = tenant.brand;
+  const legalName = tenant.branding.legalName ?? tenant.brand;
+  const phone = tenant.branding.contactPhone;
+  const contact = tenant.branding.contactEmail ?? "nuestra página de contacto";
+  const site = new URL(siteUrl).host;
   return (
     <div className="mx-auto max-w-2xl px-4 sm:px-6 lg:px-8 py-20">
       <header className="mb-12">
@@ -20,8 +30,8 @@ export default function TerminosPage() {
         <section className="space-y-3">
           <h2 className="font-display font-semibold text-xl text-foreground">1. Aceptación de los términos</h2>
           <p>
-            Al acceder y utilizar el sitio web de ORÍGEN Café S.A.S. (“ORÍGEN”, “nosotros” o “nuestro”),
-            ubicado en <strong>orígen.co</strong>, aceptas quedar vinculado por estos Términos de uso. Si no
+            Al acceder y utilizar el sitio web de {legalName} (“{brand}”, “nosotros” o “nuestro”),
+            ubicado en <strong>{site}</strong>, aceptas quedar vinculado por estos Términos de uso. Si no
             estás de acuerdo con alguna parte de estos términos, no deberás usar nuestros servicios.
           </p>
         </section>
@@ -29,7 +39,7 @@ export default function TerminosPage() {
         <section className="space-y-3">
           <h2 className="font-display font-semibold text-xl text-foreground">2. Descripción del servicio</h2>
           <p>
-            ORÍGEN es una tienda en línea de café de especialidad colombiano. Ofrecemos la venta de café
+            {brand} es una tienda en línea de café de especialidad colombiano. Ofrecemos la venta de café
             en grano y molido, suscripciones de entrega periódica, guías de preparación y contenido
             educativo relacionado con el mundo del café.
           </p>
@@ -56,7 +66,7 @@ export default function TerminosPage() {
             se rigen por el precio vigente al momento de la compra.
           </p>
           <p>
-            Aceptamos los métodos de pago indicados en el proceso de compra. ORÍGEN no almacena datos de
+            Aceptamos los métodos de pago indicados en el proceso de compra. {brand} no almacena datos de
             tarjetas de crédito o débito; el procesamiento se realiza a través de pasarelas de pago certificadas.
           </p>
         </section>
@@ -65,7 +75,7 @@ export default function TerminosPage() {
           <h2 className="font-display font-semibold text-xl text-foreground">5. Envíos y entregas</h2>
           <p>
             Los tiempos de entrega son estimados y pueden variar según la ciudad y la disponibilidad del
-            transportador. ORÍGEN no se hace responsable de demoras ocasionadas por causas fuera de
+            transportador. {brand} no se hace responsable de demoras ocasionadas por causas fuera de
             nuestro control (fuerza mayor, huelgas, eventos climáticos, etc.).
           </p>
         </section>
@@ -78,7 +88,7 @@ export default function TerminosPage() {
             perecederos o abiertos no son elegibles para devolución salvo defecto de fabricación.
           </p>
           <p>
-            Para iniciar una devolución escríbenos a <strong>hola@origen.co</strong> con el número de
+            Para iniciar una devolución escríbenos a <strong>{contact}</strong> con el número de
             pedido y el motivo.
           </p>
         </section>
@@ -96,7 +106,7 @@ export default function TerminosPage() {
           <h2 className="font-display font-semibold text-xl text-foreground">8. Propiedad intelectual</h2>
           <p>
             Todo el contenido del sitio —textos, imágenes, logotipos, videos y diseños— es propiedad
-            exclusiva de ORÍGEN Café S.A.S. o de sus respectivos titulares. Queda prohibida su reproducción,
+            exclusiva de {legalName} o de sus respectivos titulares. Queda prohibida su reproducción,
             distribución o modificación sin autorización expresa por escrito.
           </p>
         </section>
@@ -104,7 +114,7 @@ export default function TerminosPage() {
         <section className="space-y-3">
           <h2 className="font-display font-semibold text-xl text-foreground">9. Limitación de responsabilidad</h2>
           <p>
-            ORÍGEN no será responsable por daños indirectos, incidentales o consecuentes derivados del uso
+            {brand} no será responsable por daños indirectos, incidentales o consecuentes derivados del uso
             o la imposibilidad de uso de nuestros servicios. Nuestra responsabilidad máxima se limita al
             valor del pedido en cuestión.
           </p>
@@ -131,7 +141,7 @@ export default function TerminosPage() {
           <h2 className="font-display font-semibold text-xl text-foreground">12. Contacto</h2>
           <p>
             Para preguntas sobre estos términos puedes escribirnos a{" "}
-            <strong>legal@origen.co</strong> o llamarnos al <strong>+57 601 000 0000</strong>.
+            <strong>{contact}</strong>{phone && <> o llamarnos al <strong>{phone}</strong></>}.
           </p>
         </section>
 

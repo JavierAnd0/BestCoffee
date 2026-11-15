@@ -1,3 +1,5 @@
+import { getCurrentTenant } from "@/lib/data/tenant";
+import type { TenantBranding } from "@/lib/types";
 import type { Metadata } from "next";
 import { Eyebrow } from "@/components/ui/eyebrow";
 import { Mail, Clock, MapPin, MessageCircle } from "lucide-react";
@@ -6,41 +8,62 @@ import { ContactForm } from "./contact-form";
 export const metadata: Metadata = {
   title: "Contacto y Atención al Cliente",
   description:
-    "Comunícate con el equipo de ORÍGEN. Estamos disponibles para resolver cualquier duda sobre tus pedidos de café especial, suscripciones o despachos.",
+    "Comunícate con nuestro equipo. Estamos disponibles para resolver cualquier duda sobre tus pedidos de café especial, suscripciones o despachos.",
 };
 
-const CHANNELS = [
-  {
-    icon: <Mail className="size-5 text-primary" />,
-    title: "Correo electrónico",
-    detail: "hola@bestcoffee.io",
-    description: "Respuesta promedio en menos de 24 horas hábiles.",
-    action: "mailto:hola@bestcoffee.io",
-    actionText: "Escribir correo",
-  },
-  {
-    icon: <MessageCircle className="size-5 text-primary" />,
-    title: "WhatsApp y Chat",
-    detail: "+57 300 123 4567",
-    description: "Atención rápida para novedades con envíos del día.",
-    action: "https://wa.me/573001234567",
-    actionText: "Abrir WhatsApp",
-  },
-  {
+interface Channel {
+  icon: React.ReactNode;
+  title: string;
+  detail: string;
+  description: string;
+  action?: string;
+  actionText?: string;
+}
+
+/** Canales de contacto de la tienda. Solo se muestran los que tiene cargados. */
+function buildChannels(branding: TenantBranding): Channel[] {
+  const channels: Channel[] = [];
+  if (branding.contactEmail) {
+    channels.push({
+      icon: <Mail className="size-5 text-primary" />,
+      title: "Correo electrónico",
+      detail: branding.contactEmail,
+      description: "Respuesta promedio en menos de 24 horas hábiles.",
+      action: `mailto:${branding.contactEmail}`,
+      actionText: "Escribir correo",
+    });
+  }
+  if (branding.contactPhone) {
+    const digits = branding.contactPhone.replace(/\D/g, "");
+    channels.push({
+      icon: <MessageCircle className="size-5 text-primary" />,
+      title: "WhatsApp y teléfono",
+      detail: branding.contactPhone,
+      description: "Atención rápida para novedades con envíos del día.",
+      action: `https://wa.me/${digits}`,
+      actionText: "Abrir WhatsApp",
+    });
+  }
+  channels.push({
     icon: <Clock className="size-5 text-primary" />,
     title: "Horario de atención",
     detail: "Lunes a Viernes: 8:00 AM – 6:00 PM",
     description: "Sábados: 9:00 AM – 1:00 PM (Hora Colombia).",
-  },
-  {
-    icon: <MapPin className="size-5 text-primary" />,
-    title: "Tostaduría & Bar de Café",
-    detail: "Calle 69 # 4-48, Chapinero",
-    description: "Bogotá D.C., Colombia.",
-  },
-];
+  });
+  if (branding.city) {
+    channels.push({
+      icon: <MapPin className="size-5 text-primary" />,
+      title: "Ubicación",
+      detail: branding.city,
+      description: "Colombia.",
+    });
+  }
+  return channels;
+}
 
-export default function ContactoPage() {
+export default async function ContactoPage() {
+  const tenant = await getCurrentTenant();
+  const CHANNELS = buildChannels(tenant.branding);
   return (
     <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-16">
       {/* Encabezado */}

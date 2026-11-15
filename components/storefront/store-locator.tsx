@@ -423,7 +423,7 @@ export function StoreLocator({ stores }: StoreLocatorProps) {
                         : "bg-background text-muted-foreground border-border hover:bg-muted hover:text-foreground"
                     )}
                   >
-                    {s.neighborhood || s.name.replace("ORÍGEN ", "")}
+                    {s.neighborhood || s.name}
                   </button>
                 ))}
               </div>

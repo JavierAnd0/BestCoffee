@@ -251,6 +251,7 @@ export async function getCurrentOperator(): Promise<OperatorProfile | null> {
 
 export interface AdminBilling {
   billingType: "SUBSCRIPTION" | "ONE_TIME" | "COMMISSION";
+  billingStatus?: "ACTIVE" | "PAST_DUE" | "CANCELLED" | "INACTIVE";
   commissionPct: number | null;
   pendingCommission: {
     currentPct: number | null;

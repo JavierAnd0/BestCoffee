@@ -1,3 +1,4 @@
+import { demoHeaders } from "../demo";
 import { cookies } from "next/headers";
 import { env } from "../env";
 import {
@@ -51,6 +52,7 @@ export async function customerFetch<T = unknown>(
   }
 
   const reqHeaders: Record<string, string> = {
+    ...(await demoHeaders()),
     "X-Tenant-Slug": tenantSlug,
     ...(init.body !== undefined ? { "Content-Type": "application/json" } : {}),
     ...(token

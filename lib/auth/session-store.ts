@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { cookies, headers } from "next/headers";
 import { env } from "../env";
 import { resolveActiveTenantSlug } from "../tenant";
@@ -63,68 +64,46 @@ export function formatNameFromEmail(email?: string | null, fallback = "Cliente")
 }
 
 /**
- * Extrae el usuario autenticado en Neon Auth (Google OAuth) leyendo únicamente
- * las cookies oficiales de sesión de Neon Auth.
+ * Usuario autenticado en Neon Auth (Google OAuth), SOLO desde fuentes verificadas.
+ *
+ * Nunca se decodifica la cookie `session_data` a mano: es un JWT y leer su
+ * contenido sin comprobar la firma permitía fabricar una cookie con el correo
+ * de otra persona y recibir su sesión. Las dos fuentes válidas son:
+ *   1. `auth.getSession()` — el SDK verifica la firma (HS256 con el secreto de
+ *      cookies) y, si no hay copia local válida, pregunta a Neon Auth.
+ *   2. `/get-session` de Neon Auth con el token de sesión — necesario en HTTP
+ *      local, donde las cookies `__Secure-` no existen y el SDK no las ve.
  */
 export async function getNeonUser(): Promise<NeonUser | null> {
+  if (!env.neonAuthUrl) return null;
+
+  try {
+    const { auth } = await import("./server");
+    const sessionRes = (await auth.getSession()) as {
+      data?: { user?: NeonUser } | null;
+      user?: NeonUser;
+      session?: { user?: NeonUser };
+    } | null;
+    const u = sessionRes?.data?.user ?? sessionRes?.user ?? sessionRes?.session?.user;
+    if (u?.email) return u;
+  } catch {}
+
   try {
     const c = await cookies();
-
-    const sessionDataCookies = [
-      c.get("__Secure-neon-auth.local.session_data")?.value,
-      c.get("neon-auth.local.session_data")?.value,
-    ];
-
-    for (const val of sessionDataCookies) {
-      if (!val) continue;
-      const payload = decodeJwtClaims(val);
-      if (payload) {
-        const email = payload.user?.email || payload.email;
-        const name = payload.user?.name || payload.name || formatNameFromEmail(email);
-        const userId = payload.user?.id || payload.sub;
-        if (email) {
-          return { email, name, id: userId };
-        }
-      }
-    }
-
     const sessionToken =
       c.get("__Secure-neon-auth.session_token")?.value ??
       c.get("neon-auth.session_token")?.value;
-
-    if (sessionToken && env.neonAuthUrl) {
-      try {
-        const res = await fetch(`${env.neonAuthUrl}/get-session`, {
-          headers: {
-            Cookie: `__Secure-neon-auth.session_token=${sessionToken}; neon-auth.session_token=${sessionToken}`,
-          },
-          cache: "no-store",
-        });
-        if (res.ok) {
-          const data = (await res.json()) as { user?: NeonUser } | null;
-          if (data?.user && (data.user.name || data.user.email)) {
-            return data.user;
-          }
-        }
-      } catch {}
-    }
-
-    if (env.neonAuthUrl) {
-      try {
-        const { auth } = await import("./server");
-        const sessionRes = (await auth.getSession()) as {
-          data?: { user?: NeonUser };
-          user?: NeonUser;
-          session?: { user?: NeonUser };
-        } | null;
-        const u =
-          sessionRes?.data?.user ??
-          sessionRes?.user ??
-          sessionRes?.session?.user;
-        if (u && (u.name || u.email)) {
-          return u;
-        }
-      } catch {}
+    if (sessionToken) {
+      const res = await fetch(`${env.neonAuthUrl}/get-session`, {
+        headers: {
+          Cookie: `__Secure-neon-auth.session_token=${sessionToken}; neon-auth.session_token=${sessionToken}`,
+        },
+        cache: "no-store",
+      });
+      if (res.ok) {
+        const data = (await res.json()) as { user?: NeonUser } | null;
+        if (data?.user?.email) return data.user;
+      }
     }
   } catch {}
 
@@ -134,13 +113,16 @@ export async function getNeonUser(): Promise<NeonUser | null> {
 /**
  * Resuelve la sesión del cliente actual, garantizando que si hay una sesión activa
  * de Google OAuth (Neon Auth) su token del backend NestJS esté sincronizado.
+ * Memoizada por petición: una página llama varias veces a customerFetch y cada
+ * llamada validaba la sesión de Neon (y a veces hacía una petición HTTP).
  */
-export async function getCustomerSession(): Promise<{
-  token: string | undefined;
-  tenantSlug: string;
-  isMockSession: boolean;
-  neonUser: NeonUser | null;
-}> {
+export const getCustomerSession = cache(
+  async (): Promise<{
+    token: string | undefined;
+    tenantSlug: string;
+    isMockSession: boolean;
+    neonUser: NeonUser | null;
+  }> => {
   const c = await cookies();
   const h = await headers();
   const tenantSlug =
@@ -197,7 +179,8 @@ export async function getCustomerSession(): Promise<{
     isMockSession: false,
     neonUser,
   };
-}
+  },
+);
 
 export function clearNeonAndLegacyCookies(store: CookieStore) {
   for (const name of SECURE_NEON_COOKIES) {
