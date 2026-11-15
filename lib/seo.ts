@@ -8,7 +8,10 @@ import type { Product, Tenant } from "./types";
  */
 export async function getSiteUrl(): Promise<string> {
   const h = await headers();
-  const host = h.get("x-forwarded-host") ?? h.get("host") ?? "localhost:3000";
+  // Solo `Host`, la misma cabecera con la que el proxy resuelve la tienda.
+  // `X-Forwarded-Host` puede fijarla el cliente si el proxy inverso no la
+  // sobrescribe, y envenenaría canónicas, sitemap y llms.txt (que se cachea).
+  const host = h.get("host") ?? "localhost:3000";
   const isLocal = host.startsWith("localhost") || host.includes(".localhost");
   const proto = h.get("x-forwarded-proto") ?? (isLocal ? "http" : "https");
   return `${proto}://${host}`;
@@ -88,11 +91,9 @@ export function productLd(product: Product, tenant: Tenant, siteUrl: string) {
     name: product.name,
     description: product.longDescription ?? product.shortDescription,
     url,
-    sku: product.id,
     category: product.type === "ACCESSORY" ? "Accesorios de café" : "Café de especialidad",
     brand: { "@type": "Brand", name: tenant.brand },
     ...(product.images.length && { image: product.images.map((i) => i.url) }),
-    ...(product.origin && { countryOfOrigin: product.origin }),
     ...(product.flavorNotes.length && {
       additionalProperty: [
         {

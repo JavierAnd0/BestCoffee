@@ -28,12 +28,16 @@ export async function generateMetadata({
   const product = await getProductBySlug(slug);
   if (!product) return { title: "Producto no encontrado" };
   const image = product.images[0];
+  const tenant = await getCurrentTenant();
   return {
     title: product.name,
     description: product.shortDescription,
     alternates: { canonical: `/p/${product.slug}` },
     openGraph: {
       type: "website",
+      // Definir openGraph aquí reemplaza al del layout: se repiten sitio e idioma.
+      siteName: tenant.brand,
+      locale: "es_CO",
       url: `/p/${product.slug}`,
       title: product.name,
       description: product.shortDescription,

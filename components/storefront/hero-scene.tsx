@@ -78,7 +78,7 @@ function CameraRig({ progress }: { progress: MotionValue<number> }) {
  * se marcan todos visibles un instante, se compilan los programas y las texturas se suben una por una en pausas
  * cortas para no bloquear un solo cuadro.
  */
-function Warmup() {
+function Warmup({ onDone }: { onDone?: () => void }) {
   const gl = useThree((st) => st.gl);
   const scene = useThree((st) => st.scene);
   const camera = useThree((st) => st.camera);
@@ -126,6 +126,8 @@ function Warmup() {
           gl.render(scene, camera);
         } catch {}
         saved.forEach(([o, v]) => (o.visible = v));
+        // El cuadro con todo visible ya pasó: a partir de aquí la escena puede mostrarse.
+        onDone?.();
       });
       const queue = [...textures];
       const step = () => {
@@ -159,7 +161,7 @@ function Warmup() {
       window.clearTimeout(timer);
       window.clearTimeout(again);
     };
-  }, [active, progress, gl, scene, camera]);
+  }, [active, progress, gl, scene, camera, onDone]);
 
   return null;
 }
@@ -202,17 +204,36 @@ function RimLight({ progress }: { progress: MotionValue<number> }) {
  * Estado de carga + aviso de "lista". Vive en su propio componente para que el progreso de descarga
  * (que cambia muchas veces) no vuelva a renderizar el Canvas: la escena solo se entera una vez, al final.
  */
-function LoadGate({ ready, onReady }: { ready: boolean; onReady: () => void }) {
+function LoadGate({
+  ready,
+  warm,
+  onReady,
+}: {
+  ready: boolean;
+  /** El precalentamiento ya dibujó su cuadro oculto con todo visible. */
+  warm: boolean;
+  onReady: () => void;
+}) {
   const { active, progress, total } = useProgress();
+  const [gone, setGone] = useState(false);
 
   useEffect(() => {
     if (ready) return;
-    // `total === 0`: todo estaba ya en caché (se vuelve al inicio sin recargar) y no hay nada que esperar.
     if (active || (progress < 100 && total > 0)) return;
-    // Un respiro tras la descarga: el precalentamiento compila y dibuja su cuadro oculto antes de mostrar nada.
-    const t = window.setTimeout(onReady, 1000);
+    // Con descargas, se espera a que el precalentamiento termine (compilar tarda lo que tarde la GPU):
+    // así su cuadro con todas las piezas visibles nunca se ve durante el fundido.
+    if (total > 0 && !warm) return;
+    // `total === 0`: todo estaba ya en caché (se vuelve al inicio sin recargar); basta un respiro.
+    const t = window.setTimeout(onReady, total === 0 ? 1000 : 150);
     return () => window.clearTimeout(t);
-  }, [active, progress, total, ready, onReady]);
+  }, [active, progress, total, ready, warm, onReady]);
+
+  // Terminado el fundido, el indicador se desmonta: sus animaciones no deben seguir corriendo ocultas.
+  useEffect(() => {
+    if (!ready) return;
+    const t = window.setTimeout(() => setGone(true), 900);
+    return () => window.clearTimeout(t);
+  }, [ready]);
 
   // Red de seguridad: si un recurso se cuelga, la escena entra igual con lo que haya.
   useEffect(() => {
@@ -220,6 +241,7 @@ function LoadGate({ ready, onReady }: { ready: boolean; onReady: () => void }) {
     return () => window.clearTimeout(t);
   }, [onReady]);
 
+  if (gone) return null;
   return <HeroLoader progress={total > 0 ? progress : undefined} hidden={ready} />;
 }
 
@@ -235,7 +257,9 @@ export function HeroScene({ scrollProgress }: HeroSceneProps = {}) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState(true);
   const [ready, setReady] = useState(false);
+  const [warm, setWarm] = useState(false);
   const markReady = useCallback(() => setReady(true), []);
+  const markWarm = useCallback(() => setWarm(true), []);
   const [mobile, setMobile] = useState(false);
   const [dpr, setDpr] = useState<[number, number]>([1, 1.5]);
   const quality = useMemo(() => (mobile ? MOBILE_QUALITY : DESKTOP_QUALITY), [mobile]);
@@ -262,7 +286,7 @@ export function HeroScene({ scrollProgress }: HeroSceneProps = {}) {
 
   return (
     <div ref={wrapRef} className="relative w-full h-full">
-      <LoadGate ready={ready} onReady={markReady} />
+      <LoadGate ready={ready} warm={warm} onReady={markReady} />
       {/* La escena entra con un fundido cuando todo está cargado, en vez de aparecer pieza por pieza. */}
       <div
         className="absolute inset-0"
@@ -329,7 +353,7 @@ export function HeroScene({ scrollProgress }: HeroSceneProps = {}) {
           <fog attach="fog" args={["#1c0d06", 14, 38]} />
           <RimLight progress={progress} />
           <CameraRig progress={progress} />
-          <Warmup />
+          <Warmup onDone={markWarm} />
           <Suspense fallback={null}>
             <BeansStation progress={progress} />
           </Suspense>

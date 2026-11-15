@@ -16,12 +16,15 @@ export async function generateMetadata({
   const { slug } = await params;
   const post = await getBlogPost(slug);
   if (!post) return { title: "Artículo no encontrado" };
+  const tenant = await getCurrentTenant();
   return {
     title: post.title,
     description: post.excerpt,
     alternates: { canonical: `/blog/${post.slug}` },
     openGraph: {
       type: "article",
+      siteName: tenant.brand,
+      locale: "es_CO",
       url: `/blog/${post.slug}`,
       title: post.title,
       description: post.excerpt,

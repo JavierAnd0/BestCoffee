@@ -34,8 +34,7 @@ export async function generateMetadata(): Promise<Metadata> {
       siteName: tenant.brand,
       locale: "es_CO",
       url: "./",
-      title: `${tenant.brand} — Café de especialidad`,
-      description,
+      // Sin title/description: cada página aporta los suyos.
     },
     twitter: { card: "summary_large_image" },
     robots: { index: true, follow: true },

@@ -12,11 +12,23 @@ export async function listProducts(): Promise<Product[]> {
   if (env.useMocks) return PRODUCTS;
   try {
     const api = await apiServer();
-    const { data, error } = await api.GET("/v1/products");
-    if (error || !data) return [];
-    const items = (data as unknown as { items?: ApiProduct[]; data?: ApiProduct[] }).items ??
-                  (data as unknown as { items?: ApiProduct[]; data?: ApiProduct[] }).data ?? [];
-    return items.map(mapProduct);
+    type Page = { items?: ApiProduct[]; data?: ApiProduct[]; nextCursor?: string | null };
+    const all: ApiProduct[] = [];
+    let cursor: string | undefined;
+    // La API pagina por cursor (24 por página). Se recorre completa, con un tope
+    // de páginas para que una respuesta anómala no deje un bucle abierto.
+    for (let i = 0; i < 40; i++) {
+      const { data, error } = await api.GET("/v1/products", {
+        // `cursor` existe en la API pero no en los tipos generados (desactualizados).
+        params: (cursor ? { query: { cursor } } : {}) as never,
+      });
+      if (error || !data) break;
+      const page = data as unknown as Page;
+      all.push(...(page.items ?? page.data ?? []));
+      if (!page.nextCursor) break;
+      cursor = page.nextCursor;
+    }
+    return all.map(mapProduct);
   } catch {
     return [];
   }

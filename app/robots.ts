@@ -1,17 +1,11 @@
 import type { MetadataRoute } from "next";
 import { getSiteUrl } from "@/lib/seo";
 
-// Zonas privadas o sin valor de búsqueda: paneles, cuenta, pago y API.
-const PRIVATE = [
-  "/admin",
-  "/platform/superadmin",
-  "/cuenta",
-  "/checkout",
-  "/acceso",
-  "/login",
-  "/registro",
-  "/api/",
-];
+// Solo la API se bloquea aquí. Paneles, cuenta, login y pago NO: llevan
+// `X-Robots-Tag: noindex` (next.config.ts), y un rastreador bloqueado por
+// robots.txt nunca llega a leer esa cabecera, con lo que la URL podría
+// indexarse igual si alguien la enlaza.
+const PRIVATE = ["/api/"];
 
 // Rastreadores de buscadores con IA. Ya los cubre la regla general; se nombran
 // para dejar explícito que el contenido público puede usarse en sus respuestas.

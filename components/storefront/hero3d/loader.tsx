@@ -15,12 +15,13 @@ export function HeroLoader({
   return (
     <div
       role="status"
-      aria-live="polite"
       aria-hidden={hidden}
       className="absolute inset-0 z-[1] pointer-events-none flex items-start justify-center pt-[26svh] md:items-center md:pt-0 md:pl-[28%]"
       style={{ opacity: hidden ? 0 : 1, transition: "opacity 700ms ease" }}
     >
-      <div className="flex flex-col items-center gap-5">
+      {/* Un único anuncio: el porcentaje cambia muchas veces y no debe leerse cada vez. */}
+      <span className="sr-only">Cargando la animación de inicio</span>
+      <div className="flex flex-col items-center gap-5" aria-hidden>
         {/* Halo cálido donde aparecerá la escena */}
         <div className="relative h-28 w-28">
           <div

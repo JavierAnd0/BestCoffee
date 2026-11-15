@@ -54,7 +54,6 @@ export default async function TiendasPage() {
             description: store.description,
             url: `${siteUrl}/tiendas`,
             telephone: store.phone,
-            openingHours: store.hours,
             parentOrganization: { "@id": `${siteUrl}/#organization` },
             address: {
               "@type": "PostalAddress",
