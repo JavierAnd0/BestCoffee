@@ -127,8 +127,8 @@ export function CheckoutWizard({
         lastName: parts.slice(1).join(" ") || "",
         address: defaultAddress.line1 || defaultAddress.line,
         line2: defaultAddress.line2 || "",
-        city: defaultAddress.city || "Bogotá",
-        region: defaultAddress.state || "Cundinamarca",
+        city: defaultAddress.city || "",
+        region: defaultAddress.state || "",
         zip: defaultAddress.postalCode || "",
       };
     }
@@ -194,8 +194,8 @@ export function CheckoutWizard({
       lastName: shipping.lastName || parts.slice(1).join(" ") || "",
       address: addr.line1 || addr.line,
       line2: addr.line2 || "",
-      city: addr.city || "Bogotá",
-      region: addr.state || "Cundinamarca",
+      city: addr.city || "",
+      region: addr.state || "",
       zip: addr.postalCode || "",
     });
     setShippingError(null);

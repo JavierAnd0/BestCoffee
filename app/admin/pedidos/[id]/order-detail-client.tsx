@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/admin/page-header";
 import { formatCop } from "@/lib/format";
 import { updateOrderStatusAction } from "@/lib/actions/admin-mutations";
-import type { AdminOrderDetailData } from "@/lib/data/admin";
+import type { AdminOrderDetailData, AdminShippingAddress } from "@/lib/data/admin";
+import { ColombiaLocationSelector } from "@/components/storefront/colombia-location-selector";
 
 const STATUSES = ["RECEIVED", "PREPARING", "SHIPPED", "DELIVERED"] as const;
 const STATUS_LABEL: Record<(typeof STATUSES)[number], string> = {
@@ -22,29 +23,53 @@ export function AdminOrderDetailClient({ order }: { order: AdminOrderDetailData 
   const [status, setStatus] = useState(order.status);
   const [trackingNumber, setTrackingNumber] = useState(order.trackingNumber);
   const [internalNotes, setInternalNotes] = useState(order.internalNotes);
-  const [feedback, setFeedback] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<{ ok: boolean; text: string } | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [address, setAddress] = useState<AdminShippingAddress>(order.shippingAddress);
+  const [draft, setDraft] = useState<AdminShippingAddress | null>(null);
+  // La dirección solo se corrige antes de despachar (el backend lo vuelve a exigir).
+  const canEditAddress = status === "RECEIVED" || status === "PREPARING";
 
   const currentIdx = STATUSES.indexOf(
     status === "CANCELLED" ? "RECEIVED" : status,
   );
 
-  const handleUpdate = (patch: {
-    status?: AdminOrderDetailData["status"];
-    trackingNumber?: string;
-    internalNotes?: string;
-  }) => {
+  const handleUpdate = (
+    patch: {
+      status?: AdminOrderDetailData["status"];
+      trackingNumber?: string;
+      internalNotes?: string;
+      shippingAddress?: AdminShippingAddress;
+    },
+    onSuccess?: () => void,
+  ) => {
     setFeedback(null);
+    const prevStatus = status;
     if (patch.status) setStatus(patch.status);
     startTransition(async () => {
       const res = await updateOrderStatusAction(order.id, patch);
       if (res.ok) {
-        setFeedback(res.message);
+        setFeedback({ ok: true, text: res.message ?? "Pedido actualizado." });
+        onSuccess?.();
       } else {
-        setFeedback(res.error);
+        // El cambio no se guardó: la pantalla vuelve a lo que hay en el sistema.
+        if (patch.status) setStatus(prevStatus);
+        setFeedback({ ok: false, text: res.error });
       }
     });
   };
+
+  const field = (key: keyof AdminShippingAddress, label: string, placeholder = "") => (
+    <label className="block">
+      <span className="text-xs text-muted-foreground">{label}</span>
+      <input
+        value={draft?.[key] ?? ""}
+        onChange={(e) => setDraft((d) => (d ? { ...d, [key]: e.target.value } : d))}
+        placeholder={placeholder}
+        className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-xs"
+      />
+    </label>
+  );
 
   return (
     <div className="space-y-6">
@@ -92,9 +117,17 @@ export function AdminOrderDetailClient({ order }: { order: AdminOrderDetailData 
       />
 
       {feedback && (
-        <div className="rounded-md border border-emerald-500/30 bg-emerald-500/10 px-4 py-2.5 text-sm text-emerald-800 flex items-center gap-2">
-          <Check className="size-4" />
-          <span>{feedback}</span>
+        <div
+          role={feedback.ok ? "status" : "alert"}
+          className={
+            "rounded-md border px-4 py-2.5 text-sm flex items-center gap-2 " +
+            (feedback.ok
+              ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-800"
+              : "border-destructive/30 bg-destructive/10 text-destructive")
+          }
+        >
+          {feedback.ok && <Check className="size-4" />}
+          <span>{feedback.text}</span>
         </div>
       )}
 
@@ -175,8 +208,75 @@ export function AdminOrderDetailClient({ order }: { order: AdminOrderDetailData 
             />
           </Card>
           <Card icon={<MapPin className="size-4" />} title="Envío">
-            <div className="text-sm">{order.shippingLine}</div>
-            <div className="text-sm text-muted-foreground">{order.shippingCity}</div>
+            {draft ? (
+              <div className="space-y-2">
+                {field("recipientName", "Quién recibe", "Nombre y apellido")}
+                {field("line1", "Dirección", "Calle 123 # 45-67")}
+                {field("line2", "Complemento", "Apto, torre, oficina")}
+                <ColombiaLocationSelector
+                  variant="dialog"
+                  department={draft.state}
+                  city={draft.city}
+                  onDepartmentChange={(state) => setDraft((d) => (d ? { ...d, state } : d))}
+                  onCityChange={(city) => setDraft((d) => (d ? { ...d, city } : d))}
+                  departmentId="admin-order-department"
+                  cityId="admin-order-city"
+                />
+                {field("phone", "Teléfono de contacto", "+57 300 123 4567")}
+                {field("postalCode", "Código postal (opcional)")}
+                <div className="flex gap-2 pt-1">
+                  <Button
+                    size="sm"
+                    disabled={isPending}
+                    className="flex-1 justify-center"
+                    onClick={() =>
+                      handleUpdate({ shippingAddress: draft }, () => {
+                        setAddress(draft);
+                        setDraft(null);
+                      })
+                    }
+                  >
+                    Guardar dirección
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={isPending}
+                    onClick={() => setDraft(null)}
+                  >
+                    Cancelar
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <>
+                {address.recipientName && (
+                  <div className="text-sm font-medium">{address.recipientName}</div>
+                )}
+                <div className="text-sm">{address.line1 || order.shippingLine}</div>
+                {address.line2 && <div className="text-sm">{address.line2}</div>}
+                <div className="text-sm text-muted-foreground">
+                  {[address.city, address.state].filter(Boolean).join(", ") || order.shippingCity}
+                </div>
+                {address.phone && (
+                  <div className="text-xs text-muted-foreground">{address.phone}</div>
+                )}
+                {canEditAddress ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="mt-3 w-full justify-center"
+                    onClick={() => setDraft(address)}
+                  >
+                    Corregir dirección
+                  </Button>
+                ) : (
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    La dirección ya no se puede cambiar: el pedido salió o se cerró.
+                  </p>
+                )}
+              </>
+            )}
             <div className="mt-3 flex gap-2">
               <input
                 value={trackingNumber}
