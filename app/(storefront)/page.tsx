@@ -10,6 +10,7 @@ import { getHomeHero, getHomeSpotlight, getFeaturedPack } from "@/lib/data/conte
 import { getCurrentTenant } from "@/lib/data/tenant";
 import { listBestsellers } from "@/lib/data/products";
 import { CatalogHeader } from "@/components/storefront/catalog-header";
+import { LandingContact } from "@/components/storefront/landing-contact";
 
 export async function generateMetadata(): Promise<Metadata> {
   const tenant = await getCurrentTenant();
@@ -85,6 +86,9 @@ export default async function StorefrontHome() {
           </Link>
         </div>
       </section>
+      ) : !tenant.features.catalog ? (
+        // Sin catálogo no hay "tienda por preparar": la portada cierra con contacto.
+        <LandingContact branding={tenant.branding} />
       ) : (
         <section className="mx-auto max-w-2xl px-6 py-32 text-center">
           <h1 className="font-display text-3xl font-semibold">Estamos preparando la tienda</h1>

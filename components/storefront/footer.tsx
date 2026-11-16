@@ -48,8 +48,8 @@ const COLUMNS: { title: string; links: FooterLink[] }[] = [
     title: "Ayuda",
     links: [
       { label: "Contacto", href: "/contacto" },
-      { label: "Envíos", href: "/envios" },
-      { label: "Devoluciones", href: "/devoluciones" },
+      { label: "Envíos", href: "/envios", feature: "checkout" },
+      { label: "Devoluciones", href: "/devoluciones", feature: "checkout" },
     ],
   },
 ];
@@ -163,11 +163,13 @@ export function Footer({
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-8">
-          {COLUMNS.map((c) => (
+          {COLUMNS.map((c) => ({ ...c, links: c.links.filter(visible) }))
+            .filter((c) => c.links.length > 0)
+            .map((c) => (
             <div key={c.title}>
               <p className="eyebrow text-white/30 mb-5">{c.title}</p>
               <ul className="space-y-2.5 text-sm text-white/40 font-light">
-                {c.links.filter(visible).map((link) => (
+                {c.links.map((link) => (
                   <li key={link.label}>
                     <Link
                       href={link.href}
@@ -197,13 +199,17 @@ export function Footer({
             <Link href="/legal/privacidad" className="hover:text-white/60 transition-colors">
               Privacidad
             </Link>
-            <span>·</span>
-            <Link href="/devoluciones" className="hover:text-white/60 transition-colors">
-              Devoluciones
-            </Link>
+            {(features?.checkout ?? true) && (
+              <>
+                <span>·</span>
+                <Link href="/devoluciones" className="hover:text-white/60 transition-colors">
+                  Devoluciones
+                </Link>
+              </>
+            )}
           </div>
           <div className="flex gap-2">
-            {[0, 1, 2, 3].map((i) => (
+            {(features?.checkout ?? true) && [0, 1, 2, 3].map((i) => (
               <span
                 key={i}
                 className="size-6 rounded-none border"
