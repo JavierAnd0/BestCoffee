@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { del } from "@vercel/blob";
 import { env } from "../env";
 import { operatorFetch } from "../api/gateway";
-import { hasValidOperatorSession } from "../auth/operator-guard";
+import { operatorStorageTenant, productImagePrefix } from "../auth/operator-guard";
 import type { ProductImage } from "../types";
 
 // Server actions para la galería de un producto. El archivo ya está en Vercel
@@ -60,25 +60,49 @@ export async function reorderProductImagesAction(
 export async function removeProductImageAction(
   productId: string,
   imageId: string,
-  url: string,
 ): Promise<Result> {
-  if (!env.useMocks) {
-    const r = await operatorFetch(`/v1/admin/products/images/${imageId}`, {
-      method: "DELETE",
-    });
-    if (!r.ok) return { ok: false, error: r.error || "No se pudo eliminar la imagen." };
-    revalidateProduct(productId);
-  }
-  await deleteBlobAction(url);
+  if (env.useMocks) return { ok: true, data: undefined };
+  const r = await operatorFetch<{ url?: string }>(`/v1/admin/products/images/${imageId}`, {
+    method: "DELETE",
+  });
+  if (!r.ok) return { ok: false, error: r.error || "No se pudo eliminar la imagen." };
+  revalidateProduct(productId);
+  // Se borra el archivo que el backend dice que tenía la imagen (de esta
+  // tienda), nunca una URL enviada por el cliente.
+  if (r.data?.url) await deleteBlob(r.data.url);
   return { ok: true, data: undefined };
 }
 
+/** Prefijo donde el navegador debe subir las imágenes de esta tienda. */
+export async function imageUploadPrefixAction(): Promise<Result<string>> {
+  const tenantSlug = await operatorStorageTenant();
+  if (!tenantSlug) return { ok: false, error: "No tienes permiso para subir imágenes." };
+  return { ok: true, data: productImagePrefix(tenantSlug) };
+}
+
 /**
- * Borra el archivo de Vercel Blob. Ignora URLs que no son de Blob (p.ej. /img/...)
- * y solo toca imágenes de producto. Exige un operador REAL: una cookie escrita a
- * mano no basta (esta función es una acción de servidor invocable desde fuera).
+ * Descarta un archivo recién subido que no llegó a registrarse (producto nuevo
+ * o registro fallido). Solo dentro de la carpeta de la tienda del operador.
  */
-export async function deleteBlobAction(url: string): Promise<void> {
+export async function discardUploadedImageAction(url: string): Promise<void> {
+  const tenantSlug = await operatorStorageTenant();
+  if (!tenantSlug) return;
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    return;
+  }
+  if (!parsed.pathname.startsWith(`/${productImagePrefix(tenantSlug)}`)) return;
+  await deleteBlob(url);
+}
+
+/**
+ * Borra un archivo de Vercel Blob. Interna (no exportada): no es una acción de
+ * servidor invocable desde fuera; quien la llama ya comprobó la propiedad.
+ * Ignora URLs que no son imágenes de producto en Blob (p. ej. /img/...).
+ */
+async function deleteBlob(url: string): Promise<void> {
   let parsed: URL;
   try {
     parsed = new URL(url);
@@ -87,7 +111,6 @@ export async function deleteBlobAction(url: string): Promise<void> {
   }
   if (parsed.protocol !== "https:" || !parsed.hostname.endsWith(".blob.vercel-storage.com")) return;
   if (!parsed.pathname.startsWith("/products/")) return;
-  if (!(await hasValidOperatorSession())) return;
   try {
     await del(url);
   } catch {
