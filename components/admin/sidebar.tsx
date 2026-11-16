@@ -15,6 +15,7 @@ import {
   Settings,
   ShieldCheck,
   Truck,
+  KeyRound,
   type LucideIcon,
 } from "lucide-react";
 import type { TenantFeatures } from "@/lib/types";
@@ -49,6 +50,7 @@ const NAV: {
   { href: "/admin/resenas", label: "Reseñas", icon: Star, feature: "reviews" },
   { href: "/admin/configuracion", label: "Configuración", icon: Settings },
   { href: "/admin/auditoria", label: "Auditoría", icon: ShieldCheck },
+  { href: "/admin/seguridad", label: "Seguridad", icon: KeyRound },
 ];
 
 export function AdminSidebar({
