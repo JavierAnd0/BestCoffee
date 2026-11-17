@@ -1,151 +1,92 @@
 import type { Metadata } from "next";
-import { Calendar, Image as ImageIcon, MapPin, BookOpen, Bell } from "lucide-react";
+import Link from "next/link";
+import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { PageHeader } from "@/components/admin/page-header";
+import { listContentBlocks, type ContentBlock } from "@/lib/data/admin-content";
+import { deleteContentBlockAction, toggleContentBlockAction } from "@/lib/actions/admin-content";
+import { LoadError, SectionHeader, fmtDate } from "./_components/fields";
+import { ActionButton } from "./_components/row-actions";
+import { BLOCK_KINDS, KIND_ORDER, blockState, blockSummary } from "./_components/block-kinds";
 
 export const metadata: Metadata = { title: "Contenido · Admin" };
 
-const PANELS = [
-  {
-    key: "announce",
-    icon: Bell,
-    title: "Anuncio barra superior",
-    body: "Mensaje rotativo configurable. Hasta 5 mensajes activos.",
-    cta: "Editar anuncio",
-  },
-  {
-    key: "hero",
-    icon: ImageIcon,
-    title: "Hero de la home",
-    body: "Imagen, titular y CTA. Programar por fechas (campañas temporales).",
-    cta: "Editar hero",
-  },
-  {
-    key: "spotlight",
-    icon: BookOpen,
-    title: "Spotlight de origen único",
-    body: "Vitrina editorial: imagen, productor, notas y producto vinculado.",
-    cta: "Editar spotlight",
-  },
-  {
-    key: "featured",
-    icon: ImageIcon,
-    title: "Paquete destacado",
-    body: "Producto o paquete con CTA en la home y catálogo.",
-    cta: "Editar destacado",
-  },
-  {
-    key: "blog",
-    icon: BookOpen,
-    title: "Blog",
-    body: "6 artículos publicados · 1 en borrador.",
-    cta: "Gestionar artículos",
-  },
-  {
-    key: "guides",
-    icon: BookOpen,
-    title: "Guías de preparación",
-    body: "5 métodos publicados (V60, prensa, AeroPress, espresso, cold brew).",
-    cta: "Gestionar guías",
-  },
-  {
-    key: "stores",
-    icon: MapPin,
-    title: "Tiendas físicas",
-    body: "3 ubicaciones en Bogotá.",
-    cta: "Gestionar tiendas",
-  },
-];
+const STATE_CLASS = {
+  Visible: "bg-emerald-500/10 text-emerald-700 border-emerald-500/20",
+  Programado: "bg-amber-500/10 text-amber-800 border-amber-500/20",
+  Vencido: "bg-muted text-muted-foreground border-border",
+  Inactivo: "bg-muted text-muted-foreground border-border",
+} as const;
 
-export default function AdminContentPage() {
+export default async function AdminContentPage() {
+  const res = await listContentBlocks();
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Contenido del sitio"
-        description="Edita lo que se ve en la tienda pública."
+    <div>
+      <SectionHeader
+        title="Inicio"
+        description="Bloques de la página de inicio y la barra de anuncios. Si un tipo no tiene ningún bloque visible, esa sección no aparece en la tienda."
       />
-
-      <section className="rounded-lg border border-border bg-background p-6">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h2 className="font-display text-lg font-semibold">Hero activo</h2>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              Campaña de otoño · vigente 15 sep – 15 nov 2026
-            </p>
-          </div>
-          <Badge variant="outline" className="bg-emerald-500/10 text-emerald-700 border-emerald-500/20">
-            Activo
-          </Badge>
+      {!res.ok ? (
+        <LoadError error={res.error} />
+      ) : (
+        <div className="space-y-6">
+          {KIND_ORDER.map((kind) => (
+            <KindSection key={kind} kind={kind} blocks={res.data.filter((b) => b.kind === kind)} />
+          ))}
         </div>
-        <div className="grid sm:grid-cols-[280px_1fr] gap-5">
-          <div className="aspect-[5/4] rounded-md bg-muted grid place-items-center text-xs text-muted-foreground">
-            Imagen hero
-          </div>
-          <div className="space-y-3">
-            <Field label="Eyebrow" value="Campaña de otoño" />
-            <Field label="Titular" value="El otoño sabe a café recién tostado" />
-            <Field label="Subtítulo" value="Mezclas y orígenes únicos, tostados en lotes pequeños." />
-            <div className="grid sm:grid-cols-2 gap-3">
-              <Field label="Texto CTA" value="Comprar la mezcla" />
-              <Field label="Enlace CTA" value="/p/mezcla-del-alba" />
-            </div>
-            <div className="grid sm:grid-cols-2 gap-3">
-              <Field label="Inicio" value="15 sep 2026" icon={<Calendar className="size-3.5" />} />
-              <Field label="Fin" value="15 nov 2026" icon={<Calendar className="size-3.5" />} />
-            </div>
-            <div className="flex justify-end gap-2 pt-2">
-              <Button variant="outline">Vista previa</Button>
-              <Button>Guardar cambios</Button>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {PANELS.map((p) => {
-          const Icon = p.icon;
-          return (
-            <article
-              key={p.key}
-              className="rounded-lg border border-border bg-background p-5 hover:border-foreground/30 transition-colors"
-            >
-              <span className="size-9 rounded-md bg-muted grid place-items-center mb-3">
-                <Icon className="size-4" />
-              </span>
-              <h3 className="font-display text-lg font-semibold tracking-tight">{p.title}</h3>
-              <p className="mt-1 text-xs text-muted-foreground line-clamp-2">{p.body}</p>
-              <Button variant="outline" size="sm" className="mt-4">
-                {p.cta}
-              </Button>
-            </article>
-          );
-        })}
-      </section>
+      )}
     </div>
   );
 }
 
-function Field({ label, value, icon }: { label: string; value: string; icon?: React.ReactNode }) {
+function KindSection({ kind, blocks }: { kind: ContentBlock["kind"]; blocks: ContentBlock[] }) {
+  const info = BLOCK_KINDS[kind];
   return (
-    <label className="block">
-      <span className="block text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground mb-1.5">
-        {label}
-      </span>
-      <div className="relative">
-        {icon && (
-          <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground">
-            {icon}
-          </span>
-        )}
-        <input
-          defaultValue={value}
-          className={
-            "w-full rounded-md border border-input bg-background py-2 text-sm outline-none focus-visible:border-foreground/40 " +
-            (icon ? "pl-8 pr-3" : "px-3")
-          }
+    <section className="rounded-lg border border-border bg-background">
+      <header className="flex flex-wrap items-start justify-between gap-3 p-5 border-b border-border">
+        <div>
+          <h3 className="font-display text-lg font-semibold tracking-tight">{info.label}</h3>
+          <p className="mt-0.5 text-xs text-muted-foreground">{info.where}</p>
+        </div>
+        <Button
+          size="sm"
+          variant="outline"
+          render={<Link href={`/admin/contenido/bloques/nuevo?tipo=${kind}`}><Plus className="size-3.5" />Agregar</Link>}
         />
-      </div>
-    </label>
+      </header>
+      {blocks.length === 0 ? (
+        <p className="px-5 py-4 text-sm text-muted-foreground">Sin bloques: la sección no se muestra.</p>
+      ) : (
+        <ul className="divide-y divide-border">
+          {blocks.map((b) => {
+            const state = blockState(b);
+            return (
+              <li key={b.id} className="flex flex-wrap items-center gap-3 px-5 py-3">
+                <div className="flex-1 min-w-48">
+                  <Link href={`/admin/contenido/bloques/${b.id}`} className="text-sm font-medium hover:underline underline-offset-2">
+                    {blockSummary(b.kind, b.data) || "(sin texto)"}
+                  </Link>
+                  <div className="text-xs text-muted-foreground mt-0.5">
+                    Orden {b.position}
+                    {(b.startsAt || b.endsAt) && ` · ${fmtDate(b.startsAt)} – ${fmtDate(b.endsAt)}`}
+                  </div>
+                </div>
+                <Badge variant="outline" className={STATE_CLASS[state]}>{state}</Badge>
+                <ActionButton
+                  label={b.active ? "Desactivar" : "Activar"}
+                  action={toggleContentBlockAction.bind(null, b.id, !b.active)}
+                />
+                <ActionButton
+                  label="Borrar"
+                  variant="destructive"
+                  confirmText="¿Borrar este bloque? No se puede deshacer."
+                  action={deleteContentBlockAction.bind(null, b.id)}
+                />
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </section>
   );
 }

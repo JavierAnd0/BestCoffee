@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 import { getAdminOrderDetail } from "@/lib/data/admin";
 import { AdminOrderDetailClient } from "./order-detail-client";
 
@@ -18,6 +19,7 @@ export default async function AdminOrderDetail({
 }) {
   const { id } = await params;
   const order = await getAdminOrderDetail(id);
+  if (!order) notFound();
 
   return <AdminOrderDetailClient order={order} />;
 }

@@ -81,6 +81,17 @@ export async function apiServer() {
           : customerToken,
     ),
   );
+  // IP del visitante firmada: los límites por IP de la API son por visitante y
+  // no por el servidor de Next (ver lib/api/client-ip.ts).
+  const { clientIpFrom, signedClientIpHeaders } = await import("./client-ip");
+  const clientIp = clientIpFrom(h);
+  client.use({
+    onRequest({ request }) {
+      for (const [k, v] of Object.entries(signedClientIpHeaders(clientIp))) {
+        request.headers.set(k, v);
+      }
+    },
+  });
   // Estado de la tienda demo del visitante (el backend lo ignora en cualquier otra tienda).
   const demo = c.get("bc_demo")?.value;
   if (demo && demo.length <= 600) {

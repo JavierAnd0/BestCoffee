@@ -10,6 +10,7 @@ import { NewsletterPrompt } from "@/components/storefront/newsletter-prompt";
 import { Toaster } from "@/components/ui/toast";
 import { getAnnounceMessages } from "@/lib/data/content";
 import { getCurrentTenant } from "@/lib/data/tenant";
+import { storeHasCollections } from "@/lib/data/store-collections";
 import { getTenantSlug } from "@/lib/tenant";
 import { env } from "@/lib/env";
 import { JsonLd } from "@/components/seo/json-ld";
@@ -56,6 +57,8 @@ export default async function StorefrontLayout({
   // sesión ya se recibe el boletín por defecto y NO se muestra la invitación.
   const isLoggedIn = Boolean((await cookies()).get("customer_token")?.value);
   const siteUrl = await getSiteUrl();
+  // Enlace a /colecciones solo si la tienda tiene catálogo y alguna colección publicada.
+  const hasCollections = tenant.features.catalog && (await storeHasCollections());
 
   // Tienda suspendida por cobro: no se muestra el sitio ni se vende. El panel
   // de operador sigue accesible para que el dueño pueda regularizar.
@@ -104,7 +107,12 @@ export default async function StorefrontLayout({
           Saltar al contenido
         </a>
         <AnnounceBar messages={announce} />
-        <Header brand={tenant.brand} features={tenant.features} branding={tenant.branding} />
+        <Header
+          brand={tenant.brand}
+          features={tenant.features}
+          branding={tenant.branding}
+          hasCollections={hasCollections}
+        />
         <main id="main" className="flex-1 pb-24 lg:pb-0">
           {children}
         </main>
@@ -114,6 +122,7 @@ export default async function StorefrontLayout({
           welcomeOffer={tenant.newsletter.welcomeOffer}
           features={tenant.features}
           pages={tenant.branding.pages}
+          hasCollections={hasCollections}
         />
         <CartDrawer />
         <MobileNav features={tenant.features} />

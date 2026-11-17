@@ -2,6 +2,7 @@
 // No usa el cliente openapi-fetch tipado porque los endpoints de plataforma
 // no están en el schema generado.
 import { env } from "../env";
+import { clientIpHeaders } from "./client-ip";
 
 async function getToken(): Promise<string | null> {
   const { cookies } = await import("next/headers");
@@ -19,6 +20,9 @@ function decodeLocalOperatorToken(token: string | null): {
   email?: string;
   isPlatformOwner?: boolean;
 } | null {
+  // Solo en desarrollo: esta sesión no lleva firma, así que en producción
+  // cualquiera podría escribirla a mano en una cookie.
+  if (!env.isDev) return null;
   if (!token || !token.endsWith(".local_operator_session")) return null;
   try {
     const parts = token.split(".");
@@ -37,7 +41,10 @@ export async function platformFetch<T>(
   try {
     const res = await fetch(`${env.apiUrlInternal}${path}`, {
       ...options,
-      headers: buildHeaders(token, options?.headers as Record<string, string>),
+      headers: {
+        ...(await clientIpHeaders()),
+        ...buildHeaders(token, options?.headers as Record<string, string>),
+      },
       cache: "no-store",
     });
     if (res.ok) {

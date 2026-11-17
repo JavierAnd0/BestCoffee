@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { ProductCard } from "@/components/storefront/product-card";
 import { listProducts } from "@/lib/data/products";
 import { requireFeature } from "@/lib/data/feature-guard";
+import type { Product } from "@/lib/types";
 
 export const metadata: Metadata = { title: "Suscripciones" };
 
@@ -22,21 +23,36 @@ const STEPS = [
   {
     n: "3",
     title: "Recibe café fresco",
-    body: "Tostado bajo pedido y enviado en máximo 48 horas.",
+    body: "Te lo enviamos con la frecuencia que elegiste.",
   },
 ];
 
 const PERKS = [
-  "Ahorra 15% en cada entrega",
   "Pausa o salta envíos cuando quieras",
-  "Acceso a lanzamientos limitados antes que nadie",
-  "Cancela en un click",
+  "Cambia la frecuencia desde tu cuenta",
+  "Cancela cuando quieras",
 ];
+
+/** Mayor ahorro real entre las variantes (suscripción frente a compra única). */
+function maxSavingsPct(products: Product[]): number {
+  let best = 0;
+  for (const p of products) {
+    for (const v of p.variants) {
+      if (v.priceSubscriptionCents == null || v.priceOneTimeCents <= 0) continue;
+      best = Math.max(best, Math.floor((1 - v.priceSubscriptionCents / v.priceOneTimeCents) * 100));
+    }
+  }
+  return best;
+}
 
 export default async function SuscripcionesPage() {
   await requireFeature("subscriptions");
   const products = await listProducts();
-  const subProducts = products.filter((p) => p.subscriptionAvailability !== "NO").slice(0, 4);
+  const subscribable = products.filter((p) => p.subscriptionAvailability !== "NO");
+  const subProducts = subscribable.slice(0, 4);
+  // Solo se anuncia ahorro si los precios de suscripción lo dan de verdad.
+  const savings = maxSavingsPct(subscribable);
+  const perks = savings > 0 ? [`Ahorra hasta ${savings}% frente a la compra única`, ...PERKS] : PERKS;
 
   return (
     <>
@@ -48,8 +64,8 @@ export default async function SuscripcionesPage() {
             Tu café, automático
           </h1>
           <p className="mt-5 max-w-xl mx-auto text-white/85">
-            Nunca te quedes sin café. Ahorra 15% en cada entrega y cancela
-            cuando quieras.
+            Nunca te quedes sin café.
+            {savings > 0 && ` Ahorra hasta ${savings}% en cada entrega.`} Cancela cuando quieras.
           </p>
           <Button
             size="lg"
@@ -79,7 +95,7 @@ export default async function SuscripcionesPage() {
             Beneficios del suscriptor
           </h2>
           <ul className="grid sm:grid-cols-2 gap-4 text-left">
-            {PERKS.map((p) => (
+            {perks.map((p) => (
               <li
                 key={p}
                 className="flex items-center gap-3 rounded-md border border-border bg-background p-4 text-sm"

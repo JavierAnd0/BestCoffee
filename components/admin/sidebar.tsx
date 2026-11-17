@@ -16,6 +16,7 @@ import {
   ShieldCheck,
   Truck,
   KeyRound,
+  UserCog,
   type LucideIcon,
 } from "lucide-react";
 import type { TenantFeatures } from "@/lib/types";
@@ -24,6 +25,9 @@ import { stopImpersonationAction } from "@/lib/actions/operator-auth";
 import { OperatorLogoutButton } from "./operator-logout-button";
 
 type BooleanFeature = Exclude<keyof TenantFeatures, "maxProducts">;
+type StaffRole = "TENANT_EDITOR" | "TENANT_ORDERS";
+const EDITOR: StaffRole[] = ["TENANT_EDITOR"];
+const ORDERS: StaffRole[] = ["TENANT_ORDERS"];
 
 const NAV: {
   href: string;
@@ -31,34 +35,47 @@ const NAV: {
   icon: LucideIcon;
   exact?: boolean;
   /**
-   * Si la tienda no tiene esta capacidad, la entrada no aparece. Solo se usa en
-   * secciones que crean cosas nuevas (promociones, reseñas): pedidos,
-   * suscripciones y catálogo siempre se ven, para atender lo que ya existe y
+   * Si la tienda no tiene esta capacidad, la entrada no aparece. Pedidos,
+   * suscripciones y productos siempre se ven, para atender lo que ya existe y
    * para que una tienda suspendida o con plan bajo pueda regularizarse.
    */
   feature?: BooleanFeature;
+  /** Solo para el dueño de la tienda (la API responde 403 al resto). */
+  ownerOnly?: boolean;
+  /**
+   * Roles no dueños que la ven (la API aplica lo mismo): Editor = catálogo y
+   * contenido; Pedidos = pedidos, suscripciones y despachos. Sin valor: todos.
+   */
+  roles?: StaffRole[];
 }[] = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
-  { href: "/admin/productos", label: "Productos", icon: Coffee },
-  { href: "/admin/colecciones", label: "Colecciones", icon: FolderOpen },
-  { href: "/admin/pedidos", label: "Pedidos", icon: ClipboardList },
-  { href: "/admin/suscripciones", label: "Suscripciones", icon: RefreshCw },
+  { href: "/admin/productos", label: "Productos", icon: Coffee, roles: EDITOR },
+  { href: "/admin/colecciones", label: "Colecciones", icon: FolderOpen, feature: "catalog", roles: EDITOR },
+  { href: "/admin/pedidos", label: "Pedidos", icon: ClipboardList, roles: ORDERS },
+  { href: "/admin/suscripciones", label: "Suscripciones", icon: RefreshCw, roles: ORDERS },
   { href: "/admin/clientes", label: "Clientes", icon: Users },
-  { href: "/admin/logistica", label: "Logística", icon: Truck },
-  { href: "/admin/contenido", label: "Contenido", icon: FileText },
-  { href: "/admin/promociones", label: "Promociones", icon: TicketPercent, feature: "discountCodes" },
-  { href: "/admin/resenas", label: "Reseñas", icon: Star, feature: "reviews" },
-  { href: "/admin/configuracion", label: "Configuración", icon: Settings },
-  { href: "/admin/auditoria", label: "Auditoría", icon: ShieldCheck },
+  { href: "/admin/logistica", label: "Logística", icon: Truck, feature: "checkout", roles: ORDERS },
+  { href: "/admin/contenido", label: "Contenido", icon: FileText, roles: EDITOR },
+  { href: "/admin/promociones", label: "Promociones", icon: TicketPercent, feature: "discountCodes", roles: EDITOR },
+  { href: "/admin/resenas", label: "Reseñas", icon: Star, feature: "reviews", roles: EDITOR },
+  { href: "/admin/configuracion", label: "Configuración", icon: Settings, ownerOnly: true },
+  { href: "/admin/equipo", label: "Equipo", icon: UserCog, ownerOnly: true },
+  { href: "/admin/auditoria", label: "Auditoría", icon: ShieldCheck, ownerOnly: true },
   { href: "/admin/seguridad", label: "Seguridad", icon: KeyRound },
 ];
 
 export function AdminSidebar({
   operator,
   features,
+  isOwner = true,
+  staffRole = null,
 }: {
   /** Capacidades del plan de la tienda. Sin dato, se muestra todo el menú. */
   features?: TenantFeatures | null;
+  /** false oculta las entradas solo para el dueño (Equipo, Auditoría). */
+  isOwner?: boolean;
+  /** Rol de un miembro que no es dueño; filtra el menú a lo que su rol puede usar. */
+  staffRole?: StaffRole | null;
   operator: {
     name: string;
     email: string;
@@ -86,7 +103,12 @@ export function AdminSidebar({
       </div>
 
       <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-0.5">
-        {NAV.filter((n) => !n.feature || !features || features[n.feature]).map((n) => {
+        {NAV.filter(
+          (n) =>
+            (!n.feature || !features || features[n.feature]) &&
+            (!n.ownerOnly || isOwner) &&
+            (isOwner || !staffRole || !n.roles || n.roles.includes(staffRole)),
+        ).map((n) => {
           const active = n.exact ? pathname === n.href : pathname.startsWith(n.href);
           const Icon = n.icon;
           return (

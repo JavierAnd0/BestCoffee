@@ -1,78 +1,94 @@
-import { requireEditorialPage } from "@/lib/data/feature-guard";
 import type { Metadata } from "next";
-import Image from "next/image";
+import { notFound } from "next/navigation";
+import { requireEditorialPage } from "@/lib/data/feature-guard";
+import { getEditorialPage } from "@/lib/data/content";
 import { Eyebrow } from "@/components/ui/eyebrow";
+import { EditorialText, PageImage, SectionFigure } from "@/components/storefront/editorial-page";
 
-export const metadata: Metadata = { title: "Impacto y sostenibilidad" };
+// Texto, cifras e imágenes de la propia tienda (panel → Contenido → Páginas).
 
-const NUMBERS = [
-  { value: "+40", label: "Familias productoras con relación directa" },
-  { value: "60%", label: "Sobreprecio promedio sobre la bolsa C" },
-  { value: "100%", label: "Empaque reciclable o compostable" },
-  { value: "2 t", label: "Café tostado por mes en lotes pequeños" },
-];
+export async function generateMetadata(): Promise<Metadata> {
+  const page = await getEditorialPage("impacto");
+  return page ? { title: page.title, description: page.intro } : { title: "Impacto" };
+}
 
 export default async function ImpactoPage() {
   await requireEditorialPage("impacto");
+  const page = await getEditorialPage("impacto");
+  if (!page) notFound();
+  const hasImage = Boolean(page.imageUrl);
+  const highlights = page.highlights ?? [];
+
   return (
     <>
-      <section className="relative isolate h-[440px] grid place-items-center overflow-hidden">
-        <Image
-          src="/img/sacos-cafe-verde.jpg"
-          alt="Sacos de café arábica lavado en origen"
-          fill
-          priority
-          sizes="100vw"
-          className="object-cover object-center brightness-[0.38]"
-        />
+      <section
+        className={
+          "relative isolate grid place-items-center overflow-hidden " + (hasImage ? "h-[440px]" : "py-20")
+        }
+      >
+        {hasImage && (
+          <>
+            <PageImage
+              url={page.imageUrl}
+              alt={page.imageAlt}
+              priority
+              sizes="100vw"
+              className="object-cover object-center brightness-[0.38]"
+            />
+            <div
+              aria-hidden
+              className="absolute inset-0 bg-gradient-to-t from-background via-black/35 to-black/55"
+            />
+          </>
+        )}
         <div
-          aria-hidden
-          className="absolute inset-0 bg-gradient-to-t from-background via-black/35 to-black/55"
-        />
-        <div className="relative text-center text-white px-6 max-w-2xl mx-auto space-y-3">
-          <Eyebrow className="text-white/80">Impacto y Comercio Justo</Eyebrow>
-          <h1 className="mt-2 font-display text-5xl lg:text-7xl font-semibold tracking-tight">
-            Café que cuida
-          </h1>
-          <p className="mt-3 max-w-xl mx-auto text-white/85 text-sm sm:text-base leading-relaxed font-light">
-            Nuestra cadena es lo más corta posible: del productor al tostador, del tostador a tu taza.
-          </p>
+          className={
+            "relative text-center px-6 max-w-2xl mx-auto space-y-3 " + (hasImage ? "text-white" : "")
+          }
+        >
+          {page.eyebrow && <Eyebrow className={hasImage ? "text-white/80" : undefined}>{page.eyebrow}</Eyebrow>}
+          <h1 className="mt-2 font-display text-5xl lg:text-7xl font-semibold tracking-tight">{page.title}</h1>
+          {page.intro && (
+            <p
+              className={
+                "mt-3 max-w-xl mx-auto text-sm sm:text-base leading-relaxed font-light " +
+                (hasImage ? "text-white/85" : "text-muted-foreground")
+              }
+            >
+              {page.intro}
+            </p>
+          )}
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-20 grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        {NUMBERS.map((n) => (
-          <div key={n.label} className="text-center sm:text-left">
-            <div className="font-display text-5xl font-semibold tracking-tight">
-              {n.value}
+      {highlights.length > 0 && (
+        <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-20 grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {highlights.map((n, i) => (
+            <div key={i} className="text-center sm:text-left">
+              <div className="font-display text-5xl font-semibold tracking-tight">{n.value}</div>
+              <p className="mt-2 text-sm text-muted-foreground">{n.label}</p>
             </div>
-            <p className="mt-2 text-sm text-muted-foreground">{n.label}</p>
+          ))}
+        </section>
+      )}
+
+      {page.sections.length > 0 && (
+        <section className="border-t border-border">
+          <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 py-20 space-y-6">
+            {page.sections.map((s, i) => (
+              <div key={i} className="space-y-6">
+                {s.title && (
+                  <h2 className={"font-display text-3xl font-semibold tracking-tight" + (i > 0 ? " pt-4" : "")}>
+                    {s.title}
+                  </h2>
+                )}
+                <EditorialText body={s.body} />
+                <SectionFigure section={s} />
+              </div>
+            ))}
           </div>
-        ))}
-      </section>
-
-      <section className="border-t border-border">
-        <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 py-20 space-y-6">
-          <h2 className="font-display text-3xl font-semibold tracking-tight">
-            Relación directa, no comercio justo certificado
-          </h2>
-          <p className="text-base text-foreground/90 leading-relaxed">
-            En vez de pagar por un sello, vamos a las fincas, catamos cada lote y
-            negociamos un precio acorde con su calidad. Esto significa pagos por
-            encima del precio internacional, transparencia total en la cadena y
-            relaciones que duran años.
-          </p>
-
-          <h2 className="font-display text-3xl font-semibold tracking-tight pt-4">
-            Empaque consciente
-          </h2>
-          <p className="text-base text-foreground/90 leading-relaxed">
-            Nuestras bolsas son de papel kraft con barrera compostable y válvula
-            unidireccional para preservar la frescura. Si lo prefieres, pide tu
-            café en frasco retornable cuando visites una de nuestras tiendas.
-          </p>
-        </div>
-      </section>
+        </section>
+      )}
     </>
   );
 }

@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { AdminSidebar } from "@/components/admin/sidebar";
 import { getAdminBilling, getCurrentOperator } from "@/lib/data/admin";
 import { getCurrentTenant } from "@/lib/data/tenant";
+import { getOperatorTenantRole, isOwnerRole, ROLE_LABELS } from "@/lib/data/operator-role";
 import { BrandProvider } from "@/components/storefront/brand-context";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -11,10 +12,19 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   }
   // El menú solo muestra lo que el plan de la tienda incluye. Si no se puede
   // leer el plan, se muestra completo (el backend igual bloquea con 402).
-  const [tenant, billing] = await Promise.all([
+  // El rol en esta tienda viene de /v1/auth/me (`tenantRole`). Equipo y
+  // Auditoría son solo del dueño; si no se pudo leer el rol se muestran (la API
+  // igual responde 403 a quien no es dueño).
+  const [tenant, billing, roleResult] = await Promise.all([
     getCurrentTenant().catch(() => null),
     getAdminBilling(),
+    getOperatorTenantRole(),
   ]);
+  const isOwner = !roleResult.ok || isOwnerRole(roleResult.role);
+  const roleLabel =
+    roleResult.ok && roleResult.role && !operator.impersonatingTenant && operator.role !== "Superadmin"
+      ? ROLE_LABELS[roleResult.role]
+      : null;
   const billingNotice =
     billing?.billingStatus === "PAST_DUE"
       ? "Tu plan tiene un pago pendiente. Regularízalo para evitar la suspensión de la tienda."
@@ -25,7 +35,14 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   return (
     <BrandProvider brand={tenant?.brand ?? "Panel"} logoUrl={tenant?.branding.logoUrl ?? null}>
     <div className="flex min-h-screen">
-      <AdminSidebar operator={operator} features={tenant?.features ?? null} />
+      <AdminSidebar operator={roleLabel ? { ...operator, role: roleLabel } : operator} features={tenant?.features ?? null}
+        isOwner={isOwner}
+        staffRole={
+          roleResult.ok && (roleResult.role === "TENANT_EDITOR" || roleResult.role === "TENANT_ORDERS")
+            ? roleResult.role
+            : null
+        }
+      />
       <div className="flex-1 min-w-0 bg-muted/30">
         {billingNotice && (
           <div

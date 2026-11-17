@@ -33,6 +33,7 @@ export default async function CheckoutPage() {
       }
       customer={customer}
       savedAddresses={addresses}
+      canSubscribe={tenant.features.subscriptions}
     />
   );
 }

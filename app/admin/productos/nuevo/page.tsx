@@ -17,8 +17,8 @@ export default function NewProductPage() {
         Nuevo producto
       </h1>
       <p className="mt-1 text-sm text-muted-foreground mb-8">
-        Define los datos del producto. Las variantes se sincronizan con Stripe al
-        guardar.
+        Define los datos del producto. Guárdalo como borrador hasta que quieras
+        publicarlo en la tienda.
       </p>
       <ProductForm />
     </div>

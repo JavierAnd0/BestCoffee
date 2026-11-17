@@ -3,6 +3,7 @@
 import { cookies } from "next/headers";
 import QRCode from "qrcode";
 import { env } from "../env";
+import { clientIpHeaders } from "@/lib/api/client-ip";
 
 /**
  * Verificación en dos pasos del propio operador (panel de tienda y superadmin).
@@ -35,6 +36,7 @@ async function mfaFetch<T>(path: string, body?: unknown): Promise<Result<T>> {
     res = await fetch(`${env.apiUrlInternal}/v1/auth/mfa${path}`, {
       method: body === undefined ? "GET" : "POST",
       headers: {
+        ...(await clientIpHeaders()),
         Authorization: `Bearer ${token}`,
         ...(body === undefined ? {} : { "Content-Type": "application/json" }),
       },

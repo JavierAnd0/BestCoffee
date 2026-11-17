@@ -101,10 +101,15 @@ export function CartProvider({
       const i = curr.findIndex(
         (x) => x.variantId === incoming.variantId && x.mode === incoming.mode,
       );
-      const qty = incoming.qty ?? 1;
+      // Una suscripción envía una unidad por ciclo: volver a agregarla solo
+      // actualiza la frecuencia elegida.
+      const isSub = incoming.mode === "SUBSCRIPTION";
+      const qty = isSub ? 1 : (incoming.qty ?? 1);
       if (i >= 0) {
         const next = curr.slice();
-        next[i] = { ...next[i], qty: next[i].qty + qty };
+        next[i] = isSub
+          ? { ...next[i], frequencyDays: incoming.frequencyDays, qty: 1 }
+          : { ...next[i], qty: next[i].qty + qty };
         return next;
       }
       return [...curr, { ...incoming, qty }];
@@ -126,7 +131,13 @@ export function CartProvider({
         c
           .map((x) =>
             x.variantId === variantId && x.mode === mode
-              ? { ...x, qty: Math.max(0, qty) }
+              ? {
+                  ...x,
+                  qty:
+                    mode === "SUBSCRIPTION"
+                      ? Math.min(1, Math.max(0, qty))
+                      : Math.max(0, qty),
+                }
               : x,
           )
           .filter((x) => x.qty > 0),

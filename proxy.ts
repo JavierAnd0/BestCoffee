@@ -1,5 +1,31 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth/server";
+import { createHmac } from "node:crypto";
+
+// IP del visitante firmada para los límites por IP de la API (mismo formato que
+// lib/api/client-ip.ts; aquí sin importar lib/env para no evaluar todo el entorno
+// en el proxy). Sin IP = petición del servidor sin visitante.
+function signedIpHeaders(ip: string | null): Record<string, string> {
+  const secret =
+    process.env.REVALIDATE_SECRET ||
+    (process.env.NODE_ENV === "production" ? "" : "dev-revalidate-secret");
+  if (!secret) return {};
+  const value = ip && /^[0-9a-fA-F:.]{2,45}$/.test(ip) ? ip : "";
+  const ts = value ? String(Math.floor(Date.now() / 1000)) : "0";
+  return {
+    "x-client-ip": value,
+    "x-client-ip-ts": ts,
+    "x-client-ip-sig": createHmac("sha256", secret).update(`${ts}.${value}`).digest("hex"),
+  };
+}
+
+function requestIp(req: NextRequest): string | null {
+  return (
+    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    req.headers.get("x-real-ip")?.trim() ||
+    null
+  );
+}
 
 // Hosts treated as the platform shell (no tenant). `localhost` alone is the
 // dev fallback for the platform; per-tenant work uses `<slug>.localhost:3000`.
@@ -186,6 +212,7 @@ export default async function middleware(req: NextRequest) {
           const syncRes = await fetch(`${apiUrl}/v1/auth/customer/neon-sync`, {
             method: "POST",
             headers: {
+              ...signedIpHeaders(requestIp(req)),
               "Content-Type": "application/json",
               "X-Tenant-Slug": tenantSlug,
               "x-internal-secret":
@@ -245,7 +272,8 @@ export default async function middleware(req: NextRequest) {
     if (!customerSession) {
       const redirectUrl = url.clone();
       redirectUrl.pathname = "/login";
-      redirectUrl.searchParams.set("next", url.pathname);
+      redirectUrl.search = "";
+      redirectUrl.searchParams.set("next", `${url.pathname}${url.search}`);
       return NextResponse.redirect(redirectUrl);
     }
   } else if (isOperatorRoute) {
@@ -267,6 +295,8 @@ export default async function middleware(req: NextRequest) {
 
   const requestHeaders = new Headers(req.headers);
   requestHeaders.set("x-host", host);
+  // Ruta pedida, para que /cuenta pueda volver a la subpágina tras el login.
+  requestHeaders.set("x-request-path", `${url.pathname}${url.search}`);
   if (tenantSlug) {
     requestHeaders.set("x-tenant-slug", tenantSlug);
   } else {
@@ -317,6 +347,7 @@ async function resolveCustomDomain(host: string): Promise<string | null> {
     const apiUrl =
       process.env.API_URL_INTERNAL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
     const res = await fetch(`${apiUrl}/v1/tenant-domains/resolve?host=${encodeURIComponent(host)}`, {
+      headers: signedIpHeaders(null),
       cache: "no-store",
       signal: AbortSignal.timeout(2500),
     });

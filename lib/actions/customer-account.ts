@@ -92,45 +92,7 @@ export type SubscriptionActionInput =
 export async function updateSubscriptionAction(
   subscriptionId: string,
   input: SubscriptionActionInput,
-): Promise<{ ok: boolean; message: string }> {
-  if (!env.useMocks) {
-    const { token, isMockSession } = await getCustomerSession();
-    if (!token) {
-      return { ok: false, message: "No hay una sesión activa." };
-    }
-
-    if (!isMockSession) {
-      const payload: Record<string, unknown> = {};
-      if (input.action === "CHANGE_FREQUENCY") {
-        payload.frequencyDays = input.frequencyDays;
-      } else if (input.action === "PAUSE") {
-        payload.status = "PAUSED";
-      } else if (input.action === "RESUME") {
-        payload.status = "ACTIVE";
-      } else if (input.action === "SKIP_NEXT") {
-        payload.status = "SKIPPED_NEXT";
-      } else if (input.action === "CANCEL") {
-        payload.status = "CANCELLED";
-      }
-
-      const res = await customerFetch(
-        `/v1/subscriptions/${encodeURIComponent(subscriptionId)}`,
-        {
-          method: "PATCH",
-          persistSyncedSession: true,
-          body: payload,
-        },
-      );
-
-      if (!res.ok && res.status !== 503) {
-        return { ok: false, message: res.error || "No se pudo actualizar la suscripción." };
-      }
-    }
-  }
-
-  revalidatePath("/cuenta");
-  revalidatePath("/cuenta/suscripciones");
-
+): Promise<{ ok: boolean; message: string; status?: string; frequencyDays?: number }> {
   const messages: Record<SubscriptionActionInput["action"], string> = {
     CHANGE_FREQUENCY: "Frecuencia de entrega actualizada.",
     PAUSE: "Suscripción pausada.",
@@ -139,6 +101,48 @@ export async function updateSubscriptionAction(
     CANCEL: "Suscripción cancelada.",
   };
 
-  return { ok: true, message: messages[input.action] };
-}
+  if (env.useMocks) return { ok: true, message: messages[input.action] };
 
+  const { token, isMockSession } = await getCustomerSession();
+  if (!token) {
+    return { ok: false, message: "No hay una sesión activa." };
+  }
+  if (isMockSession) return { ok: true, message: messages[input.action] };
+
+  // Endpoints reales de CustomerSubscriptionsController.
+  const id = encodeURIComponent(subscriptionId);
+  const ACTION_PATH = {
+    PAUSE: "pause",
+    RESUME: "resume",
+    SKIP_NEXT: "skip-next",
+    CANCEL: "cancel",
+  } as const;
+  const res =
+    input.action === "CHANGE_FREQUENCY"
+      ? await customerFetch<{ status?: string; frequencyDays?: number }>(
+          `/v1/subscriptions/${id}`,
+          {
+            method: "PATCH",
+            persistSyncedSession: true,
+            body: { frequencyDays: input.frequencyDays },
+          },
+        )
+      : await customerFetch<{ status?: string; frequencyDays?: number }>(
+          `/v1/subscriptions/${id}/${ACTION_PATH[input.action]}`,
+          { method: "POST", persistSyncedSession: true },
+        );
+
+  if (!res.ok) {
+    return { ok: false, message: res.error || "No se pudo actualizar la suscripción." };
+  }
+
+  revalidatePath("/cuenta");
+  revalidatePath("/cuenta/suscripciones");
+
+  return {
+    ok: true,
+    message: messages[input.action],
+    status: res.data?.status,
+    frequencyDays: res.data?.frequencyDays,
+  };
+}

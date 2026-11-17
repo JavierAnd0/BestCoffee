@@ -5,6 +5,7 @@ import { getCurrentTenant } from "@/lib/data/tenant";
 import { listProducts } from "@/lib/data/products";
 import { listBlogPosts } from "@/lib/data/blog";
 import { listBrewGuides } from "@/lib/data/static";
+import { listStoreCollections } from "@/lib/data/store-collections";
 
 // Depende del host (tienda) de cada petición.
 export const dynamic = "force-dynamic";
@@ -61,15 +62,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     page("/legal/privacidad", 0.2, "yearly"),
   ];
 
-  const [products, posts, guides] = await Promise.all([
+  const [products, posts, guides, collections] = await Promise.all([
     f.catalog ? safe(listProducts) : [],
     f.blog ? safe(listBlogPosts) : [],
     safe(listBrewGuides),
+    f.catalog ? safe(listStoreCollections) : [],
   ]);
 
   for (const p of products) entries.push(page(`/p/${p.slug}`, 0.8, "weekly"));
   for (const post of posts) entries.push(page(`/blog/${post.slug}`, 0.6));
   for (const g of guides) entries.push(page(`/guias/${g.slug}`, 0.6));
+  if (collections.length) entries.push(page("/colecciones", 0.7, "weekly"));
+  for (const c of collections) entries.push(page(`/colecciones/${c.slug}`, 0.7, "weekly"));
 
   return entries;
 }

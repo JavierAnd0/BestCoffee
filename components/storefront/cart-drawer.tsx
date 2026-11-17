@@ -93,10 +93,16 @@ export function CartDrawer() {
                         }`}
                     </p>
                     <div className="flex items-center justify-between mt-3">
-                      <Stepper
-                        value={item.qty}
-                        onChange={(n) => updateQty(item.variantId, item.mode, n)}
-                      />
+                      {item.mode === "SUBSCRIPTION" ? (
+                        <span className="text-xs text-muted-foreground">
+                          1 unidad por envío
+                        </span>
+                      ) : (
+                        <Stepper
+                          value={item.qty}
+                          onChange={(n) => updateQty(item.variantId, item.mode, n)}
+                        />
+                      )}
                       <span className="font-semibold tabular-nums text-sm">
                         {formatCop(item.unitPriceCents * item.qty)}
                       </span>

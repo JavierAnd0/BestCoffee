@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
 import { PageHeader } from "@/components/admin/page-header";
-import { listPendingReviews } from "@/lib/data/admin";
+import { listAdminReviews } from "@/lib/data/admin";
 import { AdminReviewsClient } from "./reviews-client";
 
 export const metadata: Metadata = { title: "Reseñas · Admin" };
 
 export default async function AdminReviewsPage() {
-  const reviews = await listPendingReviews();
+  const reviews = await listAdminReviews();
   const pending = reviews.filter((r) => r.status === "PENDING").length;
 
   return (

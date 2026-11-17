@@ -8,12 +8,16 @@ import {
   type ApiHeroBlock,
 } from "../api/mappers";
 import { getProductBySlug } from "./products";
+import { headers } from "next/headers";
+import { tenantCacheTag } from "./cache-tags";
+import type { ContentPageSlug, EditorialPageContent } from "../editorial-pages";
 import {
   ANNOUNCE_MESSAGES,
   HERO_HOME,
   SPOTLIGHT_HOME,
   FEATURED_PACK_HOME,
 } from "../mocks/site-content";
+import { EDITORIAL_PAGES } from "../mocks/editorial-pages";
 
 // Política multi-tenant: el contenido demo (ORÍGEN) solo existe con USE_MOCKS.
 // En modo real, si la tienda no configuró un bloque, devuelve null/[] y la
@@ -67,7 +71,7 @@ export async function getHomeSpotlight(): Promise<SpotlightContent | null> {
   const product = await getProductBySlug(spot.productSlug);
   if (!product) return null;
   return {
-    eyebrow: "Origen único · spotlight",
+    eyebrow: "Destacado",
     title: spot.title ?? product.name,
     body: product.shortDescription || product.producerStory || "",
     roastLevel: product.roastLevel,
@@ -86,18 +90,44 @@ export async function getFeaturedPack(): Promise<FeaturedPackContent | null> {
   if (!bundle || slugs.length === 0) return null;
   // Price the bundle as the sum of each product's cheapest variant.
   const products = await Promise.all(slugs.map((s) => getProductBySlug(s)));
-  const priceCents = products.reduce(
-    (sum, p) => sum + (p ? cheapestPriceCents(p) : 0),
-    0,
-  );
+  // Sin precio propio de paquete: no hay ahorro que anunciar.
+  const found = products.filter((p) => p !== null && p !== undefined);
+  const priceCents = found.reduce((sum, p) => sum + cheapestPriceCents(p), 0);
   return {
     eyebrow: "Paquete destacado",
     title: bundle.title,
-    description:
-      "Una selección curada de nuestros orígenes para descubrir tu favorito.",
+    description: "Una selección de la tienda para descubrir tu favorito.",
     priceCents,
-    bagsCount: slugs.length,
-    savingsPct: 12,
+    bagsCount: found.length,
     productSlug: slugs[0] ?? "",
   };
+}
+
+// ── Páginas editoriales (historia, impacto, sostenibilidad, mayoristas) ───────
+
+/**
+ * Contenido de una página editorial de la tienda actual. `null` si la tienda la
+ * tiene apagada, no la ha escrito o la API falla: la página responde 404 y
+ * nunca se rellena con el texto de otra marca. Con mocks no hay contenido.
+ */
+export async function getEditorialPage(slug: ContentPageSlug): Promise<EditorialPageContent | null> {
+  if (env.useMocks) return EDITORIAL_PAGES[slug] ?? null;
+  try {
+    const h = await headers();
+    const tenantSlug = h.get("x-tenant-slug") ?? env.defaultTenantSlug;
+    const res = await fetch(`${env.apiUrlInternal}/v1/content/pages/${encodeURIComponent(slug)}`, {
+      headers: { "X-Tenant-Slug": tenantSlug },
+      // La API revalida estas etiquetas al guardar la página (app/api/revalidate).
+      next: {
+        revalidate: 3600,
+        tags: [tenantCacheTag(tenantSlug, "pages"), tenantCacheTag(tenantSlug, `page:${slug}`)],
+      },
+    });
+    if (!res.ok) return null;
+    const data = (await res.json()) as Partial<EditorialPageContent> | null;
+    if (!data || typeof data.title !== "string" || !data.title.trim()) return null;
+    return { ...data, title: data.title, sections: Array.isArray(data.sections) ? data.sections : [] };
+  } catch {
+    return null;
+  }
 }

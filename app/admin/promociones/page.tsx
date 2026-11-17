@@ -3,14 +3,14 @@ import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/admin/page-header";
 import { listDiscountCodes } from "@/lib/data/admin";
 import { PromoCreateDialog } from "./promo-create-dialog";
+import { PromoRowActions } from "./promo-row-actions";
 
 export const metadata: Metadata = { title: "Promociones · Admin" };
 
-const TYPE_LABEL = {
+const TYPE_LABEL: Record<string, string> = {
   PERCENT: "Porcentaje",
   FIXED: "Monto fijo",
-  FREE_SHIPPING: "Envío gratis",
-} as const;
+};
 
 export default async function AdminPromosPage() {
   const discounts = await listDiscountCodes();
@@ -33,6 +33,7 @@ export default async function AdminPromosPage() {
               <th className="px-4 py-3 font-medium">Usos</th>
               <th className="px-4 py-3 font-medium">Vencimiento</th>
               <th className="px-4 py-3 font-medium">Estado</th>
+              <th className="px-4 py-3 font-medium sr-only">Acciones</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
@@ -43,12 +44,12 @@ export default async function AdminPromosPage() {
                     {d.code}
                   </span>
                 </td>
-                <td className="px-4 py-3 text-muted-foreground">{TYPE_LABEL[d.type]}</td>
+                <td className="px-4 py-3 text-muted-foreground">{TYPE_LABEL[d.type] ?? d.type}</td>
                 <td className="px-4 py-3 font-medium">{d.value}</td>
                 <td className="px-4 py-3 text-muted-foreground">{d.appliesTo}</td>
                 <td className="px-4 py-3 tabular-nums">
                   {d.usesCount}
-                  {d.usesLimit && (
+                  {d.usesLimit != null && (
                     <span className="text-muted-foreground"> / {d.usesLimit}</span>
                   )}
                 </td>
@@ -65,8 +66,18 @@ export default async function AdminPromosPage() {
                     {d.active ? "Activo" : "Inactivo"}
                   </Badge>
                 </td>
+                <td className="px-4 py-3">
+                  <PromoRowActions id={d.id} code={d.code} active={d.active} />
+                </td>
               </tr>
             ))}
+            {discounts.length === 0 && (
+              <tr>
+                <td colSpan={8} className="px-4 py-10 text-center text-muted-foreground text-sm">
+                  Aún no hay códigos promocionales.
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>

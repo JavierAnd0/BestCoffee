@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { env } from "../env";
 import { operatorFetch } from "../api/gateway";
 import { getOperatorSession } from "./session-store";
+import { clientIpHeaders } from "@/lib/api/client-ip";
 
 /**
  * ¿Hay un operador REAL autenticado? Comprueba el token contra el backend
@@ -25,7 +26,7 @@ export async function hasValidOperatorSession(): Promise<boolean> {
 
   try {
     const res = await fetch(`${env.apiUrlInternal}/v1/auth/me`, {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { ...(await clientIpHeaders()), Authorization: `Bearer ${token}` },
       cache: "no-store",
       signal: AbortSignal.timeout(5000),
     });

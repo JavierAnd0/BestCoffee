@@ -24,9 +24,9 @@ test.describe("Storefront Views & Customer Address Management", () => {
     const res = await page.goto("/envios");
     expect(res?.status()).toBe(200);
 
-    await expect(page.locator("h1")).toContainText(/Envíos y Cobertura/i);
-    await expect(page.locator("body")).toContainText("Bogotá D.C.");
-    await expect(page.locator("body")).toContainText("Medellín");
+    // El título lleva el nombre de la tienda; el costo depende de la dirección.
+    await expect(page.locator("h1")).toContainText(/Envíos de ORÍGEN/i);
+    await expect(page.locator("body")).toContainText("Costo del envío");
   });
 
   test("3. Página de Devoluciones (/devoluciones) carga con garantía y pasos", async ({
@@ -36,7 +36,9 @@ test.describe("Storefront Views & Customer Address Management", () => {
     expect(res?.status()).toBe(200);
 
     await expect(page.locator("h1")).toContainText(/Garantía y Devoluciones/i);
-    await expect(page.locator("body")).toContainText("Garantía de frescura");
+    // Resumen del Estatuto del Consumidor (Ley 1480 de 2011).
+    await expect(page.locator("body")).toContainText("Ley 1480 de 2011");
+    await expect(page.locator("body")).toContainText("Derecho de retracto");
   });
 
   test("4. Página de Sostenibilidad (/sostenibilidad) carga con métricas y pilares", async ({
@@ -105,7 +107,8 @@ test.describe("Storefront Views & Customer Address Management", () => {
     const res = await page.goto("/tiendas");
     expect(res?.status()).toBe(200);
 
-    await expect(page.locator("h1")).toContainText(/Nuestras tiendas en Bogotá/i);
+    // Sin ciudad fija: la tienda puede tener sedes en varias ciudades.
+    await expect(page.locator("h1")).toContainText(/Nuestras tiendas/i);
     await expect(page.locator("body")).toContainText("ORÍGEN Chapinero");
     await expect(page.locator("body")).toContainText("ORÍGEN Usaquén");
     await expect(page.locator("body")).toContainText("ORÍGEN La Candelaria");

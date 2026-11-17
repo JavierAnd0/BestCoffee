@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { ProductForm } from "@/components/admin/product-form";
-import { listProducts } from "@/lib/data/products";
+import { getAdminProduct } from "@/lib/data/admin";
 
 export async function generateMetadata({
   params,
@@ -10,8 +10,7 @@ export async function generateMetadata({
   params: Promise<{ id: string }>;
 }): Promise<Metadata> {
   const { id } = await params;
-  const all = await listProducts();
-  const p = all.find((x) => x.id === id);
+  const p = await getAdminProduct(id);
   return { title: p ? `${p.name} · Admin` : "Producto · Admin" };
 }
 
@@ -21,8 +20,7 @@ export default async function EditProductPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const all = await listProducts();
-  const product = all.find((p) => p.id === id);
+  const product = await getAdminProduct(id);
   if (!product) notFound();
 
   return (
@@ -37,7 +35,7 @@ export default async function EditProductPage({
         {product.name}
       </h1>
       <p className="mt-1 text-sm text-muted-foreground mb-8">
-        Edita los datos del producto. Los cambios se sincronizan con Stripe al guardar.
+        Edita los datos del producto. Si está activo, los cambios se publican en la tienda al guardar.
       </p>
       <ProductForm product={product} />
     </div>

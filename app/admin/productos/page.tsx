@@ -4,7 +4,7 @@ import { Plus, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/admin/page-header";
-import { listProducts } from "@/lib/data/products";
+import { listAdminProducts } from "@/lib/data/admin";
 import { formatCop } from "@/lib/format";
 import type { Product } from "@/lib/types";
 
@@ -25,6 +25,12 @@ const BADGE_LABEL: Record<string, string> = {
   SEASONAL: "Temporada",
 };
 
+const STATUS_LABEL: Record<Product["status"], string> = {
+  ACTIVE: "Activo",
+  DRAFT: "Borrador",
+  ARCHIVED: "Archivado",
+};
+
 const FILTERS: { label: string; value?: Product["status"] }[] = [
   { label: "Todos" },
   { label: "Activos", value: "ACTIVE" },
@@ -39,7 +45,7 @@ export default async function ProductsListPage({
 }) {
   const [{ status, q }, products] = await Promise.all([
     searchParams,
-    listProducts(),
+    listAdminProducts(),
   ]);
 
   const query = q?.trim().toLowerCase() ?? "";
@@ -150,7 +156,7 @@ export default async function ProductsListPage({
                   </td>
                   <td className="px-4 py-3">
                     <Badge variant="outline" className="font-normal">
-                      {p.status === "ACTIVE" ? "Activo" : p.status}
+                      {STATUS_LABEL[p.status] ?? p.status}
                     </Badge>
                   </td>
                   <td className="px-4 py-3">

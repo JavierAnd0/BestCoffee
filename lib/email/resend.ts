@@ -14,6 +14,16 @@ export interface SendContactMessageParams {
   email: string;
   subject: string;
   message: string;
+  /** Tienda del formulario: firma el pie del correo (sin dato, no se pone ubicación). */
+  store?: EmailStore;
+  /** Correo de contacto de la tienda: recibe el mensaje. Sin él, el dueño de la plataforma. */
+  recipient?: string | null;
+}
+
+/** Datos de la tienda para el pie de los correos. */
+export interface EmailStore {
+  name: string;
+  city?: string | null;
 }
 
 export interface SendOrderConfirmationParams {
@@ -37,7 +47,17 @@ const brandColors = {
   buttonText: "#ffffff",
 };
 
-function baseTemplate(contentHtml: string): string {
+function escapeHtml(value: string): string {
+  return value.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
+}
+
+/** Pie con el nombre y la ciudad de la tienda si se conocen; sin dato, solo la marca. */
+function footerLine(store?: EmailStore): string {
+  if (!store?.name?.trim()) return "BestCoffee";
+  return [store.name.trim(), store.city?.trim()].filter(Boolean).map((v) => escapeHtml(v as string)).join(" · ");
+}
+
+function baseTemplate(contentHtml: string, store?: EmailStore): string {
   return `
 <!DOCTYPE html>
 <html lang="es">
@@ -67,8 +87,7 @@ function baseTemplate(contentHtml: string): string {
     </div>
     <div class="footer">
       <p style="margin: 0; font-size: 12px; color: ${brandColors.muted};">
-        BestCoffee · Especialidad y tostión artesanal colombiana.<br/>
-        Bogotá, Colombia.
+        ${footerLine(store)}
       </p>
     </div>
   </div>
@@ -136,75 +155,64 @@ export async function sendMagicLinkEmail({
 }
 
 // ── 2. Enviar Notificación de Contacto del Storefront ──────────────────────────
+/**
+ * Mensaje del formulario de contacto de una tienda, enviado a ESA tienda
+ * (su correo de contacto). No se manda acuse al remitente: el formulario es
+ * público y eso permitiría usarlo para enviar correos a cualquier dirección.
+ */
 export async function sendContactNotificationEmail({
   name,
   email,
   subject,
   message,
+  store,
+  recipient,
 }: SendContactMessageParams): Promise<{ success: boolean; error?: string }> {
   if (!resend) {
-    console.info(`[Resend notice] RESEND_API_KEY no configurada. Mensaje de contacto de ${name} (${email}): ${message}`);
+    console.info(`[Resend notice] RESEND_API_KEY no configurada. Mensaje de contacto de ${name} (${email}).`);
     return { success: false, error: "RESEND_API_KEY no configurada." };
   }
 
-  // Notificar al dueño de la plataforma o correo de soporte
+  const to = recipient?.trim() || env.platformOwnerEmail;
+  if (!to) {
+    console.error("[Contacto] La tienda no tiene correo de contacto y no hay PLATFORM_OWNER_EMAIL.");
+    return { success: false, error: "La tienda no tiene un correo de contacto configurado." };
+  }
+
+  const n = escapeHtml(name);
+  const e = escapeHtml(email);
+  const subj = escapeHtml(subject);
+  const msg = escapeHtml(message);
+  const storeName = store?.name ? escapeHtml(store.name) : "la tienda";
+  const replySubject = encodeURIComponent(`Re: ${subject}`);
+
   const notificationHtml = baseTemplate(`
     <h2 style="font-size: 20px; font-weight: 600; margin: 0 0 16px;">
-      Nuevo mensaje de contacto recibido
+      Nuevo mensaje de contacto
     </h2>
-    <p>Se ha recibido una nueva consulta desde la tienda web:</p>
-    <div style="background: #f7f5f0; border-left: 4px solid ${brandColors.accent}; padding: 16px; margin: 20px 0; border-radius: 4px;">
-      <p style="margin: 0 0 8px;"><strong>Nombre:</strong> ${name}</p>
-      <p style="margin: 0 0 8px;"><strong>Correo:</strong> <a href="mailto:${email}">${email}</a></p>
-      <p style="margin: 0 0 8px;"><strong>Motivo:</strong> ${subject}</p>
+    <p>Recibiste una consulta desde el formulario de contacto de ${storeName}:</p>
+    <div style="background: #f7f5f0; border: 1px solid ${brandColors.border}; padding: 16px; margin: 20px 0; border-radius: 8px;">
+      <p style="margin: 0 0 8px;"><strong>Nombre:</strong> ${n}</p>
+      <p style="margin: 0 0 8px;"><strong>Correo:</strong> ${e}</p>
+      <p style="margin: 0 0 8px;"><strong>Motivo:</strong> ${subj}</p>
       <p style="margin: 12px 0 0;"><strong>Mensaje:</strong></p>
-      <p style="margin: 4px 0 0; white-space: pre-wrap; color: ${brandColors.text};">${message}</p>
+      <p style="margin: 4px 0 0; white-space: pre-wrap; color: ${brandColors.text};">${msg}</p>
     </div>
     <div style="text-align: center; margin-top: 24px;">
-      <a href="mailto:${email}?subject=Re: ${encodeURIComponent(subject)} - BestCoffee" class="button">
-        Responder a ${name}
+      <a href="mailto:${encodeURIComponent(email)}?subject=${replySubject}" class="button">
+        Responder a ${n}
       </a>
     </div>
-  `);
-
-  // Confirmación al cliente
-  const confirmationHtml = baseTemplate(`
-    <h2 style="font-size: 20px; font-weight: 600; margin: 0 0 16px;">
-      ¡Hemos recibido tu mensaje!
-    </h2>
-    <p>Hola <strong>${name}</strong>,</p>
-    <p>
-      Gracias por contactarte con BestCoffee. Confirmamos que recibimos tu consulta sobre <strong>"${subject}"</strong>.
-    </p>
-    <p>
-      Nuestro equipo de baristas y atención al cliente revisará tu mensaje y te responderá en menos de 24 horas hábiles a esta dirección (${email}).
-    </p>
-    <div style="background: #faf8f5; border: 1px dashed ${brandColors.border}; padding: 16px; margin: 20px 0; border-radius: 6px;">
-      <p style="margin: 0; font-size: 13px; color: ${brandColors.muted};"><strong>Copia de tu mensaje:</strong></p>
-      <p style="margin: 6px 0 0; font-size: 14px; font-style: italic;">"${message}"</p>
-    </div>
-  `);
+  `, store);
 
   try {
-    const notifyRecipient = env.platformOwnerEmail || "logijavier@gmail.com";
-
-    // Enviar notificación al equipo interno
     await resend.emails.send({
       from: env.resendFromEmail,
-      to: notifyRecipient,
+      to,
       replyTo: email,
-      subject: `[Contacto BestCoffee] ${subject} - ${name}`,
+      subject: `[Contacto${store?.name ? ` ${store.name}` : ""}] ${subject.slice(0, 120)} - ${name.slice(0, 80)}`,
       html: notificationHtml,
     });
-
-    // Enviar acuse de recibo al usuario
-    await resend.emails.send({
-      from: env.resendFromEmail,
-      to: email,
-      subject: "Recibimos tu mensaje en BestCoffee",
-      html: confirmationHtml,
-    });
-
     return { success: true };
   } catch (err) {
     const messageErr = err instanceof Error ? err.message : String(err);

@@ -1,3 +1,4 @@
+import { safeNextPath } from "@/lib/safe-next";
 import { LoginForm } from "./login-form";
 
 export default async function LoginPage({
@@ -5,6 +6,6 @@ export default async function LoginPage({
 }: {
   searchParams: Promise<{ next?: string; error?: string }>;
 }) {
-  const { next = "/cuenta", error } = await searchParams;
-  return <LoginForm next={next} errorParam={error} />;
+  const { next, error } = await searchParams;
+  return <LoginForm next={safeNextPath(next)} errorParam={error} />;
 }

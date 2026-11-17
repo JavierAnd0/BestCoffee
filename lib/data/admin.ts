@@ -1,6 +1,8 @@
 import { env } from "../env";
 import { apiServer } from "../api/client";
 import { formatCop } from "../format";
+import { mapProduct, type ApiProduct } from "../api/mappers";
+import type { Product } from "../types";
 import {
   ADMIN_KPIS,
   ADMIN_ALERTS,
@@ -18,6 +20,7 @@ import {
   type AdminReview,
   type AdminAuditEntry,
 } from "../mocks/admin";
+import { clientIpHeaders } from "@/lib/api/client-ip";
 
 // ── Minimal shapes the backend returns (best-effort; cast at call sites) ─────
 
@@ -27,12 +30,13 @@ interface ApiOrder {
   totalCents?: number;
   total?: number;
   status?: string;
+  paymentStatus?: string;
   createdAt?: string;
 }
 
 interface ApiReview {
   id: string;
-  customer?: { name?: string } | null;
+  customer?: { name?: string | null; email?: string } | null;
   customerName?: string;
   product?: { name?: string } | null;
   productName?: string;
@@ -44,18 +48,19 @@ interface ApiReview {
   verifiedSubscriber?: boolean;
 }
 
+/** `DiscountCode` tal como lo devuelve `GET /v1/admin/discount-codes` (un arreglo). */
 interface ApiDiscountCode {
   id: string;
-  code?: string;
-  type?: string;
-  discountPct?: number;
-  discountAmount?: number;
-  value?: string | number;
-  appliesTo?: string;
-  usesCount?: number;
-  usesLimit?: number;
-  expiresAt?: string | null;
-  active?: boolean;
+  code: string;
+  type: "PERCENTAGE" | "FIXED";
+  /** PERCENTAGE: 1-100 · FIXED: centavos COP. */
+  value: number;
+  minSubtotalCents?: number | null;
+  maxRedemptions?: number | null;
+  timesRedeemed?: number;
+  startsAt?: string | null;
+  endsAt?: string | null;
+  active: boolean;
 }
 
 interface ApiAuditEntry {
@@ -77,6 +82,9 @@ interface ApiListResponse<T> {
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function items<T>(payload: unknown): T[] {
+  // Algunos listados del backend son un arreglo plano (cupones, reseñas); otros
+  // vienen paginados como `{ items, nextCursor }`.
+  if (Array.isArray(payload)) return payload as T[];
   const p = payload as ApiListResponse<T>;
   return p?.items ?? p?.data ?? [];
 }
@@ -96,15 +104,15 @@ function mapOrder(o: ApiOrder): AdminRecentOrder {
     id: o.id,
     customer: o.customer?.name ?? o.customer?.email ?? "—",
     totalCents: o.totalCents ?? o.total ?? 0,
-    status: (o.status as AdminRecentOrder["status"]) ?? "PROCESSING",
+    status: ADMIN_ORDER_STATUS_MAP[o.status ?? ""] ?? "PROCESSING",
     createdAt: ago(o.createdAt),
-  };
+  } as AdminRecentOrder;
 }
 
 function mapReview(r: ApiReview): AdminReview {
   return {
     id: r.id,
-    customerName: r.customerName ?? r.customer?.name ?? "—",
+    customerName: r.customerName ?? (r.customer?.name || r.customer?.email) ?? "—",
     productName: r.productName ?? r.product?.name ?? "—",
     rating: r.rating ?? 5,
     body: r.body ?? r.comment ?? "",
@@ -114,26 +122,33 @@ function mapReview(r: ApiReview): AdminReview {
   };
 }
 
+function formatShortDate(iso?: string | null): string | undefined {
+  if (!iso) return undefined;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return undefined;
+  return d.toLocaleDateString("es-CO", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+}
+
 function mapDiscount(d: ApiDiscountCode): AdminDiscountCode {
-  const typeKey = (d.type ?? "PERCENT") as AdminDiscountCode["type"];
-  const valueStr =
-    typeof d.value === "string"
-      ? d.value
-      : d.discountPct != null
-        ? `${d.discountPct}%`
-        : d.discountAmount != null
-          ? `$${(d.discountAmount / 100).toLocaleString("es-CO")}`
-          : "—";
+  const isPercent = d.type === "PERCENTAGE";
   return {
     id: d.id,
-    code: d.code ?? "",
-    type: typeKey,
-    value: valueStr,
-    appliesTo: d.appliesTo ?? "Todos los productos",
-    usesCount: d.usesCount ?? 0,
-    usesLimit: d.usesLimit,
-    expiresAt: d.expiresAt ?? undefined,
-    active: d.active ?? true,
+    code: d.code,
+    type: isPercent ? "PERCENT" : "FIXED",
+    // FIXED llega en centavos (igual que todos los montos de la API).
+    value: isPercent ? `${d.value}%` : formatCop(d.value),
+    appliesTo: d.minSubtotalCents
+      ? `Compras desde ${formatCop(d.minSubtotalCents)}`
+      : "Todos los productos",
+    usesCount: d.timesRedeemed ?? 0,
+    usesLimit: d.maxRedemptions ?? undefined,
+    expiresAt: formatShortDate(d.endsAt) ?? "Sin vencimiento",
+    active: d.active,
   };
 }
 
@@ -162,6 +177,7 @@ async function adminFetch<T>(path: string): Promise<T | null> {
 
   const res = await fetch(`${env.apiUrlInternal}${path}`, {
     headers: {
+      ...(await clientIpHeaders()),
       "Content-Type": "application/json",
       "X-Tenant-Slug": tenantSlug,
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -201,7 +217,7 @@ export async function getCurrentOperator(): Promise<OperatorProfile | null> {
 
   try {
     const res = await fetch(`${env.apiUrlInternal}/v1/auth/me`, {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { ...(await clientIpHeaders()), Authorization: `Bearer ${token}` },
       cache: "no-store",
     });
     if (res.ok) {
@@ -224,7 +240,9 @@ export async function getCurrentOperator(): Promise<OperatorProfile | null> {
     // Fallback a sesión local de operador si el backend no está disponible
   }
 
-  if (token.endsWith(".local_operator_session")) {
+  // Solo en desarrollo: esta sesión no lleva firma, así que en producción
+  // cualquiera podría escribirla a mano en una cookie.
+  if (env.isDev && token.endsWith(".local_operator_session")) {
     try {
       const parts = token.split(".");
       if (parts.length >= 2) {
@@ -419,11 +437,21 @@ function mapApiCustomer(c: ApiAdminCustomer): AdminCustomer {
 
 // ── Admin Order & Subscription mappers ────────────────────────────────────────
 
+export type AdminPaymentStatus = "PAID" | "PENDING" | "FAILED" | "REFUNDED";
+
+const PAYMENT_STATUSES: AdminPaymentStatus[] = ["PAID", "PENDING", "FAILED", "REFUNDED"];
+
+function toPaymentStatus(raw: unknown): AdminPaymentStatus {
+  const v = String(raw ?? "").toUpperCase() as AdminPaymentStatus;
+  return PAYMENT_STATUSES.includes(v) ? v : "PENDING";
+}
+
 export interface AdminOrderRow {
   id: string;
   customer: string;
   totalCents: number;
   status: "PROCESSING" | "SHIPPED" | "DELIVERED" | "CANCELLED";
+  paymentStatus: AdminPaymentStatus;
   createdAt: string;
   fromSub: boolean;
 }
@@ -448,6 +476,7 @@ function mapAdminOrderRow(o: ApiAdminOrder): AdminOrderRow {
     customer: o.customer?.name ?? o.customer?.email ?? "—",
     totalCents: o.totalCents ?? o.total ?? 0,
     status: ADMIN_ORDER_STATUS_MAP[o.status ?? ""] ?? "PROCESSING",
+    paymentStatus: toPaymentStatus(o.paymentStatus),
     createdAt: ago(o.createdAt),
     fromSub: o.fromSubscription ?? Boolean(o.subscriptionId),
   };
@@ -602,6 +631,7 @@ export async function listAdminOrders(): Promise<AdminOrderRow[]> {
       customer: o.customer,
       totalCents: o.totalCents,
       status: o.status,
+      paymentStatus: "PAID" as const,
       createdAt: o.createdAt,
       fromSub: false,
     }));
@@ -656,6 +686,21 @@ export async function listPendingReviews(): Promise<AdminReview[]> {
   }
 }
 
+/**
+ * Reseñas de todos los estados para la pantalla de moderación (la API filtra
+ * por un estado a la vez; sin filtro devuelve solo las pendientes).
+ */
+export async function listAdminReviews(): Promise<AdminReview[]> {
+  if (env.useMocks) return ADMIN_REVIEWS;
+  const statuses = ["PENDING", "APPROVED", "REJECTED"] as const;
+  const pages = await Promise.all(
+    statuses.map((s) =>
+      adminFetch<unknown>(`/v1/admin/reviews?status=${s}`).catch(() => null),
+    ),
+  );
+  return pages.flatMap((p) => (p ? items<ApiReview>(p).map(mapReview) : []));
+}
+
 export async function listDiscountCodes(): Promise<AdminDiscountCode[]> {
   if (env.useMocks) return ADMIN_DISCOUNTS;
   try {
@@ -682,6 +727,7 @@ export interface AdminOrderDetailData {
   id: string;
   createdAt: string;
   status: "RECEIVED" | "PREPARING" | "SHIPPED" | "DELIVERED" | "CANCELLED";
+  paymentStatus: AdminPaymentStatus;
   fromSubscription: boolean;
   customerName: string;
   customerEmail: string;
@@ -704,7 +750,8 @@ export interface AdminOrderDetailData {
   }>;
 }
 
-export async function getAdminOrderDetail(id: string): Promise<AdminOrderDetailData> {
+/** Detalle del pedido para el panel; `null` si no existe en esta tienda. */
+export async function getAdminOrderDetail(id: string): Promise<AdminOrderDetailData | null> {
   if (!env.useMocks) {
     try {
       const raw = await adminFetch<Record<string, unknown>>(
@@ -760,6 +807,7 @@ export async function getAdminOrderDetail(id: string): Promise<AdminOrderDetailD
           id: String(raw.id),
           createdAt: ago(typeof raw.createdAt === "string" ? raw.createdAt : undefined),
           status,
+          paymentStatus: toPaymentStatus(raw.paymentStatus),
           fromSubscription: Boolean(raw.fromSubscription || raw.subscriptionId),
           customerName:
             [customer.firstName, customer.lastName].filter(Boolean).join(" ").trim() ||
@@ -792,12 +840,15 @@ export async function getAdminOrderDetail(id: string): Promise<AdminOrderDetailD
         };
       }
     } catch {}
+    // Sin datos reales no se inventa un pedido: la página muestra "no encontrado".
+    return null;
   }
 
   return {
     id,
     createdAt: "Reciente",
     status: "PREPARING",
+    paymentStatus: "PAID",
     fromSubscription: false,
     customerName: "Cliente Registrado",
     customerEmail: "cliente@bestcoffee.io",
@@ -840,4 +891,85 @@ export async function listAuditEntries(): Promise<AdminAuditEntry[]> {
   } catch {
     return [];
   }
+}
+
+// ── Productos del panel (incluye borradores y archivados) ────────────────────
+
+interface ApiAdminProductListItem {
+  id: string;
+}
+
+/**
+ * Catálogo completo de la tienda para el panel. `GET /v1/admin/products`
+ * trae todos los estados pero sin variantes (páginas de 25); el detalle de
+ * cada producto (`GET /v1/admin/products/:id`) trae variantes e imágenes.
+ */
+export async function listAdminProducts(): Promise<Product[]> {
+  if (env.useMocks) {
+    const { listProducts } = await import("./products");
+    return listProducts();
+  }
+  const ids: string[] = [];
+  let cursor: string | null = null;
+  for (let page = 0; page < 40; page++) {
+    const qs: string = cursor ? `?cursor=${encodeURIComponent(cursor)}` : "";
+    const res: { items?: ApiAdminProductListItem[]; nextCursor?: string | null } | null =
+      await adminFetch(`/v1/admin/products${qs}`);
+    if (!res) break;
+    ids.push(...(res.items ?? []).map((p) => p.id));
+    cursor = res.nextCursor ?? null;
+    if (!cursor) break;
+  }
+  const details = await Promise.all(ids.map((id) => getAdminProduct(id)));
+  return details.filter((p): p is Product => p !== null);
+}
+
+/** Producto con variantes (precios en centavos) para editarlo; `null` si no es de esta tienda. */
+export async function getAdminProduct(id: string): Promise<Product | null> {
+  if (env.useMocks) {
+    const { listProducts } = await import("./products");
+    return (await listProducts()).find((p) => p.id === id) ?? null;
+  }
+  const raw = await adminFetch<ApiProduct>(`/v1/admin/products/${encodeURIComponent(id)}`).catch(
+    () => null,
+  );
+  return raw && typeof raw.id === "string" ? mapProduct(raw) : null;
+}
+
+// ── Configuración de la tienda (dueño) ───────────────────────────────────────
+
+export interface AdminStoreSettings {
+  name: string;
+  freeShippingThresholdCents: number | null;
+  shippingFlatCents: number | null;
+  legalName: string;
+  legalId: string;
+  contactEmail: string;
+  contactPhone: string;
+  city: string;
+}
+
+/** `GET /v1/admin/settings` (solo el dueño). `null` si no hay permiso o falla. */
+export async function getAdminSettings(): Promise<AdminStoreSettings | null> {
+  if (env.useMocks) return null;
+  const raw = await adminFetch<{
+    name?: string;
+    features?: Record<string, unknown> | null;
+    branding?: Record<string, unknown> | null;
+  }>("/v1/admin/settings").catch(() => null);
+  if (!raw) return null;
+  const f = raw.features ?? {};
+  const b = raw.branding ?? {};
+  const num = (v: unknown) => (typeof v === "number" ? v : null);
+  const str = (v: unknown) => (typeof v === "string" ? v : "");
+  return {
+    name: raw.name ?? "",
+    freeShippingThresholdCents: num(f.freeShippingThresholdCents),
+    shippingFlatCents: num(f.shippingFlatCents),
+    legalName: str(b.legalName),
+    legalId: str(b.legalId),
+    contactEmail: str(b.contactEmail),
+    contactPhone: str(b.contactPhone),
+    city: str(b.city),
+  };
 }

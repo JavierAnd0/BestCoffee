@@ -5,6 +5,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { env } from "../env";
 import { sendMagicLinkEmail } from "../email/resend";
+import { clientIpHeaders } from "@/lib/api/client-ip";
 
 export type MagicLinkState = null | { error: string } | { sent: true };
 export type VerifyState = null | { error: string };
@@ -69,7 +70,7 @@ export async function requestOperatorMagicLink(
   try {
     const res = await fetch(`${env.apiUrlInternal}/v1/auth/login`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { ...(await clientIpHeaders()), "Content-Type": "application/json" },
       body: JSON.stringify({ email }),
       cache: "no-store",
     });
@@ -118,7 +119,7 @@ export async function verifyOperatorMagicLink(
   try {
     res = await fetch(`${env.apiUrlInternal}/v1/auth/verify`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { ...(await clientIpHeaders()), "Content-Type": "application/json" },
       body: JSON.stringify({ email, token }),
       cache: "no-store",
     });
@@ -159,9 +160,11 @@ export async function verifyOperatorMagicLink(
   if (!verifiedData || verifiedData.email.toLowerCase() !== email.toLowerCase()) {
     return { error: "El enlace de acceso es inválido o ha expirado." };
   }
+  // Sin PLATFORM_OWNER_EMAIL nadie es dueño de la plataforma (antes caía a un
+  // correo escrito en el código).
   const isOwner =
-    email.toLowerCase() ===
-    (env.platformOwnerEmail || "logijavier@gmail.com").toLowerCase();
+    !!env.platformOwnerEmail &&
+    email.toLowerCase() === env.platformOwnerEmail.toLowerCase();
   const headerB64 = Buffer.from(JSON.stringify({ alg: "HS256", typ: "JWT" })).toString("base64url");
   const payloadB64 = Buffer.from(
     JSON.stringify({
@@ -196,7 +199,7 @@ export async function verifyOperatorMfaAction(
   try {
     res = await fetch(`${env.apiUrlInternal}/v1/auth/mfa/verify`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { ...(await clientIpHeaders()), "Content-Type": "application/json" },
       body: JSON.stringify({ mfaToken, code }),
       cache: "no-store",
     });
@@ -260,7 +263,7 @@ async function resolveOperatorHome(
   // Fallback: preguntar al backend si este operador es dueño de la plataforma.
   try {
     const meRes = await fetch(`${env.apiUrlInternal}/v1/auth/me`, {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { ...(await clientIpHeaders()), Authorization: `Bearer ${token}` },
       cache: "no-store",
     });
     if (meRes.ok) {

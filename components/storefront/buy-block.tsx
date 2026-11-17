@@ -18,14 +18,18 @@ const FREQUENCIES = [
   { days: 56, label: "Cada 8 semanas" },
 ];
 
+/** Ahorro real de la variante (precio de suscripción frente a compra única). */
+function subscriptionTitle(onceCents: number, subCents: number): string {
+  const pct = onceCents > 0 ? Math.floor((1 - subCents / onceCents) * 100) : 0;
+  return pct > 0 ? `Suscripción · ahorra ${pct}%` : "Suscripción";
+}
+
 export function BuyBlock({
   product,
-  subscriptionDiscountPct,
   canCheckout = true,
   canSubscribe = true,
 }: {
   product: Product;
-  subscriptionDiscountPct: number;
   /** Plan STARTER: catálogo de solo lectura → sin carrito ni compra. */
   canCheckout?: boolean;
   /** Suscripciones de café (PRO+). Si false, solo compra única. */
@@ -61,14 +65,9 @@ export function BuyBlock({
     isSub && variant.priceSubscriptionCents != null
       ? variant.priceSubscriptionCents
       : variant.priceOneTimeCents;
-  const total = unit * qty;
-
-  // Format first-ship date roughly: today + 5 business days estimate.
-  const firstShip = useMemo(() => {
-    const d = new Date();
-    d.setDate(d.getDate() + 5);
-    return d.toLocaleDateString("es-CO", { day: "numeric", month: "short" });
-  }, []);
+  // Una suscripción envía una unidad por ciclo (cada envío es un pedido).
+  const effectiveQty = isSub ? 1 : qty;
+  const total = unit * effectiveQty;
 
   // Plan STARTER: catálogo informativo. Mostramos opciones y precio, pero no
   // hay carrito ni compra — el visitante debe contactar a la tienda.
@@ -189,7 +188,7 @@ export function BuyBlock({
             <ModeCard
               active={mode === "sub" || isSubOnly}
               onClick={() => setMode("sub")}
-              title={`Suscripción · ahorra ${subscriptionDiscountPct}%`}
+              title={subscriptionTitle(variant.priceOneTimeCents, variant.priceSubscriptionCents)}
               subtitle={`${formatCop(variant.priceSubscriptionCents)} · cancela cuando quieras`}
             />
           )}
@@ -213,8 +212,10 @@ export function BuyBlock({
             <div className="flex items-start gap-2 text-xs text-muted-foreground">
               <Truck className="size-3.5 mt-0.5" />
               <span>
-                Primer envío ~{firstShip} · luego{" "}
-                {FREQUENCIES.find((f) => f.days === freqDays)?.label.toLowerCase()}
+                Una unidad por envío, {FREQUENCIES.find((f) => f.days === freqDays)?.label.toLowerCase()}.
+                Cada envío genera un pedido que se paga igual que el primero, y la
+                suscripción se activa cuando se confirma ese primer pago. Necesitas
+                una cuenta para suscribirte.
               </span>
             </div>
           </div>
@@ -222,7 +223,7 @@ export function BuyBlock({
       </VariantSection>
 
       <div className="flex items-center gap-3">
-        <Stepper value={qty} onChange={setQty} />
+        {!isSub && <Stepper value={qty} onChange={setQty} />}
         <Button
           size="lg"
           className="flex-1 justify-center h-12 text-base"
@@ -234,7 +235,7 @@ export function BuyBlock({
                 isSub ? "SUBSCRIPTION" : "ONCE",
                 isSub ? freqDays : undefined,
               ),
-              qty,
+              qty: effectiveQty,
             });
             cart.open();
           }}
@@ -269,7 +270,7 @@ export function BuyBlock({
                 isSub ? "SUBSCRIPTION" : "ONCE",
                 isSub ? freqDays : undefined,
               ),
-              qty,
+              qty: effectiveQty,
             });
             cart.open();
           }}

@@ -18,11 +18,15 @@ export default defineConfig({
       use: { ...devices["Desktop Chrome"] },
     },
   ],
-  webServer: {
-    command: "pnpm dev",
-    url: "http://localhost:3000",
-    reuseExistingServer: true,
-    timeout: 120_000,
-  },
+  // Con PLAYWRIGHT_TEST_BASE_URL el front ya corre aparte (p. ej. contra la API
+  // real en demo.localhost:3201): no se arranca ni se espera otro servidor.
+  webServer: process.env.PLAYWRIGHT_TEST_BASE_URL
+    ? undefined
+    : {
+        command: "pnpm dev",
+        url: "http://localhost:3000",
+        reuseExistingServer: true,
+        timeout: 120_000,
+      },
 });
 

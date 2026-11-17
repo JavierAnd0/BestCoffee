@@ -14,7 +14,7 @@ type NavLink = { href: string; label: string };
 // el enlace no se muestra para no llevar a páginas vacías o bloqueadas.
 type Pages = TenantBranding["pages"];
 
-function buildLinks(features?: TenantFeatures, pages?: Pages) {
+function buildLinks(features?: TenantFeatures, pages?: Pages, collections = false) {
   // Páginas editoriales: solo si la tienda tiene las suyas.
   const has = (p: keyof Pages) => pages?.[p] ?? true;
   const catalog = features?.catalog ?? true;
@@ -24,6 +24,7 @@ function buildLinks(features?: TenantFeatures, pages?: Pages) {
 
   const left: NavLink[] = [
     ...(catalog ? [{ href: "/catalogo", label: "Catálogo" }] : []),
+    ...(collections ? [{ href: "/colecciones", label: "Colecciones" }] : []),
     ...(subs ? [{ href: "/suscripciones", label: "Suscripciones" }] : []),
     ...(accessories ? [{ href: "/accesorios", label: "Accesorios" }] : []),
     ...(has("tiendas") ? [{ href: "/tiendas", label: "Tiendas" }] : []),
@@ -33,6 +34,7 @@ function buildLinks(features?: TenantFeatures, pages?: Pages) {
 
   const mobile: NavLink[] = [
     ...(catalog ? [{ href: "/catalogo", label: "Catálogo" }] : []),
+    ...(collections ? [{ href: "/colecciones", label: "Colecciones" }] : []),
     ...(subs ? [{ href: "/suscripciones", label: "Suscripciones" }] : []),
     ...(accessories ? [{ href: "/accesorios", label: "Accesorios" }] : []),
     ...(catalog ? [{ href: "/quiz", label: "Encuentra tu café" }] : []),
@@ -51,10 +53,13 @@ export function Header({
   brand,
   features,
   branding,
+  hasCollections = false,
 }: {
   brand?: string;
   features?: TenantFeatures;
   branding?: TenantBranding;
+  /** La tienda tiene colecciones publicadas (calculado en el servidor). */
+  hasCollections?: boolean;
 }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -64,7 +69,7 @@ export function Header({
   const [searchQuery, setSearchQuery] = useState("");
 
   const { left: LEFT_LINKS, right: RIGHT_LINKS, mobile: MOBILE_LINKS } =
-    buildLinks(features, branding?.pages);
+    buildLinks(features, branding?.pages, hasCollections);
   // Catálogo de solo lectura (STARTER): sin carrito. Cuentas de cliente: PRO+.
   const showCart = features?.checkout ?? true;
   const showAccount = features?.customerAccounts ?? true;

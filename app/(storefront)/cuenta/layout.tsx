@@ -1,4 +1,6 @@
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { safeNextPath } from "@/lib/safe-next";
 import { getCurrentCustomer, hasValidCustomerSession } from "@/lib/data/account";
 import { getCustomerSession } from "@/lib/auth/session-store";
 import { env } from "@/lib/env";
@@ -15,7 +17,13 @@ export default async function AccountLayout({ children }: { children: React.Reac
   if (!env.useMocks) {
     const { token } = await getCustomerSession();
     if (!token || !(await hasValidCustomerSession())) {
-      redirect("/login?next=/cuenta");
+      // Vuelve a la subpágina pedida (el proxy la pasa en `x-request-path`);
+      // solo se aceptan rutas internas bajo /cuenta.
+      const requested = safeNextPath((await headers()).get("x-request-path"));
+      const next = requested === "/cuenta" || requested.startsWith("/cuenta/") || requested.startsWith("/cuenta?")
+        ? requested
+        : "/cuenta";
+      redirect(`/login?next=${encodeURIComponent(next)}`);
     }
   }
   const customer = await getCurrentCustomer();

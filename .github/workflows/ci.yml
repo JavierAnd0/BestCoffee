@@ -74,3 +74,136 @@ jobs:
           path: playwright-report/
           retention-days: 14
 
+
+  # Panel /admin contra la API real: levanta Postgres, el backend (rama main de
+  # bestcoffe-Backend) con la tienda demo sembrada y el front sin mocks, y corre
+  # e2e/admin-real-api.spec.ts. Detecta desajustes entre el panel y la API que
+  # la suite con mocks no puede ver. Los secretos se generan en cada ejecución.
+  e2e-real-api:
+    name: E2E del panel contra la API real
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: bestcoffee_e2e
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/bestcoffee_e2e
+      DIRECT_URL: postgresql://postgres:postgres@localhost:5432/bestcoffee_e2e
+      # Rama del backend contra la que se prueba (cámbiala en un PR que dependa
+      # de cambios del backend aún sin fusionar).
+      BACKEND_REF: main
+
+    steps:
+      - name: Checkout front
+        uses: actions/checkout@v4
+
+      - name: Checkout backend
+        uses: actions/checkout@v4
+        with:
+          repository: JavierAnd0/bestcoffe-Backend
+          ref: ${{ env.BACKEND_REF }}
+          path: .backend
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.1.3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Secretos de la ejecución y host de la tienda
+        shell: bash
+        run: |
+          echo "E2E_JWT_SECRET=$(openssl rand -hex 32)" >> "$GITHUB_ENV"
+          echo "E2E_INTERNAL_SECRET=$(openssl rand -hex 32)" >> "$GITHUB_ENV"
+          echo "127.0.0.1 demo.localhost" | sudo tee -a /etc/hosts
+
+      - name: Backend · instalar, migrar, sembrar la demo y compilar
+        working-directory: .backend
+        run: |
+          pnpm install --frozen-lockfile --ignore-scripts
+          pnpm rebuild esbuild prisma @prisma/engines @prisma/client unrs-resolver protobufjs "@node-rs/argon2"
+          pnpm db:generate
+          pnpm prisma migrate deploy
+          node --import tsx scripts/seed-demo-tenant.ts
+          pnpm build
+
+      - name: Backend · arrancar
+        working-directory: .backend
+        shell: bash
+        run: |
+          NODE_ENV=development PORT=3001 \
+          WEB_APP_URL=http://demo.localhost:3000 \
+          JWT_SECRET="$E2E_JWT_SECRET" REVALIDATE_SECRET="$E2E_INTERNAL_SECRET" \
+            nohup node dist/main > ../backend.log 2>&1 &
+          for i in $(seq 1 60); do curl -sf http://localhost:3001/health && exit 0; sleep 2; done
+          cat ../backend.log; exit 1
+
+      - name: Operador dueño de la demo
+        shell: bash
+        run: |
+          id=$(psql "$DATABASE_URL" -tAc "select id from \"User\" where email = 'dueno@demo.test'")
+          test -n "$id" || { echo "La demo no sembró su operador"; exit 1; }
+          echo "E2E_OPERATOR_ID=$id" >> "$GITHUB_ENV"
+          echo "E2E_OPERATOR_EMAIL=dueno@demo.test" >> "$GITHUB_ENV"
+
+      - name: Front · instalar
+        run: pnpm install --frozen-lockfile
+
+      - name: Front · arrancar sin mocks contra el backend
+        shell: bash
+        env:
+          USE_MOCKS: "false"
+          NEXT_PUBLIC_API_URL: http://localhost:3001
+          API_URL_INTERNAL: http://localhost:3001
+          DEFAULT_TENANT_SLUG: demo
+          NEXT_PUBLIC_PLATFORM_DOMAIN: bestcoffee.io
+          NEXT_PUBLIC_NEON_AUTH_URL: https://ep-flat-haze-acncceyy.neonauth.sa-east-1.aws.neon.tech/neondb/auth
+          NEON_AUTH_BASE_URL: https://ep-flat-haze-acncceyy.neonauth.sa-east-1.aws.neon.tech/neondb/auth
+          NEON_AUTH_COOKIE_SECRET: dev-neon-auth-cookie-secret-min-32-chars-long!
+          AUTH_SECRET: dev-auth-secret-for-ci-tests-at-least-32-chars!
+        run: |
+          REVALIDATE_SECRET="$E2E_INTERNAL_SECRET" nohup pnpm dev > front.log 2>&1 &
+          for i in $(seq 1 90); do curl -sf -o /dev/null http://demo.localhost:3000/ && exit 0; sleep 2; done
+          cat front.log; exit 1
+
+      - name: Install Playwright Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: E2E del panel contra la API real
+        env:
+          PLAYWRIGHT_TEST_BASE_URL: http://demo.localhost:3000
+          E2E_API_URL: http://localhost:3001
+          E2E_TENANT_SLUG: demo
+        run: pnpm exec playwright test e2e/admin-real-api.spec.ts
+
+      - name: Logs y reporte
+        if: ${{ !cancelled() }}
+        shell: bash
+        run: |
+          echo "── backend ──"; tail -n 200 backend.log || true
+          echo "── front ──"; tail -n 200 front.log || true
+
+      - name: Upload Playwright Report
+        uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: playwright-report-real-api
+          path: playwright-report/
+          retention-days: 14

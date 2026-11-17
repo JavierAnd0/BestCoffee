@@ -7,6 +7,7 @@ import { Logo } from "@/components/storefront/logo";
 import { useBrand } from "@/components/storefront/brand-context";
 import { registerAction, logoutAction, type RegisterState } from "@/lib/actions/auth";
 import { authClient } from "@/lib/auth/client";
+import { AuthAside } from "../auth-aside";
 
 const PASSWORD_RULES = [
   { label: "Mínimo 8 caracteres", test: (p: string) => p.length >= 8 },
@@ -73,51 +74,26 @@ export default function RegistroPage() {
   return (
     <div className="min-h-screen grid lg:grid-cols-[5fr_7fr]">
 
-      {/* ── Panel izquierdo: brand ── */}
-      <aside
-        className="hidden lg:flex flex-col justify-between p-10 relative overflow-hidden"
-        style={{ background: "var(--cream-dark)" }}
-      >
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0 opacity-[0.04] mix-blend-multiply"
-          style={{ backgroundImage: "var(--grain)", backgroundRepeat: "repeat", backgroundSize: "200px" }}
-        />
-
-        <Logo size={18} href="/" className="relative z-10" />
-
-        <div className="relative z-10 space-y-10">
-          {/* Benefit list */}
-          <div className="space-y-5">
-            {[
-              { title: "Envíos con descuento", body: "15% de ahorro en cada entrega con tu suscripción activa." },
-              { title: "Historial de pedidos", body: "Revisa, reordena y gestiona tus compras desde un solo lugar." },
-              { title: "Suscripciones flexibles", body: "Pausa, cambia o cancela cuando quieras. Sin compromisos." },
-            ].map(({ title, body }) => (
-              <div key={title} className="flex gap-3">
-                <span className="size-5 rounded-full bg-foreground/10 grid place-items-center shrink-0 mt-0.5">
-                  <Check className="size-3" strokeWidth={2.5} />
-                </span>
-                <div>
-                  <div className="font-medium text-sm">{title}</div>
-                  <div className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{body}</div>
-                </div>
+      {/* ── Panel izquierdo: datos de la tienda ── */}
+      <AuthAside>
+        {/* Benefit list */}
+        <div className="space-y-5">
+          {[
+            { title: "Historial de pedidos", body: "Revisa, reordena y gestiona tus compras desde un solo lugar." },
+            { title: "Suscripciones flexibles", body: "Pausa, cambia o cancela cuando quieras. Sin compromisos." },
+          ].map(({ title, body }) => (
+            <div key={title} className="flex gap-3">
+              <span className="size-5 rounded-full bg-foreground/10 grid place-items-center shrink-0 mt-0.5">
+                <Check className="size-3" strokeWidth={2.5} />
+              </span>
+              <div>
+                <div className="font-medium text-sm">{title}</div>
+                <div className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{body}</div>
               </div>
-            ))}
-          </div>
-
-          {/* Pull stat */}
-          <div className="border-t border-foreground/10 pt-8">
-            <p className="font-display italic font-light leading-tight" style={{ fontSize: "clamp(1.5rem, 2.8vw, 2.1rem)" }}>
-              “+3.200 suscriptores ya reciben su café fresco cada mes.”
-            </p>
-          </div>
+            </div>
+          ))}
         </div>
-
-        <p className="relative z-10 text-xs tracking-[0.16em] uppercase text-muted-foreground font-medium">
-          Café de especialidad · Bogotá, Colombia
-        </p>
-      </aside>
+      </AuthAside>
 
       {/* ── Panel derecho: formulario ── */}
       <main className="flex flex-col px-6 py-10 sm:px-12 lg:px-20">

@@ -1,6 +1,7 @@
 import { demoHeaders } from "../demo";
 import { cookies } from "next/headers";
 import { env } from "../env";
+import { clientIpHeaders } from "./client-ip";
 import {
   getCustomerSession,
   getOperatorSession,
@@ -53,6 +54,7 @@ export async function customerFetch<T = unknown>(
 
   const reqHeaders: Record<string, string> = {
     ...(await demoHeaders()),
+    ...(await clientIpHeaders()),
     "X-Tenant-Slug": tenantSlug,
     ...(init.body !== undefined ? { "Content-Type": "application/json" } : {}),
     ...(token
@@ -110,6 +112,7 @@ export async function operatorFetch<T = unknown>(
   const { token, tenantSlug } = await getOperatorSession();
 
   const reqHeaders: Record<string, string> = {
+    ...(await clientIpHeaders()),
     "X-Tenant-Slug": tenantSlug,
     ...(init.body !== undefined ? { "Content-Type": "application/json" } : {}),
     ...(token ? { Authorization: `Bearer ${token}` } : {}),

@@ -38,45 +38,52 @@ export function CancelModal({
             Antes de cancelar…
           </DialogTitle>
           <DialogDescription>
-            ¿Demasiado café? Prueba una opción más flexible antes de cancelar tu
-            suscripción de {productName}.
+            {onSkipNext || onPause || onReduceFrequency
+              ? `¿Demasiado café? Prueba una opción más flexible antes de cancelar tu suscripción de ${productName}.`
+              : `Vas a cancelar tu suscripción de ${productName}. No se generarán más pedidos.`}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-2">
-          <Option
-            icon={<SkipForward className="size-4" />}
-            title="Saltar el próximo envío"
-            body="Retoma automáticamente en el siguiente ciclo."
-            actionLabel="Saltar"
-            disabled={pending}
-            onClick={() => {
-              onSkipNext?.();
-              onOpenChange(false);
-            }}
-          />
-          <Option
-            icon={<PauseCircle className="size-4" />}
-            title="Pausar la suscripción"
-            body="Sin envíos hasta que la reactives."
-            actionLabel="Pausar"
-            disabled={pending}
-            onClick={() => {
-              onPause?.();
-              onOpenChange(false);
-            }}
-          />
-          <Option
-            icon={<ChevronDown className="size-4" />}
-            title="Reducir la frecuencia"
-            body="Recibe con menos frecuencia, por ejemplo cada 8 semanas."
-            actionLabel="Cambiar"
-            disabled={pending}
-            onClick={() => {
-              onReduceFrequency?.();
-              onOpenChange(false);
-            }}
-          />
+          {onSkipNext && (
+            <Option
+              icon={<SkipForward className="size-4" />}
+              title="Saltar el próximo envío"
+              body="Retoma automáticamente en el siguiente ciclo."
+              actionLabel="Saltar"
+              disabled={pending}
+              onClick={() => {
+                onSkipNext?.();
+                onOpenChange(false);
+              }}
+            />
+          )}
+          {onPause && (
+            <Option
+              icon={<PauseCircle className="size-4" />}
+              title="Pausar la suscripción"
+              body="Sin envíos hasta que la reactives."
+              actionLabel="Pausar"
+              disabled={pending}
+              onClick={() => {
+                onPause?.();
+                onOpenChange(false);
+              }}
+            />
+          )}
+          {onReduceFrequency && (
+            <Option
+              icon={<ChevronDown className="size-4" />}
+              title="Reducir la frecuencia"
+              body="Recibe con menos frecuencia, por ejemplo cada 8 semanas."
+              actionLabel="Cambiar"
+              disabled={pending}
+              onClick={() => {
+                onReduceFrequency?.();
+                onOpenChange(false);
+              }}
+            />
+          )}
         </div>
 
         <DialogFooter className="flex sm:justify-between gap-3">
