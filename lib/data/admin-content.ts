@@ -1,5 +1,6 @@
 import { env } from "../env";
 import { operatorFetch } from "../api/gateway";
+import type { AdminEditorialPage } from "../editorial-pages";
 
 // Lecturas del panel para el contenido editorial de la tienda: bloques de la
 // home (/v1/admin/content), blog, guías de preparación y sedes. Tipos locales:
@@ -140,4 +141,14 @@ export function listAdminLocations() {
 
 export function getAdminLocation(id: string) {
   return read<AdminLocation | null>(`/v1/admin/locations/${encodeURIComponent(id)}`, null);
+}
+
+// ── Páginas editoriales ───────────────────────────────────────────────────────
+
+export function listAdminPages() {
+  return read<AdminEditorialPage[]>("/v1/admin/pages", []);
+}
+
+export function getAdminPage(slug: string) {
+  return read<AdminEditorialPage | null>(`/v1/admin/pages/${encodeURIComponent(slug)}`, null);
 }

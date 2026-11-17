@@ -5,6 +5,7 @@ import { env } from "../env";
 import { resolveActiveTenantSlug } from "../tenant";
 import { TENANT_ORIGEN } from "../mocks/tenant";
 import type { TenantNewsletter } from "../types";
+import { clientIpHeaders } from "@/lib/api/client-ip";
 
 const subscribeSchema = z.object({
   email: z
@@ -52,6 +53,7 @@ export async function subscribeNewsletterAction(input: {
     res = await fetch(`${env.apiUrlInternal}/v1/newsletter/subscribe`, {
       method: "POST",
       headers: {
+        ...(await clientIpHeaders()),
         "Content-Type": "application/json",
         "X-Tenant-Slug": tenantSlug,
       },

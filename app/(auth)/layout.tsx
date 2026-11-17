@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { requireFeature } from "@/lib/data/feature-guard";
 import { getCurrentTenant } from "@/lib/data/tenant";
 import { BrandProvider } from "@/components/storefront/brand-context";
+import { AuthStoreProvider } from "./auth-aside";
 
 // Depende del tenant de cada petición (host): nunca debe prerenderizarse en el build.
 export const dynamic = "force-dynamic";
@@ -20,7 +21,15 @@ export default async function AuthLayout({ children }: { children: React.ReactNo
   const tenant = await getCurrentTenant();
   return (
     <BrandProvider brand={tenant.brand} logoUrl={tenant.branding.logoUrl}>
-      {children}
+      <AuthStoreProvider
+        value={{
+          brand: tenant.brand,
+          tagline: tenant.tagline?.trim() || null,
+          city: tenant.branding.city?.trim() || null,
+        }}
+      >
+        {children}
+      </AuthStoreProvider>
     </BrandProvider>
   );
 }

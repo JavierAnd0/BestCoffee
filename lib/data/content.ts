@@ -8,6 +8,9 @@ import {
   type ApiHeroBlock,
 } from "../api/mappers";
 import { getProductBySlug } from "./products";
+import { headers } from "next/headers";
+import { tenantCacheTag } from "./cache-tags";
+import type { ContentPageSlug, EditorialPageContent } from "../editorial-pages";
 import {
   ANNOUNCE_MESSAGES,
   HERO_HOME,
@@ -97,4 +100,33 @@ export async function getFeaturedPack(): Promise<FeaturedPackContent | null> {
     bagsCount: found.length,
     productSlug: slugs[0] ?? "",
   };
+}
+
+// ── Páginas editoriales (historia, impacto, sostenibilidad, mayoristas) ───────
+
+/**
+ * Contenido de una página editorial de la tienda actual. `null` si la tienda la
+ * tiene apagada, no la ha escrito o la API falla: la página responde 404 y
+ * nunca se rellena con el texto de otra marca. Con mocks no hay contenido.
+ */
+export async function getEditorialPage(slug: ContentPageSlug): Promise<EditorialPageContent | null> {
+  if (env.useMocks) return null;
+  try {
+    const h = await headers();
+    const tenantSlug = h.get("x-tenant-slug") ?? env.defaultTenantSlug;
+    const res = await fetch(`${env.apiUrlInternal}/v1/content/pages/${encodeURIComponent(slug)}`, {
+      headers: { "X-Tenant-Slug": tenantSlug },
+      // La API revalida estas etiquetas al guardar la página (app/api/revalidate).
+      next: {
+        revalidate: 3600,
+        tags: [tenantCacheTag(tenantSlug, "pages"), tenantCacheTag(tenantSlug, `page:${slug}`)],
+      },
+    });
+    if (!res.ok) return null;
+    const data = (await res.json()) as Partial<EditorialPageContent> | null;
+    if (!data || typeof data.title !== "string" || !data.title.trim()) return null;
+    return { ...data, title: data.title, sections: Array.isArray(data.sections) ? data.sections : [] };
+  } catch {
+    return null;
+  }
 }

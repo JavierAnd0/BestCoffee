@@ -1,15 +1,33 @@
 import { handleUpload, type HandleUploadBody } from "@vercel/blob/client";
-import { operatorStorageTenant, productImagePrefix } from "@/lib/auth/operator-guard";
+import { operatorStorageTenant } from "@/lib/auth/operator-guard";
+import { IMAGE_CONTENT_TYPES, isAllowedUploadPath } from "@/lib/storage/blob-paths";
 import { NextResponse } from "next/server";
 
-// Emite tokens para que el navegador suba imágenes de producto directo a
-// Vercel Blob (sin pasar el archivo por esta función → sin límite de 4.5 MB).
+// Emite tokens para que el navegador suba imágenes directo a Vercel Blob (sin
+// pasar el archivo por esta función → sin límite de 4.5 MB): galería de
+// productos (products/<tienda>/…) y contenido (content/<tienda>/<blog|guides|pages>/…).
 // Requiere BLOB_READ_WRITE_TOKEN en el entorno.
 
 const MAX_BYTES = 8 * 1024 * 1024; // 8 MB
 
 export async function POST(request: Request): Promise<NextResponse> {
-  const body = (await request.json()) as HandleUploadBody;
+  let body: HandleUploadBody;
+  try {
+    body = (await request.json()) as HandleUploadBody;
+  } catch {
+    return NextResponse.json({ error: "Cuerpo inválido" }, { status: 400 });
+  }
+
+  // Autorización ANTES de tocar Vercel Blob: sin operador de esta tienda o con
+  // una ruta fuera de sus carpetas no se llega a pedir ningún token.
+  if (body?.type === "blob.generate-client-token") {
+    const tenantSlug = await operatorStorageTenant();
+    if (!tenantSlug) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+    const pathname = (body.payload as { pathname?: unknown } | undefined)?.pathname;
+    if (typeof pathname !== "string" || !isAllowedUploadPath(pathname, tenantSlug)) {
+      return NextResponse.json({ error: "Ruta inválida" }, { status: 403 });
+    }
+  }
 
   try {
     const json = await handleUpload({
@@ -22,11 +40,10 @@ export async function POST(request: Request): Promise<NextResponse> {
         // carpeta de su tienda: el backend confirma la membresía.
         const tenantSlug = await operatorStorageTenant();
         if (!tenantSlug) throw new Error("No autorizado");
-        if (!pathname.startsWith(productImagePrefix(tenantSlug)) || pathname.includes(".."))
-          throw new Error("Ruta inválida");
+        if (!isAllowedUploadPath(pathname, tenantSlug)) throw new Error("Ruta inválida");
 
         return {
-          allowedContentTypes: ["image/jpeg", "image/png", "image/webp", "image/avif"],
+          allowedContentTypes: IMAGE_CONTENT_TYPES,
           maximumSizeInBytes: MAX_BYTES,
           addRandomSuffix: true,
         };

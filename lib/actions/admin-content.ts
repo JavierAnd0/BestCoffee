@@ -7,6 +7,7 @@ import { operatorFetch } from "../api/gateway";
 import { getOperatorSession } from "../auth/session-store";
 import { tenantCacheTag } from "../data/cache-tags";
 import type { BrewDifficulty, ContentKind } from "../data/admin-content";
+import { isContentPageSlug, type EditorialPageContent } from "../editorial-pages";
 
 // Acciones del panel para el contenido editorial: bloques de la home, blog,
 // guías y sedes. El backend valida, aísla por tienda y avisa al front
@@ -36,7 +37,7 @@ async function refreshStorefront(tags: string[]) {
 
 async function send(
   path: string,
-  method: "POST" | "PATCH" | "DELETE",
+  method: "POST" | "PATCH" | "PUT" | "DELETE",
   body: unknown,
   fallback: string,
 ): Promise<ContentActionResult & { data?: unknown }> {
@@ -356,5 +357,80 @@ export async function deleteLocationAction(id: string): Promise<ContentActionRes
   if (!r.ok) return r;
   await refreshStorefront(["locations"]);
   revalidatePath(`${BASE}/sedes`);
+  return { ok: true };
+}
+
+// ── Páginas editoriales (/v1/admin/pages) ─────────────────────────────────────
+
+const PAGE_SLUGS = ["historia", "impacto", "sostenibilidad", "mayoristas", "tiendas"];
+
+/** Menús, sitemap y llms.txt leen las páginas activas del perfil de la tienda. */
+async function refreshPage(slug: string) {
+  await refreshStorefront(["settings", "pages", `page:${slug}`]);
+  revalidatePath(`${BASE}/paginas`);
+}
+
+/** Quita textos vacíos (la API valida formato solo de lo que llega) y filas vacías. */
+function pruneEmpty(value: unknown): unknown {
+  if (typeof value === "string") return value.trim() ? value : undefined;
+  if (Array.isArray(value)) {
+    return value.map(pruneEmpty).filter((v) => v !== undefined && !(typeof v === "object" && v && !Object.keys(v).length));
+  }
+  if (value && typeof value === "object") {
+    const out = Object.fromEntries(
+      Object.entries(value as Record<string, unknown>)
+        .map(([k, v]) => [k, pruneEmpty(v)] as const)
+        .filter(([, v]) => v !== undefined),
+    );
+    return Object.keys(out).length ? out : undefined;
+  }
+  return value;
+}
+
+/**
+ * Guarda el texto de una página. El formulario manda el contenido completo
+ * como JSON en `content` (secciones y cifras son listas editables); la API lo
+ * valida y lo sanea. `activate` = guardar y activar en un paso.
+ */
+export async function saveEditorialPageAction(
+  _prev: ContentActionResult | null,
+  fd: FormData,
+): Promise<ContentActionResult> {
+  const slug = text(fd, "slug");
+  if (!isContentPageSlug(slug)) return { ok: false, error: "Página no válida." };
+  let content: EditorialPageContent;
+  try {
+    content = JSON.parse(String(fd.get("content") ?? "")) as EditorialPageContent;
+  } catch {
+    return { ok: false, error: "El contenido no tiene un formato válido." };
+  }
+  if (!content || typeof content.title !== "string" || !content.title.trim()) {
+    return { ok: false, error: "Escribe el título de la página." };
+  }
+  const activate = fd.get("activate") === "on";
+  const cleaned = pruneEmpty(content) as EditorialPageContent;
+  cleaned.sections ??= [];
+  // Una cifra a medias no se puede mostrar.
+  if (cleaned.highlights?.some((h) => !h.value || !h.label)) {
+    return { ok: false, error: "Cada cifra necesita el dato y lo que mide." };
+  }
+
+  const r = await send(
+    `/v1/admin/pages/${slug}`,
+    "PUT",
+    { content: cleaned, ...(activate && { active: true }) },
+    "No se pudo guardar la página.",
+  );
+  if (!r.ok) return r;
+  await refreshPage(slug);
+  redirect(`${BASE}/paginas`);
+}
+
+/** Activa o desactiva una página (la misma bandera que ve el superadmin). */
+export async function setEditorialPageActiveAction(slug: string, active: boolean): Promise<ContentActionResult> {
+  if (!PAGE_SLUGS.includes(slug)) return { ok: false, error: "Página no válida." };
+  const r = await send(`/v1/admin/pages/${slug}`, "PUT", { active }, "No se pudo cambiar el estado de la página.");
+  if (!r.ok) return r;
+  await refreshPage(slug);
   return { ok: true };
 }

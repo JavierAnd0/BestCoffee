@@ -7,6 +7,7 @@ import { resolveActiveTenantSlug } from "../tenant";
 import { authHeaders } from "../data/account";
 import type { CartItem } from "@/components/storefront/cart-context";
 import type { MpPaymentData } from "@/components/storefront/mercadopago-fields";
+import { clientIpHeaders } from "@/lib/api/client-ip";
 
 export interface OrderContact {
   email: string;
@@ -168,6 +169,7 @@ export async function placeOrderAction(
         ? await fetch(`${env.apiUrlInternal}/v1/orders`, {
             method: "POST",
             headers: {
+              ...(await clientIpHeaders()),
               "Content-Type": "application/json",
               "X-Tenant-Slug": tenantSlug,
               ...demoExtra,
@@ -182,6 +184,7 @@ export async function placeOrderAction(
           await fetch(`${env.apiUrlInternal}/v1/orders/guest`, {
             method: "POST",
             headers: {
+              ...(await clientIpHeaders()),
               "Content-Type": "application/json",
               "X-Tenant-Slug": tenantSlug,
               ...demoExtra,

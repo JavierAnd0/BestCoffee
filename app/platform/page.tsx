@@ -2,8 +2,21 @@ import Link from "next/link";
 import { Coffee, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Eyebrow } from "@/components/ui/eyebrow";
+import { env } from "@/lib/env";
+
+/**
+ * Tienda de ejemplo en `<slug>.<NEXT_PUBLIC_PLATFORM_DOMAIN>` (la tienda por
+ * defecto). Sin dominio de plataforma configurado no hay enlace.
+ */
+function demoStoreUrl(): string | null {
+  const domain = process.env.NEXT_PUBLIC_PLATFORM_DOMAIN?.trim().replace(/^https?:\/\//, "").replace(/\/+$/, "");
+  if (!domain || !env.defaultTenantSlug) return null;
+  const local = /(^|\.)localhost(:\d+)?$/.test(domain);
+  return `${local ? "http" : "https"}://${env.defaultTenantSlug}.${domain}`;
+}
 
 export default function PlatformLanding() {
+  const demoUrl = demoStoreUrl();
   return (
     <div className="min-h-screen flex flex-col">
       <header className="border-b border-border">
@@ -52,15 +65,19 @@ export default function PlatformLanding() {
                 </Link>
               }
             />
-            <Button
-              size="lg"
-              variant="outline"
-              render={<Link href="http://origen.localhost:3000">Ver demo de tienda</Link>}
-            />
+            {demoUrl && (
+              <Button
+                size="lg"
+                variant="outline"
+                render={<a href={demoUrl}>Ver demo de tienda</a>}
+              />
+            )}
           </div>
-          <p className="mt-6 text-xs text-muted-foreground">
-            La demo abre la tienda piloto ORÍGEN en otro subdominio.
-          </p>
+          {demoUrl && (
+            <p className="mt-6 text-xs text-muted-foreground">
+              La demo abre una tienda de ejemplo en su propio subdominio.
+            </p>
+          )}
         </section>
 
         <section className="border-t border-border bg-muted/40">

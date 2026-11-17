@@ -8,6 +8,7 @@ import { useContentForm } from "../_components/use-content-form";
 import type { AdminBrewGuide, AdminBrewStep } from "@/lib/data/admin-content";
 import { FieldLabel, FormError, FormSection, TextArea, TextField, inputClass } from "../_components/fields";
 import { FormActions } from "../_components/submit-button";
+import { ImageUploadField } from "@/components/admin/image-upload-field";
 
 type StepRow = AdminBrewStep & { key: number };
 
@@ -72,7 +73,13 @@ export function GuideForm({ guide }: { guide?: AdminBrewGuide }) {
             </select>
           </FieldLabel>
         </div>
-        <TextField label="Imagen de portada (URL, opcional)" name="coverUrl" type="url" maxLength={500} defaultValue={guide?.coverUrl ?? ""} placeholder="https://" />
+        <ImageUploadField
+          label="Imagen de portada (opcional)"
+          name="coverUrl"
+          folder="guides"
+          defaultValue={guide?.coverUrl ?? ""}
+          hint="Sube una imagen (JPG, PNG, WebP o AVIF, hasta 8 MB) o pega su URL."
+        />
       </FormSection>
 
       <FormSection title="Pasos">

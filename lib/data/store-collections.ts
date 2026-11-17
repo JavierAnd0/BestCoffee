@@ -7,6 +7,7 @@ import { tenantCacheTag } from "./cache-tags";
 import { apiServer } from "../api/client";
 import { mapProduct, type ApiProduct } from "../api/mappers";
 import type { Product } from "../types";
+import { serverOriginHeaders } from "@/lib/api/client-ip";
 
 export interface StoreCollection {
   id: string;
@@ -63,7 +64,7 @@ export const storeHasCollections = cache(async (): Promise<boolean> => {
   try {
     const slug = (await headers()).get("x-tenant-slug") ?? env.defaultTenantSlug;
     const res = await fetch(`${env.apiUrlInternal}/v1/collections`, {
-      headers: { "X-Tenant-Slug": slug },
+      headers: { ...serverOriginHeaders(), "X-Tenant-Slug": slug },
       next: { revalidate: 300, tags: [tenantCacheTag(slug, "collections")] },
     });
     if (!res.ok) return false;

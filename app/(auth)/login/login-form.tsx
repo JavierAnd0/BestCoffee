@@ -7,6 +7,7 @@ import { Logo } from "@/components/storefront/logo";
 import { useBrand } from "@/components/storefront/brand-context";
 import { loginAction, logoutAction, type AuthState } from "@/lib/actions/auth";
 import { authClient } from "@/lib/auth/client";
+import { AuthAside } from "../auth-aside";
 
 const OAUTH_ERROR_MESSAGES: Record<string, string> = {
   state_mismatch:
@@ -81,35 +82,8 @@ export function LoginForm({
   return (
     <div className="min-h-screen grid lg:grid-cols-[5fr_7fr]">
 
-      {/* ── Panel izquierdo: brand ── */}
-      <aside
-        className="hidden lg:flex flex-col justify-between p-10 relative overflow-hidden"
-        style={{ background: "var(--cream-dark)" }}
-      >
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0 opacity-[0.04] mix-blend-multiply"
-          style={{ backgroundImage: "var(--grain)", backgroundRepeat: "repeat", backgroundSize: "200px" }}
-        />
-        <Logo size={18} href="/" className="relative z-10" />
-        <div className="relative z-10 space-y-8">
-          <blockquote>
-            <p className="font-display italic font-light leading-[1.18] tracking-[-0.02em]" style={{ fontSize: "clamp(2rem, 3.5vw, 2.75rem)" }}>
-              “Tostamos en lotes&nbsp;pequeños para que cada grano llegue a tu taza en su mejor momento.”
-            </p>
-          </blockquote>
-          <div className="flex items-center gap-4">
-            <span className="block w-8 h-px bg-foreground/30" />
-            <div>
-              <div className="text-sm font-medium">Cooperativa Banko Dhadhato</div>
-              <div className="text-xs text-muted-foreground">Guji, Etiopía · 1.950 msnm</div>
-            </div>
-          </div>
-        </div>
-        <p className="relative z-10 text-xs tracking-[0.16em] uppercase text-muted-foreground font-medium">
-          Café de especialidad · Bogotá, Colombia
-        </p>
-      </aside>
+      {/* ── Panel izquierdo: datos de la tienda ── */}
+      <AuthAside />
 
       {/* ── Panel derecho: form ── */}
       <main className="flex flex-col px-6 py-10 sm:px-12 lg:px-20">

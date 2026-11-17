@@ -11,6 +11,7 @@ import {
   setCustomerSessionCookies,
 } from "../auth/session-store";
 import { sendPasswordResetEmail } from "../email/resend";
+import { clientIpHeaders } from "@/lib/api/client-ip";
 
 export type AuthState = { error: string } | null;
 export type RegisterState = null | { error: string } | { success: true; message: string };
@@ -63,6 +64,7 @@ export async function loginAction(
     res = await fetch(`${env.apiUrlInternal}/v1/auth/customer/login`, {
       method: "POST",
       headers: {
+        ...(await clientIpHeaders()),
         "Content-Type": "application/json",
         "X-Tenant-Slug": tenantSlug,
       },
@@ -134,6 +136,7 @@ export async function registerAction(
     res = await fetch(`${env.apiUrlInternal}/v1/auth/customer/register`, {
       method: "POST",
       headers: {
+        ...(await clientIpHeaders()),
         "Content-Type": "application/json",
         "X-Tenant-Slug": tenantSlug,
       },
@@ -187,6 +190,7 @@ export async function requestPasswordResetAction(
     const res = await fetch(`${env.apiUrlInternal}/v1/auth/customer/forgot-password`, {
       method: "POST",
       headers: {
+        ...(await clientIpHeaders()),
         "Content-Type": "application/json",
         "X-Tenant-Slug": tenantSlug,
       },
@@ -219,6 +223,7 @@ export async function logoutAction(shouldRedirect: boolean | FormData = true) {
     await fetch(`${env.apiUrlInternal}/v1/auth/customer/logout`, {
       method: "POST",
       headers: {
+        ...(await clientIpHeaders()),
         "X-Tenant-Slug": tenantSlug,
         ...(token
           ? {

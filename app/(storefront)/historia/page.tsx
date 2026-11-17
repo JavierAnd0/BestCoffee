@@ -1,89 +1,76 @@
-import { requireEditorialPage } from "@/lib/data/feature-guard";
 import type { Metadata } from "next";
-import Image from "next/image";
+import { notFound } from "next/navigation";
+import { requireEditorialPage } from "@/lib/data/feature-guard";
+import { getEditorialPage } from "@/lib/data/content";
 import { Eyebrow } from "@/components/ui/eyebrow";
+import { EditorialText, PageImage, SectionFigure } from "@/components/storefront/editorial-page";
 
-export const metadata: Metadata = { title: "Nuestra historia" };
+// Texto e imágenes de la propia tienda (panel → Contenido → Páginas).
+
+export async function generateMetadata(): Promise<Metadata> {
+  const page = await getEditorialPage("historia");
+  return page ? { title: page.title, description: page.intro } : { title: "Nuestra historia" };
+}
 
 export default async function HistoriaPage() {
   await requireEditorialPage("historia");
+  const page = await getEditorialPage("historia");
+  if (!page) notFound();
+  const hasImage = Boolean(page.imageUrl);
+
   return (
     <>
-      <section className="relative isolate h-[440px] grid place-items-center overflow-hidden">
-        <Image
-          src="/img/taza-granos.jpg"
-          alt="Café de especialidad en grano y taza"
-          fill
-          priority
-          sizes="100vw"
-          className="object-cover object-center brightness-[0.45]"
-        />
+      <section
+        className={
+          "relative isolate grid place-items-center overflow-hidden " + (hasImage ? "h-[440px]" : "py-20")
+        }
+      >
+        {hasImage && (
+          <>
+            <PageImage
+              url={page.imageUrl}
+              alt={page.imageAlt}
+              priority
+              sizes="100vw"
+              className="object-cover object-center brightness-[0.45]"
+            />
+            <div
+              aria-hidden="true"
+              className="absolute inset-0 bg-gradient-to-t from-background via-black/30 to-black/50"
+            />
+          </>
+        )}
         <div
-          aria-hidden="true"
-          className="absolute inset-0 bg-gradient-to-t from-background via-black/30 to-black/50"
-        />
-        <div className="relative text-center text-white px-6 max-w-2xl mx-auto space-y-3">
-          <Eyebrow className="text-white/80">Desde 2018</Eyebrow>
-          <h1 className="mt-2 font-display text-5xl lg:text-7xl font-semibold tracking-tight">
-            Nuestra historia
-          </h1>
-          <p className="text-sm sm:text-base text-white/80 max-w-lg mx-auto font-light leading-relaxed">
-            De una pequeña bodega con tostador de 5 kilos en Chapinero a más de 40 familias caficultoras aliadas en toda Colombia.
-          </p>
+          className={
+            "relative text-center px-6 max-w-2xl mx-auto space-y-3 " + (hasImage ? "text-white" : "")
+          }
+        >
+          {page.eyebrow && <Eyebrow className={hasImage ? "text-white/80" : undefined}>{page.eyebrow}</Eyebrow>}
+          <h1 className="mt-2 font-display text-5xl lg:text-7xl font-semibold tracking-tight">{page.title}</h1>
+          {page.intro && (
+            <p
+              className={
+                "text-sm sm:text-base max-w-lg mx-auto font-light leading-relaxed " +
+                (hasImage ? "text-white/80" : "text-muted-foreground")
+              }
+            >
+              {page.intro}
+            </p>
+          )}
         </div>
       </section>
 
       <div className="mx-auto max-w-2xl px-4 sm:px-6 lg:px-8 py-20 space-y-7">
-        <p className="font-display text-xl leading-relaxed">
-          ORÍGEN nació en una bodega pequeña de Chapinero con un solo tostador de
-          5 kilos y la idea fija de que el café colombiano de alta calidad debía
-          quedarse en Colombia.
-        </p>
-        <p className="text-base text-foreground/90 leading-relaxed">
-          Empezamos comprándole a tres familias en Huila y Nariño. Hoy trabajamos
-          con más de 40 fincas y mantenemos relación directa con cada productora y
-          productor. Pagamos en promedio 60% por encima del precio C de bolsa
-          según el lote y el resultado de la cata.
-        </p>
-
-        {/* Fotografía editorial real de sacos de café de Colombia */}
-        <div className="relative aspect-[16/9] w-full rounded-2xl overflow-hidden my-8 shadow-md border border-border">
-          <Image
-            src="/img/bulto-colombia.jpg"
-            alt="Saco de café Product of Colombia"
-            fill
-            sizes="(min-width: 768px) 700px, 100vw"
-            className="object-cover hover:scale-[1.02] transition-transform duration-700 ease-out"
-          />
-        </div>
-
-        <p className="text-base text-foreground/90 leading-relaxed">
-          Creemos en tostar pequeño y enviar fresco. Cada bolsa que sale de
-          nuestra tostadora salió del tostador hace menos de cinco días. La fecha
-          de tueste está impresa en cada empaque.
-        </p>
-
-        <h2 className="font-display text-3xl font-semibold tracking-tight pt-8">
-          Lo que defendemos
-        </h2>
-        <ul className="space-y-4 text-base text-foreground/90 leading-relaxed">
-          <li>
-            <strong className="font-display">Calidad sobre escala.</strong> Lotes
-            pequeños, cata previa al tueste y QC en cada despacho.
-          </li>
-          <li>
-            <strong className="font-display">Relación directa.</strong> Conocemos
-            a quien cultiva nuestro café. Sin intermediarios.
-          </li>
-          <li>
-            <strong className="font-display">Precios justos.</strong> Tanto al
-            productor como al consumidor. Sin marcas de lujo artificiales.
-          </li>
-          <li>
-            <strong className="font-display">Frescura.</strong> Tostado bajo
-            pedido. Enviado en máximo 48 horas desde el tueste.
-          </li>
-        </ul>
+        {page.sections.map((s, i) => (
+          <div key={i} className="space-y-7">
+            {s.title && (
+              <h2 className="font-display text-3xl font-semibold tracking-tight pt-8">{s.title}</h2>
+            )}
+            {/* El primer párrafo de la página, si abre sin título, va destacado. */}
+            <EditorialText body={s.body} leadFirst={i === 0 && !s.title} />
+            <SectionFigure section={s} />
+          </div>
+        ))}
       </div>
     </>
   );

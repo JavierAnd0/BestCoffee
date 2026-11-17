@@ -1,144 +1,125 @@
-import { requireEditorialPage } from "@/lib/data/feature-guard";
 import type { Metadata } from "next";
 import Link from "next/link";
-import Image from "next/image";
-import { Eyebrow } from "@/components/ui/eyebrow";
+import { notFound } from "next/navigation";
 import { Leaf, Sprout, HeartHandshake, Recycle, ArrowRight } from "lucide-react";
+import { requireEditorialPage } from "@/lib/data/feature-guard";
+import { getEditorialPage } from "@/lib/data/content";
+import { Eyebrow } from "@/components/ui/eyebrow";
 import { Button } from "@/components/ui/button";
+import { EditorialText, PageImage } from "@/components/storefront/editorial-page";
 
-export const metadata: Metadata = {
-  title: "Sostenibilidad & Origen",
-  description:
-    "Nuestro compromiso con el medio ambiente, la caficultura regenerativa y el pago justo a los productores de café en Colombia.",
-};
+// Texto, cifras e imágenes de la propia tienda (panel → Contenido → Páginas).
+// Cada sección se muestra como una tarjeta ("pilar"); los iconos son decorativos.
 
-const PILLARS = [
-  {
-    icon: <HeartHandshake className="size-6 text-emerald-600 dark:text-emerald-400" />,
-    title: "Comercio Directo y Transparente",
-    body: "Pagamos en promedio un 60% por encima del precio internacional C de bolsa. Compramos de manera directa sin intermediarios comerciales que diluyan el valor para el caficultor.",
-  },
-  {
-    icon: <Sprout className="size-6 text-emerald-600 dark:text-emerald-400" />,
-    title: "Caficultura Regenerativa",
-    body: "Apoyamos fincas que aplican sombra natural, rotación de cultivos y protección de cuencas hídricas locales, promoviendo la biodiversidad en las regiones de origen.",
-  },
-  {
-    icon: <Recycle className="size-6 text-emerald-600 dark:text-emerald-400" />,
-    title: "Empaque Consciente",
-    body: "Nuestras bolsas están fabricadas con papel kraft certificado y barreras biodegradables. Además fomentamos el uso de recipientes retornables en nuestras tiendas físicas.",
-  },
-  {
-    icon: <Leaf className="size-6 text-emerald-600 dark:text-emerald-400" />,
-    title: "Tostado Eficiente en Lotes Pequeños",
-    body: "Nuestra curva de tueste optimizada minimiza la emisión de calor y desperdicio de energía, tostando bajo demanda semanal para evitar mermas de producto.",
-  },
-];
+const ICONS = [HeartHandshake, Sprout, Recycle, Leaf];
 
-const METRICS = [
-  { value: "+40", label: "Familias caficultoras asociadas" },
-  { value: "60%", label: "Sobreprecio promedio sobre bolsa C" },
-  { value: "100%", label: "Empaques reciclables o compostables" },
-  { value: "0", label: "Intermediarios en la compra de café verde" },
-];
+export async function generateMetadata(): Promise<Metadata> {
+  const page = await getEditorialPage("sostenibilidad");
+  return page ? { title: page.title, description: page.intro } : { title: "Sostenibilidad" };
+}
 
 export default async function SostenibilidadPage() {
   await requireEditorialPage("sostenibilidad");
+  const page = await getEditorialPage("sostenibilidad");
+  if (!page) notFound();
+  const highlights = page.highlights ?? [];
+  const cta = page.cta;
+  const hasCtaBox = Boolean(cta && (cta.title || cta.body || cta.href || cta.secondaryHref));
+
   return (
     <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-16">
-      {/* Hero */}
       <section className="mb-16 text-center max-w-3xl mx-auto">
-        <Eyebrow>Planeta & Comunidad</Eyebrow>
-        <h1 className="mt-3 font-display text-5xl lg:text-6xl font-semibold tracking-tight">
-          Sostenibilidad desde la raíz
-        </h1>
-        <p className="mt-4 text-base sm:text-lg text-muted-foreground leading-relaxed">
-          Para nosotros, la sostenibilidad no es una etiqueta publicitaria: es el modelo económico y ético que permite que el mejor café colombiano siga existiendo para las próximas generaciones.
-        </p>
+        {page.eyebrow && <Eyebrow>{page.eyebrow}</Eyebrow>}
+        <h1 className="mt-3 font-display text-5xl lg:text-6xl font-semibold tracking-tight">{page.title}</h1>
+        {page.intro && (
+          <p className="mt-4 text-base sm:text-lg text-muted-foreground leading-relaxed">{page.intro}</p>
+        )}
       </section>
 
-      {/* Imagen destacada de origen */}
-      <div className="relative aspect-[21/9] w-full rounded-2xl overflow-hidden mb-16 shadow-lg border border-border">
-        <Image
-          src="/img/bulto-colombia.jpg"
-          alt="Saco de café Product of Colombia"
-          fill
-          priority
-          sizes="100vw"
-          className="object-cover object-center"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-transparent flex items-end p-6 sm:p-10">
-          <p className="text-white font-display text-xl sm:text-2xl font-light drop-shadow-md">
-            100% Café de origen colombiano con trazabilidad directa desde la finca
-          </p>
-        </div>
-      </div>
-
-      {/* Métricas */}
-      <section className="grid grid-cols-2 lg:grid-cols-4 gap-6 py-10 border-y border-border mb-16">
-        {METRICS.map((m) => (
-          <div key={m.label} className="text-center">
-            <div className="font-display text-4xl lg:text-5xl font-semibold text-primary">
-              {m.value}
-            </div>
-            <p className="mt-2 text-xs sm:text-sm text-muted-foreground">{m.label}</p>
-          </div>
-        ))}
-      </section>
-
-      {/* Pilares */}
-      <section className="mb-20">
-        <div className="text-center max-w-2xl mx-auto mb-12">
-          <Eyebrow>Nuestros Pilares</Eyebrow>
-          <h2 className="mt-2 font-display text-3xl font-semibold tracking-tight">
-            Acciones reales en cada eslabón
-          </h2>
-        </div>
-
-        <div className="grid sm:grid-cols-2 gap-8">
-          {PILLARS.map((p) => (
-            <div
-              key={p.title}
-              className="rounded-2xl border border-border bg-card p-8 text-card-foreground space-y-4 hover:border-border/80 transition-colors"
-            >
-              <div className="size-12 rounded-xl bg-emerald-500/10 grid place-items-center">
-                {p.icon}
-              </div>
-              <h3 className="font-display text-2xl font-semibold tracking-tight">
-                {p.title}
-              </h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                {p.body}
+      {page.imageUrl && (
+        <div className="relative aspect-[21/9] w-full rounded-2xl overflow-hidden mb-16 shadow-lg border border-border">
+          <PageImage
+            url={page.imageUrl}
+            alt={page.imageAlt}
+            priority
+            sizes="100vw"
+            className="object-cover object-center"
+          />
+          {page.imageCaption && (
+            <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-transparent flex items-end p-6 sm:p-10">
+              <p className="text-white font-display text-xl sm:text-2xl font-light drop-shadow-md">
+                {page.imageCaption}
               </p>
             </div>
-          ))}
+          )}
         </div>
-      </section>
+      )}
 
-      {/* Visita nuestro impacto */}
-      <section className="rounded-2xl border border-border bg-muted/40 p-8 sm:p-12 flex flex-col md:flex-row items-center justify-between gap-8">
-        <div className="max-w-xl">
-          <h3 className="font-display text-3xl font-semibold tracking-tight">
-            Conoce el impacto de tu compra
-          </h3>
-          <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
-            Cada bolsa de café tiene un código de trazabilidad donde puedes consultar el nombre del productor, la vereda, la altitud y el proceso de fermentación de cada lote.
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-4">
-          <Link href="/impacto">
-            <Button variant="outline" className="gap-2">
-              Ver reporte de impacto
-            </Button>
-          </Link>
-          <Link href="/catalogo">
-            <Button className="gap-2">
-              Explorar cafés sostenibles <ArrowRight className="size-4" />
-            </Button>
-          </Link>
-        </div>
-      </section>
+      {highlights.length > 0 && (
+        <section className="grid grid-cols-2 lg:grid-cols-4 gap-6 py-10 border-y border-border mb-16">
+          {highlights.map((m, i) => (
+            <div key={i} className="text-center">
+              <div className="font-display text-4xl lg:text-5xl font-semibold text-primary">{m.value}</div>
+              <p className="mt-2 text-xs sm:text-sm text-muted-foreground">{m.label}</p>
+            </div>
+          ))}
+        </section>
+      )}
+
+      {page.sections.length > 0 && (
+        <section className="mb-20">
+          {(page.sectionsEyebrow || page.sectionsTitle) && (
+            <div className="text-center max-w-2xl mx-auto mb-12">
+              {page.sectionsEyebrow && <Eyebrow>{page.sectionsEyebrow}</Eyebrow>}
+              {page.sectionsTitle && (
+                <h2 className="mt-2 font-display text-3xl font-semibold tracking-tight">{page.sectionsTitle}</h2>
+              )}
+            </div>
+          )}
+          <div className="grid sm:grid-cols-2 gap-8">
+            {page.sections.map((s, i) => {
+              const Icon = ICONS[i % ICONS.length];
+              return (
+                <div
+                  key={i}
+                  className="rounded-2xl border border-border bg-card p-8 text-card-foreground space-y-4 hover:border-border/80 transition-colors"
+                >
+                  <div className="size-12 rounded-xl bg-emerald-500/10 grid place-items-center">
+                    <Icon className="size-6 text-emerald-600 dark:text-emerald-400" aria-hidden />
+                  </div>
+                  {s.title && <h3 className="font-display text-2xl font-semibold tracking-tight">{s.title}</h3>}
+                  <EditorialText body={s.body} className="text-sm text-muted-foreground leading-relaxed" />
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
+      {hasCtaBox && cta && (
+        <section className="rounded-2xl border border-border bg-muted/40 p-8 sm:p-12 flex flex-col md:flex-row items-center justify-between gap-8">
+          <div className="max-w-xl">
+            {cta.title && <h3 className="font-display text-3xl font-semibold tracking-tight">{cta.title}</h3>}
+            {cta.body && <p className="mt-2 text-sm text-muted-foreground leading-relaxed">{cta.body}</p>}
+          </div>
+          <div className="flex flex-wrap gap-4">
+            {cta.secondaryLabel && cta.secondaryHref && (
+              <Link href={cta.secondaryHref}>
+                <Button variant="outline" className="gap-2">
+                  {cta.secondaryLabel}
+                </Button>
+              </Link>
+            )}
+            {cta.label && cta.href && (
+              <Link href={cta.href}>
+                <Button className="gap-2">
+                  {cta.label} <ArrowRight className="size-4" />
+                </Button>
+              </Link>
+            )}
+          </div>
+        </section>
+      )}
     </div>
   );
 }
-

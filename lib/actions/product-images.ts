@@ -1,10 +1,10 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { del } from "@vercel/blob";
 import { env } from "../env";
 import { operatorFetch } from "../api/gateway";
 import { operatorStorageTenant, productImagePrefix } from "../auth/operator-guard";
+import { deleteBlobWithin } from "../storage/blob-paths";
 import type { ProductImage } from "../types";
 
 // Server actions para la galería de un producto. El archivo ya está en Vercel
@@ -103,17 +103,5 @@ export async function discardUploadedImageAction(url: string): Promise<void> {
  * Ignora URLs que no son imágenes de producto en Blob (p. ej. /img/...).
  */
 async function deleteBlob(url: string): Promise<void> {
-  let parsed: URL;
-  try {
-    parsed = new URL(url);
-  } catch {
-    return;
-  }
-  if (parsed.protocol !== "https:" || !parsed.hostname.endsWith(".blob.vercel-storage.com")) return;
-  if (!parsed.pathname.startsWith("/products/")) return;
-  try {
-    await del(url);
-  } catch {
-    /* si falla, el archivo queda huérfano pero la UI sigue consistente */
-  }
+  await deleteBlobWithin(url, "products/");
 }

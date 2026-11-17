@@ -45,8 +45,8 @@ export function ContactForm() {
         </div>
         <h3 className="font-display text-2xl font-semibold">¡Mensaje recibido!</h3>
         <p className="text-sm text-muted-foreground max-w-md mx-auto leading-relaxed">
-          Gracias por contactarnos, {formData.name || "amigo cafetero"}. Nuestro equipo de baristas y soporte te responderá a{" "}
-          <strong className="text-foreground">{formData.email}</strong> en menos de 24 horas hábiles.
+          Gracias por escribirnos{formData.name ? `, ${formData.name}` : ""}. Te responderemos a{" "}
+          <strong className="text-foreground">{formData.email}</strong>.
         </p>
         <Button
           variant="outline"

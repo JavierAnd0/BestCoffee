@@ -20,6 +20,7 @@ import {
   type AdminReview,
   type AdminAuditEntry,
 } from "../mocks/admin";
+import { clientIpHeaders } from "@/lib/api/client-ip";
 
 // ── Minimal shapes the backend returns (best-effort; cast at call sites) ─────
 
@@ -176,6 +177,7 @@ async function adminFetch<T>(path: string): Promise<T | null> {
 
   const res = await fetch(`${env.apiUrlInternal}${path}`, {
     headers: {
+      ...(await clientIpHeaders()),
       "Content-Type": "application/json",
       "X-Tenant-Slug": tenantSlug,
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -215,7 +217,7 @@ export async function getCurrentOperator(): Promise<OperatorProfile | null> {
 
   try {
     const res = await fetch(`${env.apiUrlInternal}/v1/auth/me`, {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { ...(await clientIpHeaders()), Authorization: `Bearer ${token}` },
       cache: "no-store",
     });
     if (res.ok) {

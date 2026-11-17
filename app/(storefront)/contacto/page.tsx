@@ -28,7 +28,7 @@ function buildChannels(branding: TenantBranding): Channel[] {
       icon: <Mail className="size-5 text-primary" />,
       title: "Correo electrónico",
       detail: branding.contactEmail,
-      description: "Respuesta promedio en menos de 24 horas hábiles.",
+      description: "Escríbenos y te responderemos a tu correo.",
       action: `mailto:${branding.contactEmail}`,
       actionText: "Escribir correo",
     });

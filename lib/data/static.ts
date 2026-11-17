@@ -9,6 +9,7 @@ import {
 import { getCurrentTenant } from "./tenant";
 import { headers } from "next/headers";
 import { tenantCacheTag } from "./cache-tags";
+import { serverOriginHeaders } from "@/lib/api/client-ip";
 
 async function tenantSlug(): Promise<string> {
   const h = await headers();
@@ -74,7 +75,7 @@ export async function listStoreLocations(): Promise<StoreLocation[]> {
   try {
     const [slug, tenant] = await Promise.all([tenantSlug(), getCurrentTenant()]);
     const res = await fetch(`${env.apiUrlInternal}/v1/locations`, {
-      headers: { "X-Tenant-Slug": slug },
+      headers: { ...serverOriginHeaders(), "X-Tenant-Slug": slug },
       // La API revalida esta etiqueta al editar sedes (app/api/revalidate).
       next: { revalidate: 3600, tags: [tenantCacheTag(slug, "locations")] },
     });
@@ -139,7 +140,7 @@ function mapBrewGuide(g: ApiBrewGuide): BrewGuide {
 async function fetchBrewGuides(): Promise<BrewGuide[]> {
   const slug = await tenantSlug();
   const res = await fetch(`${env.apiUrlInternal}/v1/brew-guides`, {
-    headers: { "X-Tenant-Slug": slug },
+    headers: { ...serverOriginHeaders(), "X-Tenant-Slug": slug },
     next: { revalidate: 3600, tags: [tenantCacheTag(slug, "brew-guides")] },
   });
   if (!res.ok) return [];
@@ -167,7 +168,7 @@ export async function getBrewGuide(slug: string): Promise<BrewGuide | undefined>
   try {
     const tenSlug = await tenantSlug();
     const res = await fetch(`${env.apiUrlInternal}/v1/brew-guides/${encodeURIComponent(slug)}`, {
-      headers: { "X-Tenant-Slug": tenSlug },
+      headers: { ...serverOriginHeaders(), "X-Tenant-Slug": tenSlug },
       next: {
         revalidate: 3600,
         tags: [tenantCacheTag(tenSlug, "brew-guides"), tenantCacheTag(tenSlug, `brew-guide:${slug}`)],

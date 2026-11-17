@@ -10,6 +10,7 @@ export default async function ContentLayout({ children }: { children: React.Reac
     ...(tenant && !tenant.features.blog ? [] : [{ href: "/admin/contenido/blog", label: "Blog" }]),
     { href: "/admin/contenido/guias", label: "Guías de preparación" },
     { href: "/admin/contenido/sedes", label: "Sedes" },
+    { href: "/admin/contenido/paginas", label: "Páginas" },
   ];
   return (
     <div>

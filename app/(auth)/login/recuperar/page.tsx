@@ -8,6 +8,7 @@ import {
   requestPasswordResetAction,
   type PasswordResetState,
 } from "@/lib/actions/auth";
+import { AuthAside } from "../../auth-aside";
 
 export default function RecuperarPasswordPage() {
   const [state, dispatch, isPending] = useActionState<PasswordResetState, FormData>(
@@ -19,32 +20,14 @@ export default function RecuperarPasswordPage() {
 
   return (
     <div className="min-h-screen grid lg:grid-cols-[5fr_7fr]">
-      <aside
-        className="hidden lg:flex flex-col justify-between p-10 relative overflow-hidden"
-        style={{ background: "var(--cream-dark)" }}
-      >
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0 opacity-[0.04] mix-blend-multiply"
-          style={{
-            backgroundImage: "var(--grain)",
-            backgroundRepeat: "repeat",
-            backgroundSize: "200px",
-          }}
-        />
-        <Logo size={18} href="/" className="relative z-10" />
-        <div className="relative z-10 space-y-6">
-          <p
-            className="font-display italic font-light leading-[1.18] tracking-[-0.02em]"
-            style={{ fontSize: "clamp(1.85rem, 3.2vw, 2.5rem)" }}
-          >
-            “Tu cuenta y tus suscripciones están seguras. Recupera el acceso en segundos.”
-          </p>
-        </div>
-        <p className="relative z-10 text-xs tracking-[0.16em] uppercase text-muted-foreground font-medium">
-          Café de especialidad · Bogotá, Colombia
+      <AuthAside>
+        <p
+          className="font-display italic font-light leading-[1.18] tracking-[-0.02em]"
+          style={{ fontSize: "clamp(1.85rem, 3.2vw, 2.5rem)" }}
+        >
+          Recupera el acceso a tu cuenta con un enlace en tu correo.
         </p>
-      </aside>
+      </AuthAside>
 
       <main className="flex flex-col px-6 py-10 sm:px-12 lg:px-20">
         <div className="flex items-center justify-between mb-10 lg:mb-0">

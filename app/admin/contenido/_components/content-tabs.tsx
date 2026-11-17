@@ -8,7 +8,7 @@ export interface ContentTab {
   label: string;
 }
 
-/** Pestañas de Contenido: inicio, blog, guías y sedes (según el plan). */
+/** Pestañas de Contenido: inicio, blog, guías, sedes y páginas (según el plan). */
 export function ContentTabs({ tabs }: { tabs: ContentTab[] }) {
   const pathname = usePathname();
   return (

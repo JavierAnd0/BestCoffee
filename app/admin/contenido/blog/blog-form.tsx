@@ -6,6 +6,7 @@ import { useContentForm } from "../_components/use-content-form";
 import type { AdminBlogPost } from "@/lib/data/admin-content";
 import { FormError, FormSection, TextArea, TextField, FieldLabel, inputClass, toLocalInput } from "../_components/fields";
 import { FormActions } from "../_components/submit-button";
+import { ImageUploadField } from "@/components/admin/image-upload-field";
 
 export function BlogForm({ post }: { post?: AdminBlogPost }) {
   const { error, onSubmit, pending } = useContentForm(saveBlogPostAction);
@@ -45,13 +46,12 @@ export function BlogForm({ post }: { post?: AdminBlogPost }) {
           defaultValue={post?.body ?? ""}
           hint="Deja una línea en blanco entre párrafos."
         />
-        <TextField
-          label="Imagen de portada (URL, opcional)"
+        <ImageUploadField
+          label="Imagen de portada (opcional)"
           name="coverUrl"
-          type="url"
-          maxLength={500}
+          folder="blog"
           defaultValue={post?.coverUrl ?? ""}
-          placeholder="https://"
+          hint="Sube una imagen (JPG, PNG, WebP o AVIF, hasta 8 MB) o pega su URL."
         />
       </FormSection>
 
