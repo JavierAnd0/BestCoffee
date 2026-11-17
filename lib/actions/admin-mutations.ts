@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { env } from "../env";
 import { operatorFetch } from "../api/gateway";
+import type { AdminShippingAddress } from "../data/admin";
 import type {
   GrindFormat,
   Product,
@@ -158,31 +159,68 @@ export async function saveProductAction(
   };
 }
 
+/**
+ * Cambios del pedido desde su detalle. El backend separa el estado
+ * (`PATCH /:id/status`, con sus transiciones) del resto (`PATCH /:id`: guía,
+ * notas y dirección), y rechaza campos que no conoce.
+ */
 export async function updateOrderStatusAction(
   orderId: string,
   patch: {
     status?: "RECEIVED" | "PREPARING" | "SHIPPED" | "DELIVERED" | "CANCELLED";
     trackingNumber?: string;
     internalNotes?: string;
+    shippingAddress?: AdminShippingAddress;
   },
 ): Promise<AdminMutationResult> {
+  const id = encodeURIComponent(orderId);
   if (!env.useMocks) {
-    const res = await operatorFetch(
-      `/v1/admin/orders/${encodeURIComponent(orderId)}`,
-      {
+    if (patch.status) {
+      const res = await operatorFetch(`/v1/admin/orders/${id}/status`, {
         method: "PATCH",
-        body: patch,
-      },
-    );
-    if (!res.ok && res.status !== 503) {
-      return { ok: false, error: res.error || "No se pudo actualizar el pedido." };
+        body: {
+          status: patch.status,
+          ...(patch.trackingNumber?.trim() ? { trackingUrl: patch.trackingNumber.trim() } : {}),
+        },
+      });
+      if (!res.ok) return { ok: false, error: res.error || "No se pudo cambiar el estado." };
+    }
+
+    const rest: Record<string, unknown> = {};
+    if (patch.trackingNumber !== undefined && !patch.status) {
+      rest.trackingUrl = patch.trackingNumber.trim();
+    }
+    if (patch.internalNotes !== undefined) rest.internalNotes = patch.internalNotes;
+    if (patch.shippingAddress) {
+      const a = patch.shippingAddress;
+      const opt = (v: string) => v.trim() || undefined;
+      if (a.line1.trim().length < 3 || a.city.trim().length < 2) {
+        return { ok: false, error: "La dirección y la ciudad son obligatorias." };
+      }
+      rest.shippingAddress = {
+        recipientName: opt(a.recipientName),
+        line1: a.line1.trim(),
+        line2: opt(a.line2),
+        city: a.city.trim(),
+        state: opt(a.state),
+        postalCode: opt(a.postalCode),
+        phone: opt(a.phone),
+        country: "CO",
+      };
+    }
+    if (Object.keys(rest).length > 0) {
+      const res = await operatorFetch(`/v1/admin/orders/${id}`, { method: "PATCH", body: rest });
+      if (!res.ok) return { ok: false, error: res.error || "No se pudo actualizar el pedido." };
     }
   }
 
   revalidatePath("/admin");
   revalidatePath("/admin/pedidos");
   revalidatePath(`/admin/pedidos/${orderId}`);
-  return { ok: true, message: "Pedido actualizado correctamente." };
+  return {
+    ok: true,
+    message: patch.shippingAddress ? "Dirección actualizada." : "Pedido actualizado correctamente.",
+  };
 }
 
 export async function saveAdminSettingsAction(

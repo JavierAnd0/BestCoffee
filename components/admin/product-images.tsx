@@ -7,7 +7,8 @@ import { ChevronLeft, ChevronRight, Loader2, Trash2, Upload } from "lucide-react
 import type { ProductImage } from "@/lib/types";
 import {
   attachProductImageAction,
-  deleteBlobAction,
+  discardUploadedImageAction,
+  imageUploadPrefixAction,
   removeProductImageAction,
   reorderProductImagesAction,
 } from "@/lib/actions/product-images";
@@ -64,7 +65,12 @@ export function ProductImages({
     }
     setUploading((u) => [...u, { key, name: file.name }]);
     try {
-      const blob = await upload(`products/${productId ?? "draft"}/${file.name}`, file, {
+      const prefix = await imageUploadPrefixAction();
+      if (!prefix.ok) {
+        setError(prefix.error);
+        return;
+      }
+      const blob = await upload(`${prefix.data}${productId ?? "draft"}/${file.name}`, file, {
         access: "public",
         handleUploadUrl: "/api/admin/blob-upload",
       });
@@ -72,7 +78,7 @@ export function ProductImages({
       if (productId) {
         const r = await attachProductImageAction(productId, blob.url, alt);
         if (!r.ok) {
-          await deleteBlobAction(blob.url);
+          await discardUploadedImageAction(blob.url);
           setError(r.error);
           return;
         }
@@ -118,13 +124,13 @@ export function ProductImages({
     const prev = images;
     setImages(prev.filter((i) => i.id !== img.id));
     if (productId) {
-      const r = await removeProductImageAction(productId, img.id, img.url);
+      const r = await removeProductImageAction(productId, img.id);
       if (!r.ok) {
         setImages(prev);
         setError(r.error);
       }
     } else {
-      await deleteBlobAction(img.url);
+      await discardUploadedImageAction(img.url);
     }
   }
 

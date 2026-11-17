@@ -86,38 +86,23 @@ export async function placeOrderAction(
     const demoExtra = await demoHeaders();
     const hasSubscription = input.items.some((i) => i.mode === "SUBSCRIPTION");
 
-    // Si algún item tiene variantId mock (ej. accesorios 'v_...'),
-    // buscamos una variante real activa en el backend para que la orden sea autoritativa y persistida
-    let fallbackVariantId: string | undefined;
-    const resolvedItems = await Promise.all(
-      input.items.map(async (i) => {
-        let variantId = i.variantId;
-        if (!variantId || variantId.startsWith("v_") || variantId.startsWith("mock_")) {
-          if (!fallbackVariantId) {
-            try {
-              const pRes = await fetch(`${env.apiUrlInternal}/v1/products`, {
-                headers: { "X-Tenant-Slug": tenantSlug },
-                cache: "no-store",
-              });
-              if (pRes.ok) {
-                const pData = await pRes.json();
-                const list = pData?.items ?? pData?.data ?? [];
-                if (list.length > 0 && list[0]?.variants?.length > 0) {
-                  fallbackVariantId = list[0].variants[0].id;
-                }
-              }
-            } catch {}
-          }
-          if (fallbackVariantId) {
-            variantId = fallbackVariantId;
-          }
-        }
-        return {
-          variantId,
-          quantity: Math.max(1, i.qty),
-        };
-      })
-    );
+    // Cada línea debe apuntar a una variante real. Antes, una línea sin variante
+    // (o con un id de datos de ejemplo) se cambiaba por el primer producto del
+    // catálogo: el cliente pagaba algo que no eligió. Ahora se rechaza.
+    // (Con USE_MOCKS los ids de ejemplo son válidos: el pedido no llega al backend.)
+    if (
+      !env.useMocks &&
+      input.items.some((i) => !i.variantId || /^(v_|mock_)/.test(i.variantId))
+    ) {
+      return {
+        error:
+          "Hay un producto en tu carrito que ya no está disponible. Quítalo y vuelve a agregarlo.",
+      };
+    }
+    const resolvedItems = input.items.map((i) => ({
+      variantId: i.variantId,
+      quantity: Math.max(1, i.qty),
+    }));
 
     // Formato exacto requerido por el DTO del backend NestJS
     const body: Record<string, unknown> = {
@@ -125,11 +110,13 @@ export async function placeOrderAction(
       mode: hasSubscription ? "SUBSCRIPTION" : "ONE_TIME",
       discountCode: input.discountCode || undefined,
       shippingAddress: {
+        recipientName: guestName,
         line1: input.shipping.address.trim(),
         line2: input.shipping.line2?.trim() || undefined,
         city: input.shipping.city.trim(),
         state: input.shipping.region?.trim() || undefined,
-        postalCode: input.shipping.zip?.trim() || "110111",
+        // Sin código postal se envía vacío: nunca uno inventado (110111 es de Bogotá).
+        postalCode: input.shipping.zip?.trim() || undefined,
         country: "CO",
         phone: input.contact.phone.trim() || undefined,
       },

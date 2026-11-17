@@ -1,0 +1,429 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-15T21:27:03Z",
+  "title": "Design System: BestCoffee",
+  "extensions": {
+    "colorMeta": {
+      "paper-cream": {
+        "role": "neutral",
+        "displayName": "Papel Crema",
+        "canonical": "#faf7f1",
+        "oklch": "oklch(98% 0.009 85)",
+        "tonalRamp": [
+          "#0c0b0a",
+          "#262522",
+          "#44423d",
+          "#63615c",
+          "#85827d",
+          "#a7a59f",
+          "#cbc9c5",
+          "#efeeec"
+        ]
+      },
+      "card-cream": {
+        "role": "neutral",
+        "displayName": "Crema de Tarjeta",
+        "canonical": "#fdf9f4",
+        "oklch": "oklch(98% 0.008 74)",
+        "tonalRamp": [
+          "#0c0b0a",
+          "#272522",
+          "#44413e",
+          "#64615c",
+          "#85827d",
+          "#a8a4a0",
+          "#cbc9c5",
+          "#efeeec"
+        ]
+      },
+      "roast-ink": {
+        "role": "primary",
+        "displayName": "Tinta Espresso",
+        "canonical": "#170d04",
+        "oklch": "oklch(17% 0.026 66)",
+        "tonalRamp": [
+          "#0e0a07",
+          "#2b241d",
+          "#4b4034",
+          "#6c5f52",
+          "#8d8072",
+          "#b0a295",
+          "#d1c7be",
+          "#f3ede8"
+        ]
+      },
+      "parchment-muted": {
+        "role": "neutral",
+        "displayName": "Pergamino",
+        "canonical": "#ede5d8",
+        "oklch": "oklch(92% 0.019 80)",
+        "tonalRamp": [
+          "#0d0b08",
+          "#28241e",
+          "#474137",
+          "#676055",
+          "#898176",
+          "#aba498",
+          "#cdc8c0",
+          "#f1eee9"
+        ]
+      },
+      "cream-mid": {
+        "role": "neutral",
+        "displayName": "Crema Media",
+        "canonical": "#f0e4d0",
+        "oklch": "oklch(92% 0.030 81)",
+        "tonalRamp": [
+          "#0d0b07",
+          "#2a241a",
+          "#4a4131",
+          "#6a604e",
+          "#8c816f",
+          "#aea492",
+          "#d0c8bc",
+          "#f2eee7"
+        ]
+      },
+      "cream-dark": {
+        "role": "neutral",
+        "displayName": "Crema Oscura",
+        "canonical": "#e5d5be",
+        "oklch": "oklch(88% 0.036 77)",
+        "tonalRamp": [
+          "#0e0b06",
+          "#2b2418",
+          "#4c402e",
+          "#6d5f4b",
+          "#8f806b",
+          "#b1a38e",
+          "#d2c8b9",
+          "#f3eee5"
+        ]
+      },
+      "terracotta": {
+        "role": "secondary",
+        "displayName": "Terracota Tostado",
+        "canonical": "#b85c32",
+        "oklch": "oklch(58% 0.131 44)",
+        "tonalRamp": [
+          "#1a0400",
+          "#451200",
+          "#742300",
+          "#9c4215",
+          "#c2653b",
+          "#e58a63",
+          "#f9b89c",
+          "#ffe5d6"
+        ]
+      },
+      "signal-red": {
+        "role": "neutral",
+        "displayName": "Rojo de Alerta",
+        "canonical": "#b54129",
+        "oklch": "oklch(53% 0.155 33)",
+        "tonalRamp": [
+          "#1d0200",
+          "#4b0600",
+          "#7e0f00",
+          "#a7341c",
+          "#ce583f",
+          "#f27f66",
+          "#ffb19e",
+          "#ffe2d7"
+        ]
+      },
+      "espresso-deep": {
+        "role": "neutral",
+        "displayName": "Espresso Profundo",
+        "canonical": "#110602",
+        "oklch": "oklch(14% 0.025 51)",
+        "tonalRamp": [
+          "#0e0a08",
+          "#2c231e",
+          "#4d3f37",
+          "#6e5d54",
+          "#8f7e75",
+          "#b2a198",
+          "#d2c6c0",
+          "#f4ede9"
+        ]
+      },
+      "espresso-glow": {
+        "role": "neutral",
+        "displayName": "Brasa",
+        "canonical": "#341509",
+        "oklch": "oklch(24% 0.054 41)",
+        "tonalRamp": [
+          "#120806",
+          "#341f18",
+          "#59392d",
+          "#7c5749",
+          "#9f7869",
+          "#c29b8d",
+          "#dec2b8",
+          "#faebe5"
+        ]
+      },
+      "hero-cream": {
+        "role": "neutral",
+        "displayName": "Crema de Hero",
+        "canonical": "#f7efe4",
+        "oklch": "oklch(96% 0.017 76)",
+        "tonalRamp": [
+          "#0d0b08",
+          "#28241f",
+          "#474139",
+          "#676057",
+          "#888177",
+          "#aba49a",
+          "#cdc8c1",
+          "#f1eeea"
+        ]
+      },
+      "hero-copper": {
+        "role": "tertiary",
+        "displayName": "Cobre",
+        "canonical": "#e09f67",
+        "oklch": "oklch(75% 0.106 61)",
+        "tonalRamp": [
+          "#160700",
+          "#3c1b00",
+          "#673200",
+          "#8c5113",
+          "#b0723a",
+          "#d39662",
+          "#ebc09c",
+          "#ffe9d6"
+        ]
+      },
+      "hero-caramel": {
+        "role": "tertiary",
+        "displayName": "Caramelo",
+        "canonical": "#e8b888",
+        "oklch": "oklch(81% 0.084 66)",
+        "tonalRamp": [
+          "#130801",
+          "#371f03",
+          "#5e3807",
+          "#815728",
+          "#a5784a",
+          "#c79b6f",
+          "#e2c3a4",
+          "#fdebda"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Titulares del hero y aperturas de sección, en serifa ligera."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Títulos de página: catálogo, ficha de producto, blog."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Títulos de tarjeta, sección y diálogo."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Texto corrido en DM Sans, líneas de 65 a 75 caracteres."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Eyebrows, etiquetas de producto y metadatos en mayúsculas espaciadas."
+      }
+    },
+    "shadows": [
+      {
+        "name": "rest-subtle",
+        "value": "0 1px 2px rgba(23,13,4,0.05)",
+        "purpose": "Único caso en reposo: bloque de compra que debe separarse del fondo (shadow-xs)."
+      },
+      {
+        "name": "floating",
+        "value": "0 10px 24px rgba(23,13,4,0.25)",
+        "purpose": "Lo que flota sobre el contenido: carrito, diálogos, panel de la demo."
+      },
+      {
+        "name": "card-ring",
+        "value": "0 0 0 1px rgba(23,13,4,0.10)",
+        "purpose": "Anillo de 1 px que sustituye a la sombra en las tarjetas."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-out-expo",
+        "value": "cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "Curva principal: barrido de navegación, entradas de tarjeta."
+      },
+      {
+        "name": "duration-hover",
+        "value": "240ms",
+        "purpose": "Respuesta de hover en navegación y botones."
+      },
+      {
+        "name": "duration-reveal",
+        "value": "750ms",
+        "purpose": "Entrada de tarjetas de producto (fundido y ascenso de 28 px, una sola vez)."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "sm",
+        "value": "640px"
+      },
+      {
+        "name": "md",
+        "value": "768px"
+      },
+      {
+        "name": "lg",
+        "value": "1024px"
+      },
+      {
+        "name": "xl",
+        "value": "1280px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Botón primario (CTA)",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Llamado a la acción principal: píldora espresso con flecha que avanza al pasar el cursor.",
+      "html": "<a class=\"ds-cta\" href=\"#\">Ver catálogo <span class=\"ds-cta-arrow\">→</span></a>",
+      "css": ".ds-cta{display:inline-flex;align-items:center;gap:12px;padding:16px 28px;background:var(--foreground,#170d04);color:var(--background,#faf7f1);border-radius:9999px;font:600 12px/1 var(--font-sans, \"DM Sans\", ui-sans-serif, system-ui, sans-serif);letter-spacing:.18em;text-transform:uppercase;text-decoration:none;box-shadow:0 4px 12px rgba(23,13,4,.18);transition:transform .3s}.ds-cta:hover{transform:scale(1.02)}.ds-cta-arrow{transition:transform .3s}.ds-cta:hover .ds-cta-arrow{transform:translateX(4px)}.ds-cta:focus-visible{outline:2px solid var(--accent,#b85c32);outline-offset:2px}"
+    },
+    {
+      "name": "Botón de interfaz",
+      "kind": "button",
+      "refersTo": "button-outline",
+      "description": "Acción secundaria en paneles y formularios: hairline sobre crema, pergamino al hover.",
+      "html": "<button class=\"ds-btn-outline\">Guardar cambios</button>",
+      "css": ".ds-btn-outline{height:32px;padding:0 10px;border:1px solid rgba(23,13,4,.08);border-radius:6px;background:var(--background,#faf7f1);color:var(--foreground,#170d04);font:500 14px/1 var(--font-sans, \"DM Sans\", ui-sans-serif, system-ui, sans-serif);transition:background .2s}.ds-btn-outline:hover{background:var(--muted,#ede5d8)}.ds-btn-outline:focus-visible{outline:none;border-color:rgba(184,92,50,.38);box-shadow:0 0 0 3px rgba(184,92,50,.19)}.ds-btn-outline:active{transform:translateY(1px)}"
+    },
+    {
+      "name": "Campo de texto",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Trazo hairline transparente; el foco toma el acento de la tienda.",
+      "html": "<input class=\"ds-input\" placeholder=\"tu@correo.com\" />",
+      "css": ".ds-input{height:32px;width:240px;padding:4px 10px;border:1px solid rgba(23,13,4,.08);border-radius:6px;background:transparent;color:var(--foreground,#170d04);font:400 14px/1.2 var(--font-sans, \"DM Sans\", ui-sans-serif, system-ui, sans-serif);outline:none;transition:border-color .2s,box-shadow .2s}.ds-input::placeholder{color:rgba(23,13,4,.52)}.ds-input:focus-visible{border-color:rgba(184,92,50,.38);box-shadow:0 0 0 3px rgba(184,92,50,.19)}"
+    },
+    {
+      "name": "Chip",
+      "kind": "chip",
+      "refersTo": "chip",
+      "description": "Etiqueta de producto o estado: pergamino, píldora de 20 px.",
+      "html": "<span class=\"ds-chip\">Comercio justo</span>",
+      "css": ".ds-chip{display:inline-flex;align-items:center;height:20px;padding:2px 8px;border-radius:9999px;background:var(--muted,#ede5d8);color:var(--foreground,#170d04);font:500 12px/1 var(--font-sans, \"DM Sans\", ui-sans-serif, system-ui, sans-serif)}"
+    },
+    {
+      "name": "Enlace de navegación",
+      "kind": "nav",
+      "refersTo": "nav",
+      "description": "El relleno espresso barre desde la izquierda al pasar el cursor y el texto se invierte a crema.",
+      "html": "<a class=\"ds-nav\" href=\"#\"><span>Catálogo</span></a>",
+      "css": ".ds-nav{position:relative;display:inline-flex;align-items:center;padding:4px 10px;overflow:hidden;color:rgba(23,13,4,.85);font:500 14px/1.4 var(--font-sans, \"DM Sans\", ui-sans-serif, system-ui, sans-serif);text-decoration:none;transition:color .2s}.ds-nav::before{content:\"\";position:absolute;inset:0;background:var(--foreground,#170d04);transform:scaleX(0);transform-origin:right;transition:transform .24s cubic-bezier(.16,1,.3,1)}.ds-nav:hover::before{transform:scaleX(1);transform-origin:left}.ds-nav:hover{color:var(--background,#faf7f1)}.ds-nav>span{position:relative}"
+    },
+    {
+      "name": "Eyebrow",
+      "kind": "custom",
+      "refersTo": "label",
+      "description": "El patrón único de etiqueta de apoyo: 11 px, mayúsculas, tracking amplio.",
+      "html": "<div class=\"ds-eyebrow\">Selección de especialidad</div>",
+      "css": ".ds-eyebrow{font:500 11px/1.2 var(--font-sans, \"DM Sans\", ui-sans-serif, system-ui, sans-serif);letter-spacing:.18em;text-transform:uppercase;color:rgba(23,13,4,.52)}"
+    },
+    {
+      "name": "Indicador de tueste",
+      "kind": "custom",
+      "refersTo": "roast",
+      "description": "Firma gráfica del producto: nueve cajitas llenas hasta el nivel de tueste.",
+      "html": "<div class=\"ds-roast\"><span class=\"ds-roast-label\">Tueste 5/9</span><span class=\"ds-roast-bar\"><i class=\"on\"></i><i class=\"on\"></i><i class=\"on\"></i><i class=\"on\"></i><i class=\"on\"></i><i></i><i></i><i></i><i></i></span></div>",
+      "css": ".ds-roast{display:flex;align-items:center;gap:12px}.ds-roast-label{font:600 10px/1 var(--font-sans, \"DM Sans\", ui-sans-serif, system-ui, sans-serif);letter-spacing:.16em;text-transform:uppercase;color:rgba(23,13,4,.52)}.ds-roast-bar{display:flex;gap:3px}.ds-roast-bar i{width:10px;height:8px;border:1px solid rgba(23,13,4,.2);border-radius:1px;background:transparent}.ds-roast-bar i.on{background:rgba(23,13,4,.8)}"
+    },
+    {
+      "name": "Tarjeta de producto",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Imagen con degradado de tueste, halo cálido y etiqueta pequeña; sin marco ni sombra.",
+      "html": "<article class=\"ds-product\"><div class=\"ds-product-img\"><span class=\"ds-product-label\">Origen único</span></div><h3 class=\"ds-product-name\">Sierra Nevada</h3><p class=\"ds-product-price\">$ 32.000</p></article>",
+      "css": ".ds-product{width:220px;cursor:pointer}.ds-product-img{position:relative;height:220px;border-radius:2px;overflow:hidden;background:linear-gradient(158deg,#1f0e06 0%,#3d1c0c 40%,#6b2e14 75%,#8b4520 100%);transition:transform .7s}.ds-product-img::after{content:\"\";position:absolute;inset:0;background:radial-gradient(ellipse at 45% 58%,rgba(190,110,50,.24) 0%,transparent 58%)}.ds-product:hover .ds-product-img{transform:scale(1.02)}.ds-product-label{position:absolute;left:12px;top:12px;z-index:1;font:500 10px/1 var(--font-sans, \"DM Sans\", ui-sans-serif, system-ui, sans-serif);letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.85)}.ds-product-name{margin:16px 0 4px;font:600 24px/1.2 var(--font-display, \"Cormorant Garamond\", Georgia, serif);letter-spacing:-.025em;color:var(--foreground,#170d04)}.ds-product-price{margin:0;font:400 14px/1.4 var(--font-sans, \"DM Sans\", ui-sans-serif, system-ui, sans-serif);color:rgba(23,13,4,.7)}"
+    },
+    {
+      "name": "Panel \"Arma tu tienda\"",
+      "kind": "custom",
+      "refersTo": "button-primary",
+      "description": "Píldora espresso plegada que se despliega en tarjeta con presets; flota sobre la tienda demo.",
+      "html": "<button class=\"ds-demo-pill\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" aria-hidden=\"true\"><line x1=\"4\" y1=\"21\" x2=\"4\" y2=\"14\"/><line x1=\"4\" y1=\"10\" x2=\"4\" y2=\"3\"/><line x1=\"12\" y1=\"21\" x2=\"12\" y2=\"12\"/><line x1=\"12\" y1=\"8\" x2=\"12\" y2=\"3\"/><line x1=\"20\" y1=\"21\" x2=\"20\" y2=\"16\"/><line x1=\"20\" y1=\"12\" x2=\"20\" y2=\"3\"/></svg>Arma tu tienda</button>",
+      "css": ".ds-demo-pill{display:inline-flex;align-items:center;gap:8px;padding:10px 16px;border:0;border-radius:9999px;background:var(--foreground,#170d04);color:var(--background,#faf7f1);font:500 12px/1 var(--font-sans, \"DM Sans\", ui-sans-serif, system-ui, sans-serif);box-shadow:0 10px 24px rgba(23,13,4,.25);cursor:pointer}.ds-demo-pill:focus-visible{outline:2px solid var(--accent,#b85c32);outline-offset:2px}"
+    }
+  ],
+  "narrative": {
+    "northStar": "La Tostaduría Editorial",
+    "overview": "Una revista de café impresa que se vende sola. Papel crema, tinta espresso, una serifa elegante a gran tamaño y un único acento terracota. Es un sistema sereno y premium: mucho aire, pocas cosas a la vez, jerarquía por escala y peso de la tipografía y no por cajas, colores ni efectos. El café es el protagonista; la interfaz se aparta.\n\nLa plataforma es multi-tienda, así que el sistema tiene dos capas. **La estructura es de BestCoffee** (crema, espresso, tipografía, hairlines, ritmo) y **el acento es de cada cafetería**: `--accent` lo sobrescribe el color de marca de la tienda y todo lo que sea énfasis (foco, indicadores, detalles) lo hereda. La escena 3D del hero y su paleta oscura son propias de la tienda demo ORÍGEN, no del sistema.",
+    "keyCharacteristics": [
+      "Crema cálido como superficie dominante; espresso como tinta y como escenario oscuro (hero y pie de página).",
+      "Un solo acento, terracota por defecto, intercambiable por tienda.",
+      "Serifa display ligera (Cormorant Garamond) frente a un sans sobrio (DM Sans) con etiquetas en mayúsculas espaciadas.",
+      "Plano y tónico: hairlines y cambios de crema en lugar de sombras en reposo.",
+      "Esquinas casi rectas en el contenido; píldora solo en el llamado a la acción principal.",
+      "Español de Colombia y precios en COP; diseño móvil primero."
+    ],
+    "rules": [
+      {
+        "name": "The One Voice Rule",
+        "body": "El acento aparece en menos del 10 % de cualquier pantalla. Su escasez es lo que lo hace leer como marca.",
+        "section": "colors"
+      },
+      {
+        "name": "The Tinted Neutral Rule",
+        "body": "Ningún neutro es gris puro: todo lleva calidez de café. Ni `#000` ni `#fff`; el blanco real de una superficie es la crema.",
+        "section": "colors"
+      },
+      {
+        "name": "The Tenant Accent Rule",
+        "body": "Toda pieza que use énfasis de color lo toma de `--accent`, nunca de un hex fijo. Así una tienda con otro color de marca no hereda terracota por accidente.",
+        "section": "colors"
+      },
+      {
+        "name": "The Serif-Speaks Rule",
+        "body": "Los titulares son siempre serifa; el sans nunca titula. La excepción son las etiquetas en mayúsculas, que no son titulares.",
+        "section": "typography"
+      },
+      {
+        "name": "The Small-Caps-Label Rule",
+        "body": "Toda etiqueta de apoyo usa el mismo patrón: 11 px, mayúsculas, tracking 0.16–0.18 em. No se inventan otros estilos de etiqueta.",
+        "section": "typography"
+      },
+      {
+        "name": "The Flat-At-Rest Rule",
+        "body": "Una superficie en reposo no proyecta sombra. Si algo sube, es porque el usuario lo activó o porque flota.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "**Do** usar el espresso (`#170d04`) como tinta y crema (`#faf7f1`) como papel; todo neutro lleva calidez.",
+      "**Do** tomar el énfasis siempre de `--accent`, para que cada tienda firme con su color.",
+      "**Do** titular en serifa Cormorant Garamond, ligera (300) en el display y semiaudaz (600) en títulos de página.",
+      "**Do** separar con aire y con hairlines al 8 %, no con cajas ni sombras.",
+      "**Do** mantener las etiquetas de apoyo en el patrón único: 11 px, mayúsculas, tracking 0.16–0.18 em.",
+      "**Do** reservar la píldora para el CTA principal y los chips; el resto es casi recto (2–6 px).",
+      "**Do** diseñar primero para móvil y en español de Colombia, con precios en COP.",
+      "**Do** respetar `prefers-reduced-motion` (ya hay una regla global que reduce animaciones a casi cero)."
+    ],
+    "donts": [
+      "**Don't** parecer una plantilla genérica de SaaS: nada de degradados morados, iconos en círculos de colores ni paneles azules de plantilla.",
+      "**Don't** caer en la cafetería clichê: sin granos de café como fondo repetido, tipografía de pizarra ni sepia nostálgico.",
+      "**Don't** recargar: un solo acento, pocas animaciones y ningún efecto que compita con el producto.",
+      "**Don't** volverlo frío o corporativo: sin grises azulados ni esquinas duras que no se sientan a café.",
+      "**Don't** usar `#000` ni `#fff`, ni un hex fijo de terracota donde corresponde `--accent`.",
+      "**Don't** poner sombras a superficies en reposo ni desenfoques de fondo en elementos que se desplazan: encarecen el scroll.",
+      "**Don't** mostrar reseñas, cifras o testimonios que no sean reales.",
+      "**Don't** extender la escena 3D ni su paleta oscura a otras tiendas: son identidad de la demo ORÍGEN."
+    ]
+  }
+}

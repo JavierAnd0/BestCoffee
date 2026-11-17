@@ -1,5 +1,5 @@
 import { handleUpload, type HandleUploadBody } from "@vercel/blob/client";
-import { hasValidOperatorSession } from "@/lib/auth/operator-guard";
+import { operatorStorageTenant, productImagePrefix } from "@/lib/auth/operator-guard";
 import { NextResponse } from "next/server";
 
 // Emite tokens para que el navegador suba imágenes de producto directo a
@@ -18,8 +18,12 @@ export async function POST(request: Request): Promise<NextResponse> {
       onBeforeGenerateToken: async (pathname) => {
         // Solo un operador REAL puede subir: la cookie no basta (se escribe a mano),
         // el token se comprueba contra el backend.
-        if (!(await hasValidOperatorSession())) throw new Error("No autorizado");
-        if (!pathname.startsWith("products/")) throw new Error("Ruta inválida");
+        // Solo un operador REAL de esta tienda puede subir, y solo dentro de la
+        // carpeta de su tienda: el backend confirma la membresía.
+        const tenantSlug = await operatorStorageTenant();
+        if (!tenantSlug) throw new Error("No autorizado");
+        if (!pathname.startsWith(productImagePrefix(tenantSlug)) || pathname.includes(".."))
+          throw new Error("Ruta inválida");
 
         return {
           allowedContentTypes: ["image/jpeg", "image/png", "image/webp", "image/avif"],

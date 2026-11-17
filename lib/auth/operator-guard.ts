@@ -1,5 +1,7 @@
 import { cookies } from "next/headers";
 import { env } from "../env";
+import { operatorFetch } from "../api/gateway";
+import { getOperatorSession } from "./session-store";
 
 /**
  * ¿Hay un operador REAL autenticado? Comprueba el token contra el backend
@@ -31,4 +33,24 @@ export async function hasValidOperatorSession(): Promise<boolean> {
   } catch {
     return false;
   }
+}
+
+/**
+ * Tienda sobre la que el operador puede subir o borrar archivos en Vercel Blob.
+ * La confirma el backend (miembro con permiso de edición de la tienda del host):
+ * un token válido de otra tienda no basta. Devuelve null si no hay permiso.
+ */
+export async function operatorStorageTenant(): Promise<string | null> {
+  const { token, tenantSlug } = await getOperatorSession();
+  if (!token) return null;
+  if (env.useMocks) return tenantSlug;
+  if (token.endsWith(".local_operator_session")) return null;
+  const r = await operatorFetch<{ tenantSlug?: string }>("/v1/admin/products/storage-access");
+  const slug = r.ok ? r.data?.tenantSlug : undefined;
+  return slug && /^[a-z0-9-]+$/.test(slug) ? slug : null;
+}
+
+/** Prefijo de ruta de las imágenes de producto de una tienda en Blob. */
+export function productImagePrefix(tenantSlug: string): string {
+  return `products/${tenantSlug}/`;
 }

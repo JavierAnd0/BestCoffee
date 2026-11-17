@@ -23,6 +23,7 @@ import { OrderSummary } from "./order-summary";
 import { useCart } from "./cart-context";
 import { MercadoPagoFields, submitMpForm, type MpPaymentData } from "./mercadopago-fields";
 import { ColombiaLocationSelector } from "./colombia-location-selector";
+import { findDepartmentForCity } from "@/lib/data/colombia";
 import { placeOrderAction } from "@/lib/actions/order";
 import { previewDiscountCodeAction } from "@/lib/actions/discount";
 import type { MockAddress, MockCustomer } from "@/lib/mocks/account";
@@ -127,8 +128,8 @@ export function CheckoutWizard({
         lastName: parts.slice(1).join(" ") || "",
         address: defaultAddress.line1 || defaultAddress.line,
         line2: defaultAddress.line2 || "",
-        city: defaultAddress.city || "Bogotá",
-        region: defaultAddress.state || "Cundinamarca",
+        city: defaultAddress.city || "",
+        region: defaultAddress.state || findDepartmentForCity(defaultAddress.city ?? "") || "",
         zip: defaultAddress.postalCode || "",
       };
     }
@@ -194,8 +195,8 @@ export function CheckoutWizard({
       lastName: shipping.lastName || parts.slice(1).join(" ") || "",
       address: addr.line1 || addr.line,
       line2: addr.line2 || "",
-      city: addr.city || "Bogotá",
-      region: addr.state || "Cundinamarca",
+      city: addr.city || "",
+      region: addr.state || findDepartmentForCity(addr.city ?? "") || "",
       zip: addr.postalCode || "",
     });
     setShippingError(null);

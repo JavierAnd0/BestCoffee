@@ -63,6 +63,10 @@ export const env = {
       ? required("NEON_AUTH_COOKIE_SECRET")
       : optional("NEON_AUTH_COOKIE_SECRET", "dev-neon-auth-cookie-secret-min-32-chars-long!"),
 
+  // Correo al que llega "Quiero esta tienda" desde el panel de la demo. Sin un
+  // correo real el botón no se muestra (no se publica un contacto inventado).
+  demoContactEmail: optional("DEMO_CONTACT_EMAIL", ""),
+
   // Resend (Transactional Email & Magic Links)
   resendApiKey: optional("RESEND_API_KEY", ""),
   resendFromEmail: optional(

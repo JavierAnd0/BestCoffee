@@ -1,12 +1,13 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { LayoutDashboard, Store } from "lucide-react";
+import { LayoutDashboard, Store, KeyRound } from "lucide-react";
 import { platformFetch } from "@/lib/api/platform";
 import { OperatorLogoutButton } from "@/components/admin/operator-logout-button";
 
 const NAV = [
   { href: "/platform/superadmin", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { href: "/platform/superadmin/tenants", label: "Tenants", icon: Store },
+  { href: "/platform/superadmin/seguridad", label: "Seguridad", icon: KeyRound },
 ];
 
 export default async function SuperadminLayout({

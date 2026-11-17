@@ -668,6 +668,16 @@ export async function listDiscountCodes(): Promise<AdminDiscountCode[]> {
   }
 }
 
+export interface AdminShippingAddress {
+  recipientName: string;
+  line1: string;
+  line2: string;
+  city: string;
+  state: string;
+  postalCode: string;
+  phone: string;
+}
+
 export interface AdminOrderDetailData {
   id: string;
   createdAt: string;
@@ -678,6 +688,8 @@ export interface AdminOrderDetailData {
   customerPhone: string;
   shippingLine: string;
   shippingCity: string;
+  /** Dirección completa tal como la guardó el pedido (para corregirla). */
+  shippingAddress: AdminShippingAddress;
   trackingNumber: string;
   internalNotes: string;
   subtotalCents: number;
@@ -707,7 +719,10 @@ export async function getAdminOrderDetail(id: string): Promise<AdminOrderDetailD
           phone?: string;
         };
         const addr = (raw.shippingAddress ?? {}) as {
+          recipientName?: string;
           line1?: string;
+          line2?: string;
+          postalCode?: string;
           address?: string;
           city?: string;
           state?: string;
@@ -757,7 +772,17 @@ export async function getAdminOrderDetail(id: string): Promise<AdminOrderDetailD
           shippingCity: [addr.city, addr.state ?? addr.region]
             .filter(Boolean)
             .join(", ") || "Colombia",
-          trackingNumber: String(raw.trackingNumber ?? ""),
+          shippingAddress: {
+            recipientName: addr.recipientName ?? "",
+            line1: addr.line1 ?? addr.address ?? "",
+            line2: addr.line2 ?? "",
+            city: addr.city ?? "",
+            state: addr.state ?? addr.region ?? "",
+            postalCode: addr.postalCode ?? "",
+            phone: addr.phone ?? "",
+          },
+          // El backend guarda la guía en `trackingUrl` (número o enlace).
+          trackingNumber: String(raw.trackingUrl ?? raw.trackingNumber ?? ""),
           internalNotes: String(raw.internalNotes ?? ""),
           subtotalCents,
           shippingCents,
@@ -779,6 +804,15 @@ export async function getAdminOrderDetail(id: string): Promise<AdminOrderDetailD
     customerPhone: "—",
     shippingLine: "Dirección registrada en el pedido",
     shippingCity: "Bogotá, Colombia",
+    shippingAddress: {
+      recipientName: "Cliente Registrado",
+      line1: "Dirección registrada en el pedido",
+      line2: "",
+      city: "Bogotá",
+      state: "Cundinamarca",
+      postalCode: "",
+      phone: "",
+    },
     trackingNumber: "",
     internalNotes: "",
     subtotalCents: 116_000_00,

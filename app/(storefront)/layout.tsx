@@ -15,6 +15,7 @@ import { env } from "@/lib/env";
 import { JsonLd } from "@/components/seo/json-ld";
 import { BrandProvider } from "@/components/storefront/brand-context";
 import { DemoPanel } from "@/components/storefront/demo-panel";
+import { validContact } from "@/lib/demo-plan";
 import { getSiteUrl, organizationLd, tenantDescription, websiteLd } from "@/lib/seo";
 
 // Título por tienda: cada cafetería muestra su propia marca, no la de la demo.
@@ -125,7 +126,9 @@ export default async function StorefrontLayout({
           />
         )}
         <Toaster />
-        {tenant.demo && <DemoPanel features={tenant.features} />}
+        {tenant.demo && (
+          <DemoPanel features={tenant.features} contactEmail={validContact(env.demoContactEmail)} />
+        )}
       </CartProvider>
       </BrandProvider>
     </div>

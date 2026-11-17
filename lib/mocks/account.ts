@@ -66,9 +66,27 @@ export const MOCK_CUSTOMER: MockCustomer = {
   newsletterOptIn: true,
 };
 
+// Con los campos separados que guarda la API (ciudad y departamento aparte):
+// el checkout ya no rellena "Bogotá" cuando faltan.
 export const MOCK_ADDRESSES: MockAddress[] = [
-  { id: "a1", label: "Casa", line: "Cra 12 #34-56, Bogotá", isDefault: true },
-  { id: "a2", label: "Oficina", line: "Cl 93 #11-20, Bogotá", isDefault: false },
+  {
+    id: "a1",
+    label: "Casa",
+    line: "Cra 12 #34-56, Bogotá",
+    line1: "Cra 12 #34-56",
+    city: "Bogotá",
+    state: "Bogotá D.C.",
+    isDefault: true,
+  },
+  {
+    id: "a2",
+    label: "Oficina",
+    line: "Cl 93 #11-20, Bogotá",
+    line1: "Cl 93 #11-20",
+    city: "Bogotá",
+    state: "Bogotá D.C.",
+    isDefault: false,
+  },
 ];
 
 export const MOCK_ORDERS: MockOrder[] = [
