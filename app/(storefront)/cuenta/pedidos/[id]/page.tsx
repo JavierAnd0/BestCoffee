@@ -160,7 +160,7 @@ export default async function OrderDetailPage({ params }: Props) {
           <h2 className="font-medium text-sm mb-3">Dirección de envío</h2>
           <div className="flex items-start gap-2 text-sm text-muted-foreground">
             <MapPin className="size-4 shrink-0 mt-0.5 text-accent" />
-            <span>{order.shippingAddress ?? "Cra 12 #34-56, Bogotá · Colombia"}</span>
+            <span>{order.shippingAddress || "Sin dirección registrada"}</span>
           </div>
         </section>
 

@@ -84,6 +84,70 @@ export interface paths {
         patch: operations["MembersController_updateRole"];
         trace?: never;
     };
+    "/v1/admin/billing": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["AdminBillingController_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/billing/commission/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["AdminBillingController_accept"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/billing/commission/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["AdminBillingController_reject"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/tenant-domains/resolve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["TenantDomainsController_resolve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/auth/login": {
         parameters: {
             query?: never;
@@ -100,6 +164,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/auth/verify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["AuthController_verify"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/auth/me": {
         parameters: {
             query?: never;
@@ -110,6 +190,102 @@ export interface paths {
         get: operations["AuthController_me"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/auth/mfa/verify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["AuthController_verifyMfa"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/auth/mfa": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["AuthController_mfaStatus"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/auth/mfa/setup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["AuthController_mfaSetup"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/auth/mfa/enable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["AuthController_mfaEnable"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/auth/mfa/disable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["AuthController_mfaDisable"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/auth/mfa/recovery-codes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["AuthController_mfaRecoveryCodes"];
         delete?: never;
         options?: never;
         head?: never;
@@ -158,6 +334,22 @@ export interface paths {
         get: operations["AdminProductsController_list"];
         put?: never;
         post: operations["AdminProductsController_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/products/storage-access": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["AdminProductsController_storageAccess"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -468,6 +660,70 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/admin/blog": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["AdminBlogController_list"];
+        put?: never;
+        post: operations["AdminBlogController_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/blog/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["AdminBlogController_findOne"];
+        put?: never;
+        post?: never;
+        delete: operations["AdminBlogController_remove"];
+        options?: never;
+        head?: never;
+        patch: operations["AdminBlogController_update"];
+        trace?: never;
+    };
+    "/v1/admin/blog/{id}/publish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["AdminBlogController_publish"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/blog/{id}/unpublish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["AdminBlogController_unpublish"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/quiz/recommend": {
         parameters: {
             query?: never;
@@ -494,6 +750,70 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["CartController_price"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/cart": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["CartController_getCart"];
+        put?: never;
+        post?: never;
+        delete: operations["CartController_clearCart"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/cart/items": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["CartController_addItem"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/cart/items/{variantId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["CartController_removeItem"];
+        options?: never;
+        head?: never;
+        patch: operations["CartController_updateItem"];
+        trace?: never;
+    };
+    "/v1/cart/merge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["CartController_mergeCart"];
         delete?: never;
         options?: never;
         head?: never;
@@ -580,6 +900,182 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/newsletter/subscribe": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["NewsletterController_subscribe"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/auth/customer/register": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["CustomerAuthController_register"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/auth/customer/verify-email": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["CustomerAuthController_verifyEmail"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/auth/customer/login": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["CustomerAuthController_login"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/auth/customer/forgot-password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["CustomerAuthController_forgotPassword"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/auth/customer/reset-password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["CustomerAuthController_resetPassword"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/auth/customer/neon-sync": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["CustomerAuthController_syncNeon"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/auth/customer/logout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["CustomerAuthController_logout"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/customers/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["CustomersController_me"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["CustomersController_updateMe"];
+        trace?: never;
+    };
+    "/v1/customers/me/addresses": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["AddressesController_list"];
+        put?: never;
+        post: operations["AddressesController_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/customers/me/addresses/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["AddressesController_remove"];
+        options?: never;
+        head?: never;
+        patch: operations["AddressesController_update"];
+        trace?: never;
+    };
     "/v1/admin/orders": {
         parameters: {
             query?: never;
@@ -626,6 +1122,102 @@ export interface paths {
         options?: never;
         head?: never;
         patch: operations["AdminOrdersController_updateStatus"];
+        trace?: never;
+    };
+    "/v1/orders": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["CustomerOrdersController_list"];
+        put?: never;
+        post: operations["CheckoutController_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/orders/guest": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["CheckoutController_createGuest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/orders/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["CustomerOrdersController_findOne"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/mercadopago/connect": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["MercadoPagoConnectController_connect"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/mercadopago/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["MercadoPagoConnectController_status"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/mercadopago/disconnect": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["MercadoPagoConnectController_disconnect"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/v1/admin/subscriptions": {
@@ -724,6 +1316,102 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/subscriptions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["CustomerSubscriptionsController_list"];
+        put?: never;
+        post: operations["CustomerSubscriptionsController_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/subscriptions/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["CustomerSubscriptionsController_findOne"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["CustomerSubscriptionsController_update"];
+        trace?: never;
+    };
+    "/v1/subscriptions/{id}/pause": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["CustomerSubscriptionsController_pause"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/subscriptions/{id}/resume": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["CustomerSubscriptionsController_resume"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/subscriptions/{id}/skip-next": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["CustomerSubscriptionsController_skipNext"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/subscriptions/{id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["CustomerSubscriptionsController_cancel"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/admin/discount-codes": {
         parameters: {
             query?: never;
@@ -788,6 +1476,326 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/brew-guides": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["BrewGuidesController_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/brew-guides/{slug}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["BrewGuidesController_findOne"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/locations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["LocationsController_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/brew-guides": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["AdminBrewGuidesController_list"];
+        put?: never;
+        post: operations["AdminBrewGuidesController_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/brew-guides/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["AdminBrewGuidesController_findOne"];
+        put?: never;
+        post?: never;
+        delete: operations["AdminBrewGuidesController_remove"];
+        options?: never;
+        head?: never;
+        patch: operations["AdminBrewGuidesController_update"];
+        trace?: never;
+    };
+    "/v1/admin/locations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["AdminLocationsController_list"];
+        put?: never;
+        post: operations["AdminLocationsController_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/locations/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["AdminLocationsController_findOne"];
+        put?: never;
+        post?: never;
+        delete: operations["AdminLocationsController_remove"];
+        options?: never;
+        head?: never;
+        patch: operations["AdminLocationsController_update"];
+        trace?: never;
+    };
+    "/v1/admin/gifts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GiftsAdminController_list"];
+        put?: never;
+        post: operations["GiftsAdminController_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/gifts/redeem": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["GiftsCustomerController_redeem"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/platform/tenants": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["PlatformTenantsController_list"];
+        put?: never;
+        post: operations["PlatformTenantsController_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/platform/tenants/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["PlatformTenantsController_findOne"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["PlatformTenantsController_update"];
+        trace?: never;
+    };
+    "/v1/platform/tenants/{id}/domains": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["PlatformTenantsController_listDomains"];
+        put?: never;
+        post: operations["PlatformTenantsController_addDomain"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/platform/tenants/{id}/domains/{domainId}/verify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["PlatformTenantsController_verifyDomain"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/platform/tenants/{id}/domains/{domainId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["PlatformTenantsController_removeDomain"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/platform/tenants/{id}/impersonate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["PlatformTenantsController_impersonate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/platform/tiers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["PlatformTiersController_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/dashboard/kpis": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["AdminDashboardController_kpis"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/dashboard/alerts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["AdminDashboardController_alerts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/dashboard/sales": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["AdminDashboardController_sales"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/customers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["AdminCustomersController_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -801,6 +1809,19 @@ export interface components {
             font?: string;
             /** @description URL del logo */
             logoUrl?: string;
+            /** @example Mi Café S.A.S. */
+            legalName?: string;
+            /**
+             * @description NIT
+             * @example 900.000.000-0
+             */
+            legalId?: string;
+            /** @example hola@micafe.co */
+            contactEmail?: string;
+            /** @example +57 300 123 4567 */
+            contactPhone?: string;
+            /** @example Bogotá */
+            city?: string;
         };
         ShippingSettingsDto: {
             /** @description Umbral de envío gratis (centavos COP) */
@@ -808,10 +1829,17 @@ export interface components {
             /** @description Tarifa plana de envío (centavos COP) */
             shippingFlatCents?: number;
         };
+        NewsletterSettingsDto: {
+            /** @description Mostrar la invitación discreta a visitantes sin sesión */
+            popupEnabled?: boolean;
+            /** @description Código de descuento de bienvenida (debe existir y estar activo). null o vacío = sin oferta. */
+            welcomeCode?: Record<string, never> | null;
+        };
         UpdateSettingsDto: {
             name?: string;
             branding?: components["schemas"]["BrandingDto"];
             shipping?: components["schemas"]["ShippingSettingsDto"];
+            newsletter?: components["schemas"]["NewsletterSettingsDto"];
         };
         AddMemberDto: {
             /** @description Email del operador (se crea si no existe) */
@@ -828,6 +1856,24 @@ export interface components {
         LoginDto: {
             /** @example operador@origen.co */
             email: string;
+            /** @description Token de verificación emitido por Cloudflare Turnstile */
+            turnstileToken?: string;
+        };
+        VerifyLoginDto: {
+            /** @example operador@origen.co */
+            email: string;
+            /** @description Token raw recibido en el enlace de acceso */
+            token: string;
+        };
+        VerifyMfaDto: {
+            /** @example 123456 */
+            code: string;
+            /** @description Token del paso pendiente que devolvió /verify */
+            mfaToken: string;
+        };
+        MfaCodeDto: {
+            /** @example 123456 */
+            code: string;
         };
         CreateVariantDto: {
             /**
@@ -849,7 +1895,7 @@ export interface components {
             /** @description Slug URL-safe. Si se omite, se deriva del nombre. */
             slug?: string;
             /** @enum {string} */
-            type: "BLEND" | "SINGLE_ORIGIN" | "DECAF";
+            type: "BLEND" | "SINGLE_ORIGIN" | "DECAF" | "ACCESSORY";
             origin?: string;
             description?: string;
             producerStory?: string;
@@ -875,7 +1921,7 @@ export interface components {
             /** @description Slug URL-safe. Si se omite, se deriva del nombre. */
             slug?: string;
             /** @enum {string} */
-            type?: "BLEND" | "SINGLE_ORIGIN" | "DECAF";
+            type?: "BLEND" | "SINGLE_ORIGIN" | "DECAF" | "ACCESSORY";
             origin?: string;
             description?: string;
             producerStory?: string;
@@ -920,7 +1966,7 @@ export interface components {
         };
         AutoRulesDto: {
             /** @enum {string} */
-            type?: "BLEND" | "SINGLE_ORIGIN" | "DECAF";
+            type?: "BLEND" | "SINGLE_ORIGIN" | "DECAF" | "ACCESSORY";
             /** @description Tostado mínimo (1..9) */
             roastLevelGte?: number;
             /** @description Tostado máximo (1..9) */
@@ -1002,6 +2048,42 @@ export interface components {
             endsAt?: Record<string, never> | null;
             position?: number;
         };
+        CreateBlogPostDto: {
+            title: string;
+            /** @description Slug único en la tienda; si se omite se deriva del título */
+            slug?: string;
+            /** @description Entradilla / resumen */
+            excerpt?: string;
+            /** @description Texto del artículo; párrafos separados por una línea en blanco */
+            body: string;
+            /** @description URL de la portada */
+            coverUrl?: string;
+            /**
+             * @description true = publicado; false = borrador
+             * @default false
+             */
+            published: boolean;
+            /** @description Fecha de publicación (ISO). Solo con published=true; una fecha futura programa el artículo */
+            publishedAt?: string;
+        };
+        UpdateBlogPostDto: {
+            title?: string;
+            /** @description Slug único en la tienda; si se omite se deriva del título */
+            slug?: string;
+            /** @description Entradilla / resumen */
+            excerpt?: string;
+            /** @description Texto del artículo; párrafos separados por una línea en blanco */
+            body?: string;
+            /** @description URL de la portada */
+            coverUrl?: string;
+            /**
+             * @description true = publicado; false = borrador
+             * @default false
+             */
+            published: boolean;
+            /** @description Fecha de publicación (ISO). Solo con published=true; una fecha futura programa el artículo */
+            publishedAt?: string;
+        };
         QuizAnswersDto: {
             /** @enum {string} */
             roast?: "LIGHT" | "MEDIUM" | "DARK";
@@ -1011,7 +2093,7 @@ export interface components {
              * @description Tipo preferido
              * @enum {string}
              */
-            type?: "BLEND" | "SINGLE_ORIGIN" | "DECAF";
+            type?: "BLEND" | "SINGLE_ORIGIN" | "DECAF" | "ACCESSORY";
             /** @description Prefiere descafeinado */
             decaf?: boolean;
             /**
@@ -1064,6 +2146,44 @@ export interface components {
             hasStockIssues: boolean;
             discount?: components["schemas"]["CartDiscountDto"];
         };
+        CustomerCartItemDto: {
+            id: string;
+            variantId: string;
+            quantity: number;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        CustomerCartResponseDto: {
+            lines: components["schemas"]["CartLineDto"][];
+            subtotalCents: number;
+            discountCents: number;
+            shippingCents: number;
+            totalCents: number;
+            /** @description Faltó stock en alguna línea */
+            hasStockIssues: boolean;
+            discount?: components["schemas"]["CartDiscountDto"];
+            /** @description Registros base en BD con ID y cantidad */
+            rawItems: components["schemas"]["CustomerCartItemDto"][];
+        };
+        AddCartItemDto: {
+            /** @description ID de la variante de producto */
+            variantId: string;
+            /**
+             * @description Cantidad a agregar al carrito
+             * @default 1
+             */
+            quantity: number;
+        };
+        UpdateCartItemDto: {
+            /** @description Nueva cantidad del item (0 para eliminarlo) */
+            quantity: number;
+        };
+        MergeCartDto: {
+            /** @description Lista de items locales de localStorage para fusionar */
+            items: components["schemas"]["CartItemDto"][];
+        };
         CreateReviewDto: {
             /** @description Slug del producto reseñado */
             productSlug: string;
@@ -1072,6 +2192,8 @@ export interface components {
             rating: number;
             title?: string;
             body: string;
+            /** @description Token de verificación emitido por Cloudflare Turnstile */
+            turnstileToken?: string;
         };
         ApproveReviewDto: {
             /** @description Marcar como suscriptor verificado */
@@ -1080,11 +2202,114 @@ export interface components {
         ReplyReviewDto: {
             reply?: string;
         };
+        SubscribeNewsletterDto: {
+            /** @example cliente@correo.com */
+            email: string;
+            /** @enum {string} */
+            source?: "popup" | "footer";
+        };
+        RegisterCustomerDto: {
+            /** @example ana@ejemplo.co */
+            email: string;
+            /** @example MiClave123 */
+            password: string;
+            /** @example Ana García */
+            name?: string;
+            /** @description Token de verificación emitido por Cloudflare Turnstile */
+            turnstileToken?: string;
+        };
+        VerifyEmailDto: {
+            /** @description Token recibido por correo */
+            token: string;
+            /** @example ana@ejemplo.co */
+            email: string;
+        };
+        CustomerLoginDto: {
+            /** @example ana@ejemplo.co */
+            email: string;
+            /** @example MiClave123 */
+            password: string;
+            /** @description Token de verificación emitido por Cloudflare Turnstile */
+            turnstileToken?: string;
+        };
+        ForgotPasswordDto: {
+            /** @example ana@ejemplo.co */
+            email: string;
+            /** @description Token de verificación emitido por Cloudflare Turnstile */
+            turnstileToken?: string;
+        };
+        ResetPasswordDto: {
+            /** @example ana@ejemplo.co */
+            email: string;
+            /** @description Token recibido en el enlace del correo */
+            token: string;
+            /** @example NuevaClave123 */
+            newPassword: string;
+        };
+        SyncNeonCustomerDto: {
+            /** @example usuario@gmail.com */
+            email: string;
+            /** @example Juan Pérez */
+            name?: string;
+        };
+        UpdateCustomerDto: {
+            /** @description Nombre completo */
+            name?: string;
+            /** @description Teléfono de contacto */
+            phone?: string;
+            /** @description Recibir novedades, promociones y guías por correo. Los correos de pedidos y envíos no dependen de esta preferencia. */
+            newsletterOptIn?: boolean;
+        };
+        CreateAddressDto: {
+            label?: string;
+            line1?: string;
+            line2?: string;
+            city?: string;
+            state?: string;
+            postalCode?: string;
+            /** @default CO */
+            country: string;
+            phone?: string;
+            /** @default false */
+            isDefault: boolean;
+        };
+        UpdateAddressDto: {
+            label?: string;
+            line1?: string;
+            line2?: string;
+            city?: string;
+            state?: string;
+            postalCode?: string;
+            country?: string;
+            phone?: string;
+            isDefault?: boolean;
+        };
         UpdateOrderStatusDto: {
             /** @enum {string} */
             status: "RECEIVED" | "PREPARING" | "SHIPPED" | "DELIVERED" | "CANCELLED";
             /** @description URL de seguimiento (recomendada al pasar a SHIPPED) */
             trackingUrl?: string;
+        };
+        ShippingAddressDto: {
+            /**
+             * @description Quién recibe el pedido (puede no ser el titular de la cuenta)
+             * @example Ana Pérez
+             */
+            recipientName?: string;
+            /** @example Calle 123 # 45-67 */
+            line1: string;
+            /** @example Apto 301 */
+            line2?: string;
+            /** @example Bogotá */
+            city: string;
+            /** @example Cundinamarca */
+            state?: string;
+            /** @example 110111 */
+            postalCode?: string;
+            /** @default CO */
+            country: string;
+            /** @example +57 300 123 4567 */
+            phone?: string;
         };
         UpdateOrderDto: {
             /** @enum {string} */
@@ -1093,12 +2318,76 @@ export interface components {
             trackingUrl?: string;
             /** @description Notas internas (no visibles al cliente) */
             internalNotes?: string;
+            /** @description Corrige la dirección de envío. Solo antes del despacho (Recibido o En preparación). */
+            shippingAddress?: components["schemas"]["ShippingAddressDto"];
+        };
+        OrderItemDto: {
+            variantId: string;
+            quantity: number;
+            /** @description Solo en modo SUBSCRIPTION: cada cuántos días se envía */
+            frequencyDays?: number;
+        };
+        MpPaymentInputDto: {
+            /** @description Card token generado por MercadoPago.js */
+            cardToken: string;
+            /** @example visa */
+            paymentMethodId: string;
+            /** @default 1 */
+            installments: number;
+            issuerId?: string;
+            /** @description Email del pagador; por defecto el del cliente */
+            payerEmail?: string;
+        };
+        CreateOrderDto: {
+            items: components["schemas"]["OrderItemDto"][];
+            /**
+             * @default ONE_TIME
+             * @enum {string}
+             */
+            mode: "ONE_TIME" | "SUBSCRIPTION";
+            /**
+             * @description Solo en modo SUBSCRIPTION: frecuencia de envío en días (las líneas pueden fijar la suya)
+             * @default 30
+             */
+            frequencyDays: number;
+            discountCode?: string;
+            shippingAddress: components["schemas"]["ShippingAddressDto"];
+            payment?: components["schemas"]["MpPaymentInputDto"];
+        };
+        CreateGuestOrderDto: {
+            items: components["schemas"]["OrderItemDto"][];
+            /**
+             * @default ONE_TIME
+             * @enum {string}
+             */
+            mode: "ONE_TIME" | "SUBSCRIPTION";
+            /**
+             * @description Solo en modo SUBSCRIPTION: frecuencia de envío en días (las líneas pueden fijar la suya)
+             * @default 30
+             */
+            frequencyDays: number;
+            discountCode?: string;
+            shippingAddress: components["schemas"]["ShippingAddressDto"];
+            payment?: components["schemas"]["MpPaymentInputDto"];
+            /** @example cliente@correo.com */
+            email: string;
+            /** @example María García */
+            name?: string;
         };
         UpdateSubscriptionDto: {
             /** @description Frecuencia en días (7..365) */
             frequencyDays?: number;
             /** @description Descuento por suscripción (0..100) */
             discountPct?: number;
+        };
+        CreateSubscriptionDto: {
+            variantId: string;
+            frequencyDays: number;
+            /** @description ID de una dirección guardada del cliente */
+            addressId?: string;
+        };
+        UpdateMySubDto: {
+            frequencyDays: number;
         };
         CreateDiscountCodeDto: {
             /**
@@ -1151,6 +2440,170 @@ export interface components {
             endsAt?: string;
             /** @default true */
             active: boolean;
+        };
+        BrewStepDto: {
+            title: string;
+            body?: string;
+            /**
+             * @description Duración del paso en segundos
+             * @default 0
+             */
+            durationSec: number;
+        };
+        CreateBrewGuideDto: {
+            title: string;
+            /** @description Nombre corto del método (V60, Prensa francesa…) */
+            method?: string;
+            /** @description Slug único en la tienda (URL /guias/<slug>); si se omite se deriva del método o título */
+            slug?: string;
+            summary?: string;
+            /** @description Tiempo total legible ("4 min") */
+            totalTime?: string;
+            /**
+             * @default Media
+             * @enum {string}
+             */
+            difficulty: "Fácil" | "Media" | "Avanzada";
+            steps?: components["schemas"]["BrewStepDto"][];
+            /** @description URL de la portada */
+            coverUrl?: string;
+        };
+        UpdateBrewGuideDto: {
+            title?: string;
+            /** @description Nombre corto del método (V60, Prensa francesa…) */
+            method?: string;
+            /** @description Slug único en la tienda (URL /guias/<slug>); si se omite se deriva del método o título */
+            slug?: string;
+            summary?: string;
+            /** @description Tiempo total legible ("4 min") */
+            totalTime?: string;
+            /**
+             * @default Media
+             * @enum {string}
+             */
+            difficulty: "Fácil" | "Media" | "Avanzada";
+            steps?: components["schemas"]["BrewStepDto"][];
+            /** @description URL de la portada */
+            coverUrl?: string;
+        };
+        CreateLocationDto: {
+            /** @example Sede Chapinero */
+            name: string;
+            /** @example Cra 13 #57-32 */
+            address: string;
+            /** @example Bogotá */
+            city: string;
+            phone?: Record<string, never> | null;
+            /** @description Horario legible ("Lun–Sáb · 8:00–18:00") */
+            hours?: Record<string, never> | null;
+            /** @description Latitud (mapa) */
+            lat?: Record<string, never> | null;
+            /** @description Longitud (mapa) */
+            lng?: Record<string, never> | null;
+        };
+        UpdateLocationDto: {
+            /** @example Sede Chapinero */
+            name?: string;
+            /** @example Cra 13 #57-32 */
+            address?: string;
+            /** @example Bogotá */
+            city?: string;
+            phone?: Record<string, never> | null;
+            /** @description Horario legible ("Lun–Sáb · 8:00–18:00") */
+            hours?: Record<string, never> | null;
+            /** @description Latitud (mapa) */
+            lat?: Record<string, never> | null;
+            /** @description Longitud (mapa) */
+            lng?: Record<string, never> | null;
+        };
+        CreateGiftDto: {
+            variantId: string;
+            /** @description Email del comprador / remitente del regalo */
+            buyerEmail: string;
+            /** @description Número de envíos incluidos en el regalo */
+            totalShipments: number;
+            message?: string;
+        };
+        RedeemGiftDto: {
+            /** @description Código del regalo (ej. ABCD-EF12-3456) */
+            redemptionCode: string;
+            /**
+             * @description Frecuencia de envío en días
+             * @default 30
+             */
+            frequencyDays: number;
+            /** @description ID de una dirección guardada del cliente */
+            addressId?: string;
+        };
+        CreatePlatformTenantDto: {
+            /**
+             * @description Slug único (solo letras minúsculas, números y guiones)
+             * @example cafe-roma
+             */
+            slug: string;
+            /** @example Café Roma */
+            name: string;
+            /**
+             * @default STARTER
+             * @enum {string}
+             */
+            tier: "STARTER" | "PRO" | "BUSINESS";
+            /**
+             * @description Email del primer TENANT_OWNER
+             * @example owner@caferoma.com
+             */
+            ownerEmail: string;
+            /** @example María García */
+            ownerName?: string;
+            /**
+             * @description Dominio personalizado (sin https://)
+             * @example tienda.caferoma.com
+             */
+            domain?: string;
+            /**
+             * @description Feature flags iniciales
+             * @example {
+             *       "subscriptions": true
+             *     }
+             */
+            features?: Record<string, never>;
+            /** @description Habilita el cobro por comisión (solo PRO/BUSINESS). Solo puede definirse al crear. */
+            commissionEnabled?: boolean;
+            /** @description % de comisión inicial (si commissionEnabled) */
+            commissionPct?: number;
+        };
+        UpdatePlatformTenantDto: {
+            /** @enum {string} */
+            tier?: "STARTER" | "PRO" | "BUSINESS";
+            /** @description Feature flags (merge con los existentes) */
+            features?: Record<string, never>;
+            /** @description Datos de branding (merge con los existentes) */
+            branding?: Record<string, never>;
+            /** @enum {string} */
+            billingType?: "SUBSCRIPTION" | "ONE_TIME" | "COMMISSION";
+            /** @enum {string} */
+            billingStatus?: "ACTIVE" | "PAST_DUE" | "CANCELLED" | "INACTIVE";
+            /** @enum {string|null} */
+            billingCycle?: "MONTHLY" | "QUARTERLY" | "ANNUAL" | null;
+            /** @description ISO date — inicio de suscripción o pago único */
+            billingStartedAt?: Record<string, never> | null;
+            /** @description ISO date — próxima renovación o fin de mantenimiento */
+            currentPeriodEnd?: Record<string, never> | null;
+            /** @description ISO date — cancelación */
+            cancelledAt?: Record<string, never> | null;
+            /** @description Pago único: ¿cobra mantenimiento recurrente? */
+            hasMaintenance?: boolean;
+            /** @description Monto del cobro en centavos COP */
+            billingAmountCents?: Record<string, never> | null;
+            /** @description % de comisión sobre ventas (0–100) */
+            commissionPct?: number;
+        };
+        AddTenantDomainDto: {
+            /**
+             * @description Dominio propio de la tienda (sin https://)
+             * @example tienda.caferoma.com
+             */
+            domain: string;
         };
     };
     responses: never;
@@ -1337,6 +2790,88 @@ export interface operations {
             };
         };
     };
+    AdminBillingController_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug del tenant (lo pega el SDK del front) */
+                "X-Tenant-Slug"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminBillingController_accept: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug del tenant (lo pega el SDK del front) */
+                "X-Tenant-Slug"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminBillingController_reject: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug del tenant (lo pega el SDK del front) */
+                "X-Tenant-Slug"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    TenantDomainsController_resolve: {
+        parameters: {
+            query: {
+                host: string;
+            };
+            header?: {
+                /** @description Slug del tenant (lo pega el SDK del front) */
+                "X-Tenant-Slug"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     AuthController_login: {
         parameters: {
             query?: never;
@@ -1353,7 +2888,31 @@ export interface operations {
             };
         };
         responses: {
-            201: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AuthController_verify: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug del tenant (lo pega el SDK del front) */
+                "X-Tenant-Slug"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VerifyLoginDto"];
+            };
+        };
+        responses: {
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -1381,10 +2940,146 @@ export interface operations {
             };
         };
     };
+    AuthController_verifyMfa: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug del tenant (lo pega el SDK del front) */
+                "X-Tenant-Slug"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VerifyMfaDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AuthController_mfaStatus: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug del tenant (lo pega el SDK del front) */
+                "X-Tenant-Slug"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AuthController_mfaSetup: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug del tenant (lo pega el SDK del front) */
+                "X-Tenant-Slug"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AuthController_mfaEnable: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug del tenant (lo pega el SDK del front) */
+                "X-Tenant-Slug"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MfaCodeDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AuthController_mfaDisable: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug del tenant (lo pega el SDK del front) */
+                "X-Tenant-Slug"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MfaCodeDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AuthController_mfaRecoveryCodes: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug del tenant (lo pega el SDK del front) */
+                "X-Tenant-Slug"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MfaCodeDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     ProductsController_list: {
         parameters: {
             query?: {
-                type?: "BLEND" | "SINGLE_ORIGIN" | "DECAF";
+                type?: "BLEND" | "SINGLE_ORIGIN" | "DECAF" | "ACCESSORY";
                 /** @description Tostado mínimo (1..9) */
                 roastMin?: number;
                 /** @description Nota de cata a filtrar */
@@ -1476,6 +3171,26 @@ export interface operations {
         };
         responses: {
             201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminProductsController_storageAccess: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug del tenant (lo pega el SDK del front) */
+                "X-Tenant-Slug"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -2119,6 +3834,165 @@ export interface operations {
             };
         };
     };
+    AdminBlogController_list: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug del tenant (lo pega el SDK del front) */
+                "X-Tenant-Slug"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Todos los artículos, borradores incluidos */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminBlogController_create: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug del tenant (lo pega el SDK del front) */
+                "X-Tenant-Slug"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateBlogPostDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminBlogController_findOne: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug del tenant (lo pega el SDK del front) */
+                "X-Tenant-Slug"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminBlogController_remove: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug del tenant (lo pega el SDK del front) */
+                "X-Tenant-Slug"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminBlogController_update: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug del tenant (lo pega el SDK del front) */
+                "X-Tenant-Slug"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateBlogPostDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminBlogController_publish: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug del tenant (lo pega el SDK del front) */
+                "X-Tenant-Slug"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminBlogController_unpublish: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug del tenant (lo pega el SDK del front) */
+                "X-Tenant-Slug"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     QuizController_recommend: {
         parameters: {
             query?: never;
@@ -2166,6 +4040,154 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CartPriceResponseDto"];
+                };
+            };
+        };
+    };
+    CartController_getCart: {
+        parameters: {
+            query: {
+                discountCode: string;
+            };
+            header?: {
+                /** @description Slug del tenant (lo pega el SDK del front) */
+                "X-Tenant-Slug"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomerCartResponseDto"];
+                };
+            };
+        };
+    };
+    CartController_clearCart: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug del tenant (lo pega el SDK del front) */
+                "X-Tenant-Slug"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CartController_addItem: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug del tenant (lo pega el SDK del front) */
+                "X-Tenant-Slug"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AddCartItemDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomerCartResponseDto"];
+                };
+            };
+        };
+    };
+    CartController_removeItem: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug del tenant (lo pega el SDK del front) */
+                "X-Tenant-Slug"?: string;
+            };
+            path: {
+                variantId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomerCartResponseDto"];
+                };
+            };
+        };
+    };
+    CartController_updateItem: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug del tenant (lo pega el SDK del front) */
+                "X-Tenant-Slug"?: string;
+            };
+            path: {
+                variantId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateCartItemDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomerCartResponseDto"];
+                };
+            };
+        };
+    };
+    CartController_mergeCart: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug del tenant (lo pega el SDK del front) */
+                "X-Tenant-Slug"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MergeCartDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomerCartResponseDto"];
                 };
             };
         };
@@ -2291,6 +4313,333 @@ export interface operations {
             };
         };
     };
+    NewsletterController_subscribe: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug del tenant (lo pega el SDK del front) */
+                "X-Tenant-Slug"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SubscribeNewsletterDto"];
+            };
+        };
+        responses: {
+            /** @description Suscripción registrada (respuesta uniforme) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CustomerAuthController_register: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug del tenant (lo pega el SDK del front) */
+                "X-Tenant-Slug"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegisterCustomerDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CustomerAuthController_verifyEmail: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug del tenant (lo pega el SDK del front) */
+                "X-Tenant-Slug"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VerifyEmailDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CustomerAuthController_login: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug del tenant (lo pega el SDK del front) */
+                "X-Tenant-Slug"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CustomerLoginDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CustomerAuthController_forgotPassword: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug del tenant (lo pega el SDK del front) */
+                "X-Tenant-Slug"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ForgotPasswordDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CustomerAuthController_resetPassword: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug del tenant (lo pega el SDK del front) */
+                "X-Tenant-Slug"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResetPasswordDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CustomerAuthController_syncNeon: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Secreto compartido (REVALIDATE_SECRET) entre front y API */
+                "x-internal-secret": string;
+                /** @description Slug del tenant (lo pega el SDK del front) */
+                "X-Tenant-Slug"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SyncNeonCustomerDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CustomerAuthController_logout: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug del tenant (lo pega el SDK del front) */
+                "X-Tenant-Slug"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CustomersController_me: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug del tenant (lo pega el SDK del front) */
+                "X-Tenant-Slug"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CustomersController_updateMe: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug del tenant (lo pega el SDK del front) */
+                "X-Tenant-Slug"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateCustomerDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AddressesController_list: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug del tenant (lo pega el SDK del front) */
+                "X-Tenant-Slug"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AddressesController_create: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug del tenant (lo pega el SDK del front) */
+                "X-Tenant-Slug"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateAddressDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AddressesController_remove: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug del tenant (lo pega el SDK del front) */
+                "X-Tenant-Slug"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AddressesController_update: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug del tenant (lo pega el SDK del front) */
+                "X-Tenant-Slug"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateAddressDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     AdminOrdersController_list: {
         parameters: {
             query?: {
@@ -2384,6 +4733,161 @@ export interface operations {
                 "application/json": components["schemas"]["UpdateOrderStatusDto"];
             };
         };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CustomerOrdersController_list: {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: number;
+            };
+            header?: {
+                /** @description Slug del tenant (lo pega el SDK del front) */
+                "X-Tenant-Slug"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CheckoutController_create: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug del tenant (lo pega el SDK del front) */
+                "X-Tenant-Slug"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateOrderDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CheckoutController_createGuest: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Secreto compartido (REVALIDATE_SECRET) entre front y API */
+                "x-internal-secret": string;
+                /** @description Slug del tenant (lo pega el SDK del front) */
+                "X-Tenant-Slug"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateGuestOrderDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CustomerOrdersController_findOne: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug del tenant (lo pega el SDK del front) */
+                "X-Tenant-Slug"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    MercadoPagoConnectController_connect: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug del tenant (lo pega el SDK del front) */
+                "X-Tenant-Slug"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    MercadoPagoConnectController_status: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug del tenant (lo pega el SDK del front) */
+                "X-Tenant-Slug"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    MercadoPagoConnectController_disconnect: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug del tenant (lo pega el SDK del front) */
+                "X-Tenant-Slug"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             200: {
                 headers: {
@@ -2535,6 +5039,189 @@ export interface operations {
         };
     };
     AdminSubscriptionsController_cancel: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug del tenant (lo pega el SDK del front) */
+                "X-Tenant-Slug"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CustomerSubscriptionsController_list: {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: number;
+            };
+            header?: {
+                /** @description Slug del tenant (lo pega el SDK del front) */
+                "X-Tenant-Slug"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CustomerSubscriptionsController_create: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug del tenant (lo pega el SDK del front) */
+                "X-Tenant-Slug"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateSubscriptionDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CustomerSubscriptionsController_findOne: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug del tenant (lo pega el SDK del front) */
+                "X-Tenant-Slug"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CustomerSubscriptionsController_update: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug del tenant (lo pega el SDK del front) */
+                "X-Tenant-Slug"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateMySubDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CustomerSubscriptionsController_pause: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug del tenant (lo pega el SDK del front) */
+                "X-Tenant-Slug"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CustomerSubscriptionsController_resume: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug del tenant (lo pega el SDK del front) */
+                "X-Tenant-Slug"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CustomerSubscriptionsController_skipNext: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug del tenant (lo pega el SDK del front) */
+                "X-Tenant-Slug"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CustomerSubscriptionsController_cancel: {
         parameters: {
             query?: never;
             header?: {
@@ -2719,6 +5406,685 @@ export interface operations {
             path: {
                 id: string;
             };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    BrewGuidesController_list: {
+        parameters: {
+            query?: {
+                limit?: number;
+                cursor?: string;
+            };
+            header?: {
+                /** @description Slug del tenant (lo pega el SDK del front) */
+                "X-Tenant-Slug"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    BrewGuidesController_findOne: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug del tenant (lo pega el SDK del front) */
+                "X-Tenant-Slug"?: string;
+            };
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    LocationsController_list: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug del tenant (lo pega el SDK del front) */
+                "X-Tenant-Slug"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminBrewGuidesController_list: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug del tenant (lo pega el SDK del front) */
+                "X-Tenant-Slug"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Guías de la tienda con sus pasos */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminBrewGuidesController_create: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug del tenant (lo pega el SDK del front) */
+                "X-Tenant-Slug"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateBrewGuideDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminBrewGuidesController_findOne: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug del tenant (lo pega el SDK del front) */
+                "X-Tenant-Slug"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminBrewGuidesController_remove: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug del tenant (lo pega el SDK del front) */
+                "X-Tenant-Slug"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminBrewGuidesController_update: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug del tenant (lo pega el SDK del front) */
+                "X-Tenant-Slug"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateBrewGuideDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminLocationsController_list: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug del tenant (lo pega el SDK del front) */
+                "X-Tenant-Slug"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sedes físicas de la tienda */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminLocationsController_create: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug del tenant (lo pega el SDK del front) */
+                "X-Tenant-Slug"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateLocationDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminLocationsController_findOne: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug del tenant (lo pega el SDK del front) */
+                "X-Tenant-Slug"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminLocationsController_remove: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug del tenant (lo pega el SDK del front) */
+                "X-Tenant-Slug"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminLocationsController_update: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug del tenant (lo pega el SDK del front) */
+                "X-Tenant-Slug"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateLocationDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    GiftsAdminController_list: {
+        parameters: {
+            query?: {
+                limit?: number;
+                cursor?: string;
+            };
+            header?: {
+                /** @description Slug del tenant (lo pega el SDK del front) */
+                "X-Tenant-Slug"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    GiftsAdminController_create: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug del tenant (lo pega el SDK del front) */
+                "X-Tenant-Slug"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateGiftDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    GiftsCustomerController_redeem: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug del tenant (lo pega el SDK del front) */
+                "X-Tenant-Slug"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RedeemGiftDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    PlatformTenantsController_list: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug del tenant (lo pega el SDK del front) */
+                "X-Tenant-Slug"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    PlatformTenantsController_create: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug del tenant (lo pega el SDK del front) */
+                "X-Tenant-Slug"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreatePlatformTenantDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    PlatformTenantsController_findOne: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug del tenant (lo pega el SDK del front) */
+                "X-Tenant-Slug"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    PlatformTenantsController_update: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug del tenant (lo pega el SDK del front) */
+                "X-Tenant-Slug"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdatePlatformTenantDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    PlatformTenantsController_listDomains: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug del tenant (lo pega el SDK del front) */
+                "X-Tenant-Slug"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    PlatformTenantsController_addDomain: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug del tenant (lo pega el SDK del front) */
+                "X-Tenant-Slug"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AddTenantDomainDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    PlatformTenantsController_verifyDomain: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug del tenant (lo pega el SDK del front) */
+                "X-Tenant-Slug"?: string;
+            };
+            path: {
+                id: string;
+                domainId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    PlatformTenantsController_removeDomain: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug del tenant (lo pega el SDK del front) */
+                "X-Tenant-Slug"?: string;
+            };
+            path: {
+                id: string;
+                domainId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    PlatformTenantsController_impersonate: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug del tenant (lo pega el SDK del front) */
+                "X-Tenant-Slug"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    PlatformTiersController_list: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug del tenant (lo pega el SDK del front) */
+                "X-Tenant-Slug"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminDashboardController_kpis: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug del tenant (lo pega el SDK del front) */
+                "X-Tenant-Slug"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminDashboardController_alerts: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug del tenant (lo pega el SDK del front) */
+                "X-Tenant-Slug"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminDashboardController_sales: {
+        parameters: {
+            query: {
+                days: string;
+            };
+            header?: {
+                /** @description Slug del tenant (lo pega el SDK del front) */
+                "X-Tenant-Slug"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminCustomersController_list: {
+        parameters: {
+            query: {
+                cursor: string;
+                limit: string;
+            };
+            header?: {
+                /** @description Slug del tenant (lo pega el SDK del front) */
+                "X-Tenant-Slug"?: string;
+            };
+            path?: never;
             cookie?: never;
         };
         requestBody?: never;

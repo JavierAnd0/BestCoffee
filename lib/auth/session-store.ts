@@ -133,7 +133,9 @@ export const getCustomerSession = cache(
   let token = c.get("customer_token")?.value;
 
   if (token === "mock-session-test") {
-    return { token, tenantSlug, isMockSession: true, neonUser: null };
+    // La cuenta de ejemplo solo existe en modo mocks; fuera de él la cookie no da sesión.
+    if (env.useMocks) return { token, tenantSlug, isMockSession: true, neonUser: null };
+    token = undefined;
   }
 
   let neonUser: NeonUser | null = null;
@@ -236,7 +238,9 @@ export async function getOperatorSession(): Promise<{
     c.get("bestcoffee-operator-session")?.value ??
     null;
 
-  const isLocalOperator = Boolean(token?.endsWith(".local_operator_session"));
+  // La sesión local sin firma solo existe en desarrollo.
+  const isLocalOperator =
+    env.isDev && Boolean(token?.endsWith(".local_operator_session"));
   const localClaims = isLocalOperator && token ? decodeJwtClaims(token) : null;
 
   return {

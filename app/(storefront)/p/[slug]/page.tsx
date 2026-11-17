@@ -12,6 +12,8 @@ import { getCurrentTenant } from "@/lib/data/tenant";
 import { requireFeature } from "@/lib/data/feature-guard";
 import { JsonLd } from "@/components/seo/json-ld";
 import { breadcrumbLd, getSiteUrl, productLd } from "@/lib/seo";
+import { getProductReviews, getVerifiedCustomerEmail } from "@/lib/data/reviews";
+import { ProductReviewsSection } from "@/components/storefront/product-reviews";
 
 const TYPE_LABEL = {
   BLEND: "Mezcla",
@@ -63,12 +65,28 @@ export default async function ProductPage({
     getCurrentTenant(),
     getSiteUrl(),
   ]);
+  // Reseñas: solo si el plan de la tienda las incluye, y siempre con datos reales.
+  const [reviews, sessionEmail] = tenant.features.reviews
+    ? await Promise.all([getProductReviews(product.slug), getVerifiedCustomerEmail()])
+    : [null, null];
+  const ld = productLd(product, tenant, siteUrl);
 
   return (
     <>
       <JsonLd
         data={[
-          productLd(product, tenant, siteUrl),
+          reviews?.average != null
+            ? {
+                ...ld,
+                aggregateRating: {
+                  "@type": "AggregateRating",
+                  ratingValue: reviews.average,
+                  reviewCount: reviews.count,
+                  bestRating: 5,
+                  worstRating: 1,
+                },
+              }
+            : ld,
           breadcrumbLd(siteUrl, [
             { name: "Inicio", path: "/" },
             { name: "Catálogo", path: "/catalogo" },
@@ -93,9 +111,15 @@ export default async function ProductPage({
             <h1 className="mt-4 font-display text-4xl lg:text-5xl font-semibold tracking-tight">
               {product.name}
             </h1>
-            <div className="mt-3">
-              <Stars value={5} count={128} />
-            </div>
+            {reviews?.average != null && (
+              <a href="#resenas" className="mt-3 inline-flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground">
+                <Stars value={Math.round(reviews.average)} />
+                <span>
+                  {reviews.average.toLocaleString("es-CO")} · {reviews.count}{" "}
+                  {reviews.count === 1 ? "reseña" : "reseñas"}
+                </span>
+              </a>
+            )}
             {product.type !== "ACCESSORY" && (
               <div className="mt-6">
                 <Roast level={product.roastLevel} />
@@ -115,7 +139,6 @@ export default async function ProductPage({
             <div className="mt-10 border-t border-border pt-8">
               <BuyBlock
                 product={product}
-                subscriptionDiscountPct={tenant.subscriptionDiscountPct}
                 canCheckout={tenant.features.checkout}
                 canSubscribe={tenant.features.subscriptions}
               />
@@ -151,7 +174,13 @@ export default async function ProductPage({
         </section>
       )}
 
-      <Reviews />
+      {reviews && (
+        <ProductReviewsSection
+          productSlug={product.slug}
+          summary={reviews}
+          sessionEmail={sessionEmail}
+        />
+      )}
 
       {related.length > 0 && (
         <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-20">
@@ -169,61 +198,5 @@ export default async function ProductPage({
         </section>
       )}
     </>
-  );
-}
-
-function Reviews() {
-  return (
-    <section className="border-t border-border">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-20 grid lg:grid-cols-[1fr_2fr] gap-12">
-        <div>
-          <Eyebrow>Reseñas</Eyebrow>
-          <div className="mt-2 font-display text-6xl font-semibold tracking-tight">4.8</div>
-          <div className="mt-2">
-            <Stars value={5} size={18} />
-          </div>
-          <p className="mt-2 text-xs text-muted-foreground">128 reseñas verificadas</p>
-          <div className="mt-6 space-y-2">
-            {[
-              [5, 82],
-              [4, 12],
-              [3, 4],
-              [2, 1],
-              [1, 1],
-            ].map(([n, pct]) => (
-              <div key={n} className="flex items-center gap-3 text-xs">
-                <span className="w-6 tabular-nums text-muted-foreground">{n}★</span>
-                <span className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
-                  <span className="block h-full bg-foreground/70" style={{ width: `${pct}%` }} />
-                </span>
-                <span className="w-8 tabular-nums text-right text-muted-foreground">{pct}%</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="space-y-6">
-          {[
-            { who: "María R.", body: "Excelente café, llegó fresco y con notas muy claras." },
-            { who: "Andrés P.", body: "Mi rutina de la mañana cambió. La suscripción es comodísima." },
-            { who: "Clara T.", body: "Es el mejor que he probado de origen único en Colombia." },
-          ].map((r) => (
-            <article key={r.who} className="border-b border-border pb-6 last:border-0">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <Stars value={5} size={13} />
-                  <span className="text-xs text-muted-foreground">{r.who}</span>
-                  <Badge variant="outline" className="font-normal">
-                    Suscriptor
-                  </Badge>
-                </div>
-                <span className="text-xs text-muted-foreground">02 jun 2026</span>
-              </div>
-              <p className="mt-3 text-sm leading-relaxed text-foreground/90">{r.body}</p>
-            </article>
-          ))}
-        </div>
-      </div>
-    </section>
   );
 }

@@ -19,6 +19,9 @@ function decodeLocalOperatorToken(token: string | null): {
   email?: string;
   isPlatformOwner?: boolean;
 } | null {
+  // Solo en desarrollo: esta sesión no lleva firma, así que en producción
+  // cualquiera podría escribirla a mano en una cookie.
+  if (!env.isDev) return null;
   if (!token || !token.endsWith(".local_operator_session")) return null;
   try {
     const parts = token.split(".");

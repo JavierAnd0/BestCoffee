@@ -166,7 +166,6 @@ export interface FeaturedPackContent {
   description: string;
   priceCents: number;
   bagsCount: number;
-  savingsPct: number;
   productSlug: string;
 }
 

@@ -6,7 +6,9 @@ import {
   type StoreLocation,
   type BrewGuide,
 } from "../mocks/static";
+import { getCurrentTenant } from "./tenant";
 import { headers } from "next/headers";
+import { tenantCacheTag } from "./cache-tags";
 
 async function tenantSlug(): Promise<string> {
   const h = await headers();
@@ -36,46 +38,52 @@ interface ApiLocation {
   description?: string;
 }
 
-function mapLocation(l: ApiLocation): StoreLocation {
-  const lat = l.lat ?? l.latitude ?? 4.6443;
-  const lng = l.lng ?? l.longitude ?? -74.0628;
+// Solo se muestra lo que la tienda cargó: sin datos de relleno (teléfono,
+// horario o descripción de otra marca). `brand` nombra una sede sin nombre.
+function mapLocation(l: ApiLocation, brand: string): StoreLocation {
+  const lat = l.lat ?? l.latitude;
+  const lng = l.lng ?? l.longitude;
+  const hasCoords = typeof lat === "number" && typeof lng === "number";
+  const address = l.address ?? l.street ?? "";
+  const city = l.city ?? "";
+  const place = encodeURIComponent([address, city].filter(Boolean).join(", "));
   return {
-    slug: l.slug ?? l.id ?? "store",
-    name: l.name ?? "ORÍGEN",
-    neighborhood: l.neighborhood ?? "Bogotá",
-    address: l.address ?? l.street ?? "",
-    city: l.city ?? "Bogotá",
-    hours: l.hours ?? l.schedule ?? l.openingHours ?? "Lun–Dom · 7:00–20:00",
-    phone: l.phone ?? l.phoneNumber ?? "+57 (601) 234-5678",
-    coordinates: { lat, lng },
-    features: l.features ?? [
-      "Barra de filtrados",
-      "Molienda personalizada",
-      "Pet friendly",
-      "WiFi de alta velocidad",
-    ],
-    description:
-      l.description ??
-      "Tienda de café de especialidad, barra de filtrados artesanales y café fresco recién tostado.",
-    googleMapsUrl: `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`,
-    wazeUrl: `https://waze.com/ul?ll=${lat},${lng}&navigate=yes`,
+    slug: l.slug ?? l.id ?? "sede",
+    name: l.name ?? brand,
+    neighborhood: l.neighborhood ?? city,
+    address,
+    city,
+    hours: l.hours ?? l.schedule ?? l.openingHours ?? "",
+    phone: l.phone ?? l.phoneNumber ?? "",
+    // Sin coordenadas el mapa embebido no tiene a dónde apuntar; los enlaces
+    // de abajo usan la dirección escrita.
+    coordinates: { lat: hasCoords ? lat : 0, lng: hasCoords ? lng : 0 },
+    features: l.features ?? [],
+    description: l.description ?? "",
+    googleMapsUrl: hasCoords
+      ? `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`
+      : `https://www.google.com/maps/dir/?api=1&destination=${place}`,
+    wazeUrl: hasCoords
+      ? `https://waze.com/ul?ll=${lat},${lng}&navigate=yes`
+      : `https://waze.com/ul?q=${place}&navigate=yes`,
   };
 }
 
 export async function listStoreLocations(): Promise<StoreLocation[]> {
   if (env.useMocks) return STORE_LOCATIONS;
   try {
-    const slug = await tenantSlug();
+    const [slug, tenant] = await Promise.all([tenantSlug(), getCurrentTenant()]);
     const res = await fetch(`${env.apiUrlInternal}/v1/locations`, {
       headers: { "X-Tenant-Slug": slug },
-      next: { revalidate: 3600 },
+      // La API revalida esta etiqueta al editar sedes (app/api/revalidate).
+      next: { revalidate: 3600, tags: [tenantCacheTag(slug, "locations")] },
     });
     if (!res.ok) return [];
     const data = await res.json();
     const list: ApiLocation[] = Array.isArray(data)
       ? data
       : (data?.items ?? data?.data ?? []);
-    return list.map(mapLocation);
+    return list.map((l) => mapLocation(l, tenant.brand));
   } catch {
     return [];
   }
@@ -104,6 +112,7 @@ interface ApiBrewGuide {
   estimatedTime?: string;
   difficulty?: string;
   steps?: ApiBrewStep[];
+  coverUrl?: string | null;
 }
 
 function mapBrewGuide(g: ApiBrewGuide): BrewGuide {
@@ -123,6 +132,7 @@ function mapBrewGuide(g: ApiBrewGuide): BrewGuide {
       body: s.body ?? s.description ?? s.content ?? "",
       durationSec: s.durationSec ?? s.duration ?? 0,
     })),
+    coverUrl: g.coverUrl ?? null,
   };
 }
 
@@ -130,7 +140,7 @@ async function fetchBrewGuides(): Promise<BrewGuide[]> {
   const slug = await tenantSlug();
   const res = await fetch(`${env.apiUrlInternal}/v1/brew-guides`, {
     headers: { "X-Tenant-Slug": slug },
-    next: { revalidate: 3600 },
+    next: { revalidate: 3600, tags: [tenantCacheTag(slug, "brew-guides")] },
   });
   if (!res.ok) return [];
   const data = await res.json();
@@ -150,19 +160,22 @@ export async function listBrewGuides(): Promise<BrewGuide[]> {
   }
 }
 
+// Sin la guía en la API (no existe o la API falla) la página responde 404:
+// nunca se rellena con la guía de ejemplo de otra tienda.
 export async function getBrewGuide(slug: string): Promise<BrewGuide | undefined> {
   if (env.useMocks) return findGuideMock(slug);
   try {
     const tenSlug = await tenantSlug();
     const res = await fetch(`${env.apiUrlInternal}/v1/brew-guides/${encodeURIComponent(slug)}`, {
       headers: { "X-Tenant-Slug": tenSlug },
-      next: { revalidate: 3600 },
+      next: {
+        revalidate: 3600,
+        tags: [tenantCacheTag(tenSlug, "brew-guides"), tenantCacheTag(tenSlug, `brew-guide:${slug}`)],
+      },
     });
-    if (res.ok) return mapBrewGuide((await res.json()) as ApiBrewGuide);
-    // Fall back to fetching the full list and finding the guide
-    const all = await listBrewGuides();
-    return all.find((g) => g.slug === slug) ?? findGuideMock(slug);
+    if (!res.ok) return undefined;
+    return mapBrewGuide((await res.json()) as ApiBrewGuide);
   } catch {
-    return findGuideMock(slug);
+    return undefined;
   }
 }

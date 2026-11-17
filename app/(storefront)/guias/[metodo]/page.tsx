@@ -1,9 +1,11 @@
 import Link from "next/link";
+import Image from "next/image";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { Badge } from "@/components/ui/badge";
 import { Eyebrow } from "@/components/ui/eyebrow";
 import { getBrewGuide } from "@/lib/data/static";
+import { remoteImage } from "@/lib/remote-image";
 
 export async function generateMetadata({
   params,
@@ -24,6 +26,7 @@ export default async function GuiaPage({
   const { metodo } = await params;
   const guide = await getBrewGuide(metodo);
   if (!guide) notFound();
+  const cover = remoteImage(guide.coverUrl);
 
   return (
     <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 py-16">
@@ -50,6 +53,20 @@ export default async function GuiaPage({
           </Badge>
         </div>
       </header>
+
+      {cover && (
+        <div className="relative mt-10 aspect-[16/9] rounded-lg bg-muted overflow-hidden">
+          <Image
+            src={cover.src}
+            unoptimized={cover.unoptimized}
+            alt=""
+            fill
+            priority
+            sizes="(min-width: 768px) 768px, 100vw"
+            className="object-cover"
+          />
+        </div>
+      )}
 
       <div className="mt-12 space-y-6">
         {guide.steps.map((s, i) => (

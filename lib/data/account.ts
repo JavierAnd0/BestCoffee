@@ -277,13 +277,38 @@ interface ApiSubscription {
   productSlug?: string;
   productName?: string;
   variantLabel?: string;
-  variant?: { label?: string; sizeGrams?: number; grind?: string } | null;
+  variant?: {
+    label?: string;
+    sizeGrams?: number;
+    grind?: string;
+    priceSubscription?: number | null;
+    priceOneTime?: number | null;
+    product?: {
+      slug?: string;
+      name?: string;
+      images?: Array<{ url: string; alt?: string | null }>;
+    } | null;
+  } | null;
   unitPrice?: number;
   unitPriceCents?: number;
   frequencyDays?: number;
+  discountPct?: number;
   status?: string;
   nextShipAt?: string | null;
   nextDeliveryAt?: string | null;
+  lastShippedAt?: string | null;
+}
+
+/**
+ * Suscripción del cliente tal como la muestra la cuenta. Añade a la forma de
+ * los datos de ejemplo lo que distingue el modelo real de "pedidos sin pagos".
+ */
+export interface CustomerSubscription extends MockSubscription {
+  /** Nació con un pedido que aún no se ha pagado: se activa al confirmarse el pago. */
+  awaitingFirstPayment?: boolean;
+  /** El próximo envío está saltado (la fecha ya quedó una frecuencia después). */
+  skippedNext?: boolean;
+  imageUrl?: string | null;
 }
 
 const SUB_STATUS_MAP: Record<string, SubStatus> = {
@@ -308,7 +333,7 @@ function daysUntil(iso?: string | null): number {
   return Math.max(-1, Math.round(diff / (1000 * 60 * 60 * 24)));
 }
 
-function mapSubscription(s: ApiSubscription): MockSubscription {
+export function mapSubscription(s: ApiSubscription): CustomerSubscription {
   const grindLabel: Record<string, string> = {
     WHOLE_BEAN: "Grano",
     ESPRESSO: "Espresso",
@@ -328,26 +353,45 @@ function mapSubscription(s: ApiSubscription): MockSubscription {
 
   const nextShipAt = s.nextShipAt ?? s.nextDeliveryAt ?? null;
   const status = SUB_STATUS_MAP[s.status ?? ""] ?? "ACTIVE";
+  // Así representa la API "esperando el pago del primer pedido" (estado
+  // PAYMENT_FAILED sin envíos; ver subscription-first-order.ts en el backend).
+  const awaitingFirstPayment =
+    s.status === "PAYMENT_FAILED" && (s.lastShippedAt ?? null) === null;
+  const product = s.product ?? s.variant?.product ?? null;
+  // Precio de cada envío: el de suscripción de la variante menos el descuento
+  // propio de la suscripción (el envío se suma aparte, según la tienda).
+  const basePrice =
+    s.unitPriceCents ??
+    s.variant?.priceSubscription ??
+    s.variant?.priceOneTime ??
+    Math.round(s.unitPrice ?? 0);
+  const unitPriceCents = s.discountPct
+    ? Math.max(0, basePrice - Math.round((basePrice * s.discountPct) / 100))
+    : basePrice;
+  const noNextDate = status === "PAUSED" || status === "CANCELLED" || awaitingFirstPayment;
 
   return {
     id: s.id,
-    productSlug: s.productSlug ?? s.product?.slug ?? "",
-    productName: s.productName ?? s.product?.name ?? "Café",
+    productSlug: s.productSlug ?? product?.slug ?? "",
+    productName: s.productName ?? product?.name ?? "Café",
     variantLabel,
-    unitPriceCents: s.unitPriceCents ?? Math.round((s.unitPrice ?? 0)),
-    frequencyDays: s.frequencyDays ?? 14,
+    unitPriceCents,
+    frequencyDays: s.frequencyDays ?? 30,
     status,
-    nextShipAt: status === "PAUSED" ? "—" : formatShortDate(nextShipAt),
-    daysUntilNext: status === "PAUSED" ? -1 : daysUntil(nextShipAt),
+    nextShipAt: noNextDate ? "—" : formatShortDate(nextShipAt),
+    daysUntilNext: noNextDate ? -1 : daysUntil(nextShipAt),
+    awaitingFirstPayment,
+    skippedNext: s.status === "SKIPPED_NEXT",
+    imageUrl: s.variant?.product?.images?.[0]?.url ?? null,
   };
 }
 
-export async function getCustomerSubscriptions(): Promise<MockSubscription[]> {
+export async function getCustomerSubscriptions(): Promise<CustomerSubscription[]> {
   if (env.useMocks) return MOCK_SUBSCRIPTIONS;
   const { token, isMockSession } = await getCustomerSession();
   if (!token) return [];
   if (isMockSession) return MOCK_SUBSCRIPTIONS;
-  const res = await customerFetch<unknown>("/v1/subscriptions");
+  const res = await customerFetch<unknown>("/v1/subscriptions?limit=50");
   if (!res.ok) return [];
   return items<ApiSubscription>(res.data).map(mapSubscription);
 }

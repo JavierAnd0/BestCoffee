@@ -7,8 +7,20 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/admin/page-header";
 import { formatCop } from "@/lib/format";
-import { updateOrderStatusAction } from "@/lib/actions/admin-mutations";
-import type { AdminOrderDetailData, AdminShippingAddress } from "@/lib/data/admin";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { markOrderPaidAction, updateOrderStatusAction } from "@/lib/actions/admin-mutations";
+import type {
+  AdminOrderDetailData,
+  AdminPaymentStatus,
+  AdminShippingAddress,
+} from "@/lib/data/admin";
 import { ColombiaLocationSelector } from "@/components/storefront/colombia-location-selector";
 
 const STATUSES = ["RECEIVED", "PREPARING", "SHIPPED", "DELIVERED"] as const;
@@ -19,8 +31,43 @@ const STATUS_LABEL: Record<(typeof STATUSES)[number], string> = {
   DELIVERED: "Entregado",
 };
 
+/** Siguiente paso permitido por la API (`ALLOWED_TRANSITIONS` de admin-orders). */
+const NEXT_STATUS: Partial<Record<AdminOrderDetailData["status"], AdminOrderDetailData["status"]>> = {
+  RECEIVED: "PREPARING",
+  PREPARING: "SHIPPED",
+  SHIPPED: "DELIVERED",
+};
+
+const NEXT_LABEL: Partial<Record<AdminOrderDetailData["status"], string>> = {
+  RECEIVED: "Pasar a preparación",
+  PREPARING: "Marcar como enviado",
+  SHIPPED: "Marcar como entregado",
+};
+
+const PAYMENT_LABEL: Record<AdminPaymentStatus, string> = {
+  PAID: "Pagado",
+  PENDING: "Pendiente de pago",
+  FAILED: "Pago fallido",
+  REFUNDED: "Reembolsado",
+};
+
+const PAYMENT_TONE: Record<AdminPaymentStatus, string> = {
+  PAID: "bg-emerald-500/10 text-emerald-700 border-emerald-500/20",
+  PENDING: "bg-amber-500/10 text-amber-700 border-amber-500/20",
+  FAILED: "bg-destructive/10 text-destructive border-destructive/20",
+  REFUNDED: "bg-muted text-muted-foreground border-border",
+};
+
 export function AdminOrderDetailClient({ order }: { order: AdminOrderDetailData }) {
   const [status, setStatus] = useState(order.status);
+  const [paymentStatus, setPaymentStatus] = useState(order.paymentStatus);
+  const [confirmPaid, setConfirmPaid] = useState(false);
+  const [paidError, setPaidError] = useState<string | null>(null);
+  // Solo se confirma un pago pendiente o fallido de un pedido vivo (la API
+  // rechaza cancelados y reembolsados).
+  const canMarkPaid =
+    status !== "CANCELLED" && (paymentStatus === "PENDING" || paymentStatus === "FAILED");
+  const nextStatus = NEXT_STATUS[status];
   const [trackingNumber, setTrackingNumber] = useState(order.trackingNumber);
   const [internalNotes, setInternalNotes] = useState(order.internalNotes);
   const [feedback, setFeedback] = useState<{ ok: boolean; text: string } | null>(null);
@@ -59,6 +106,20 @@ export function AdminOrderDetailClient({ order }: { order: AdminOrderDetailData 
     });
   };
 
+  const handleMarkPaid = () => {
+    setPaidError(null);
+    startTransition(async () => {
+      const res = await markOrderPaidAction(order.id);
+      if (res.ok) {
+        setPaymentStatus("PAID");
+        setConfirmPaid(false);
+        setFeedback({ ok: true, text: res.message });
+      } else {
+        setPaidError(res.error);
+      }
+    });
+  };
+
   const field = (key: keyof AdminShippingAddress, label: string, placeholder = "") => (
     <label className="block">
       <span className="text-xs text-muted-foreground">{label}</span>
@@ -91,25 +152,37 @@ export function AdminOrderDetailClient({ order }: { order: AdminOrderDetailData 
             >
               Imprimir guía
             </Button>
-            {status !== "SHIPPED" && status !== "DELIVERED" && (
+            {status !== "DELIVERED" && status !== "CANCELLED" && (
+              <Button
+                variant="ghost"
+                size="sm"
+                disabled={isPending}
+                className="text-destructive"
+                onClick={() => {
+                  const msg =
+                    paymentStatus === "PAID"
+                      ? "¿Cancelar este pedido? Se devolverá el stock descontado. No se puede deshacer."
+                      : "¿Cancelar este pedido? No se puede deshacer.";
+                  if (window.confirm(msg)) handleUpdate({ status: "CANCELLED" });
+                }}
+              >
+                Cancelar pedido
+              </Button>
+            )}
+            {nextStatus && (
               <Button
                 size="sm"
                 disabled={isPending}
                 onClick={() =>
-                  handleUpdate({ status: "SHIPPED", trackingNumber })
+                  handleUpdate(
+                    nextStatus === "SHIPPED"
+                      ? { status: nextStatus, trackingNumber }
+                      : { status: nextStatus },
+                  )
                 }
               >
                 {isPending && <Loader2 className="size-3.5 animate-spin mr-1" />}
-                Marcar como enviado
-              </Button>
-            )}
-            {status === "SHIPPED" && (
-              <Button
-                size="sm"
-                disabled={isPending}
-                onClick={() => handleUpdate({ status: "DELIVERED" })}
-              >
-                Marcar como entregado
+                {NEXT_LABEL[status]}
               </Button>
             )}
           </div>
@@ -133,19 +206,25 @@ export function AdminOrderDetailClient({ order }: { order: AdminOrderDetailData 
 
       <section className="rounded-lg border border-border bg-background p-6">
         <h2 className="font-display text-lg font-semibold mb-4">Estado del pedido</h2>
+        {status === "CANCELLED" && (
+          <p className="mb-4 text-sm text-destructive">Este pedido está cancelado.</p>
+        )}
         <div className="flex items-center justify-between gap-2">
           {STATUSES.map((s, i) => (
             <button
               key={s}
               type="button"
-              disabled={isPending}
-              onClick={() => handleUpdate({ status: s })}
-              className="flex-1 flex flex-col items-center cursor-pointer group"
+              // Solo el siguiente paso es válido; los demás los rechaza la API.
+              disabled={isPending || s !== nextStatus}
+              onClick={() =>
+                handleUpdate(s === "SHIPPED" ? { status: s, trackingNumber } : { status: s })
+              }
+              className="flex-1 flex flex-col items-center cursor-pointer disabled:cursor-default group"
             >
               <div
                 className={
                   "size-8 rounded-full grid place-items-center text-xs font-semibold transition-colors " +
-                  (i <= currentIdx
+                  (status !== "CANCELLED" && i <= currentIdx
                     ? "bg-foreground text-background"
                     : "bg-muted text-muted-foreground group-hover:bg-muted/80")
                 }
@@ -281,7 +360,8 @@ export function AdminOrderDetailClient({ order }: { order: AdminOrderDetailData 
               <input
                 value={trackingNumber}
                 onChange={(e) => setTrackingNumber(e.target.value)}
-                placeholder="Número de guía"
+                placeholder="Guía o enlace de seguimiento"
+                aria-label="Número de guía o enlace de seguimiento"
                 className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-xs"
               />
               <Button
@@ -295,15 +375,27 @@ export function AdminOrderDetailClient({ order }: { order: AdminOrderDetailData 
             </div>
           </Card>
           <Card icon={<CreditCard className="size-4" />} title="Pago">
-            <Badge
-              variant="outline"
-              className="bg-emerald-500/10 text-emerald-700 border-emerald-500/20"
-            >
-              Confirmado
+            <Badge variant="outline" className={PAYMENT_TONE[paymentStatus]}>
+              {PAYMENT_LABEL[paymentStatus]}
             </Badge>
-            <div className="mt-2 text-xs text-muted-foreground">
-              Orden procesada en tienda
-            </div>
+            {canMarkPaid && (
+              <>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  ¿El cliente ya pagó por transferencia o contra entrega? Confírmalo aquí.
+                </p>
+                <Button
+                  size="sm"
+                  disabled={isPending}
+                  className="mt-3 w-full justify-center"
+                  onClick={() => {
+                    setPaidError(null);
+                    setConfirmPaid(true);
+                  }}
+                >
+                  Marcar como pagado
+                </Button>
+              </>
+            )}
           </Card>
           <Card icon={<Truck className="size-4" />} title="Notas internas">
             <textarea
@@ -324,6 +416,41 @@ export function AdminOrderDetailClient({ order }: { order: AdminOrderDetailData 
           </Card>
         </aside>
       </div>
+
+      <Dialog open={confirmPaid} onOpenChange={(o) => !isPending && setConfirmPaid(o)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-display text-xl font-semibold">
+              ¿Confirmar el pago de {formatCop(order.totalCents)}?
+            </DialogTitle>
+            <DialogDescription>
+              Hazlo solo si ya recibiste el dinero. Se descontará el inventario, se contará el
+              cupón (si lo hay) y el cliente recibirá la confirmación por correo.
+            </DialogDescription>
+          </DialogHeader>
+          {paidError && (
+            <div
+              role="alert"
+              className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive"
+            >
+              {paidError}
+            </div>
+          )}
+          <DialogFooter>
+            <Button
+              variant="outline"
+              disabled={isPending}
+              onClick={() => setConfirmPaid(false)}
+            >
+              Volver
+            </Button>
+            <Button disabled={isPending} onClick={handleMarkPaid}>
+              {isPending && <Loader2 className="size-4 animate-spin mr-1.5" />}
+              Sí, marcar como pagado
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

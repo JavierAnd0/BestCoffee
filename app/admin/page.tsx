@@ -13,14 +13,16 @@ import {
 } from "@/lib/data/admin";
 import { CommissionProposalBanner } from "@/components/admin/commission-proposal-banner";
 import { formatCop } from "@/lib/format";
+import { getCurrentTenant } from "@/lib/data/tenant";
 
 export const metadata: Metadata = { title: "Dashboard · Admin" };
 
-const STATUS_LABEL = {
+const STATUS_LABEL: Record<string, string> = {
   PROCESSING: "Procesando",
   SHIPPED: "Enviado",
   DELIVERED: "Entregado",
-} as const;
+  CANCELLED: "Cancelado",
+};
 
 const SEVERITY_ICON = {
   danger: OctagonAlert,
@@ -35,12 +37,13 @@ const SEVERITY_TONE = {
 } as const;
 
 export default async function AdminDashboard() {
-  const [kpis, alerts, recent, sales, billing] = await Promise.all([
+  const [kpis, alerts, recent, sales, billing, tenant] = await Promise.all([
     getDashboardKpis(),
     getDashboardAlerts(),
     getRecentOrders(),
     getSalesLast14d(),
     getAdminBilling(),
+    getCurrentTenant(),
   ]);
   return (
     <div className="space-y-8">
@@ -48,7 +51,7 @@ export default async function AdminDashboard() {
         <div>
           <h1 className="font-display text-4xl font-semibold tracking-tight">Dashboard</h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            Vista general de ORÍGEN. Datos en tiempo real.
+            Vista general de {tenant.name}. Datos en tiempo real.
           </p>
         </div>
         <div className="text-xs text-muted-foreground">

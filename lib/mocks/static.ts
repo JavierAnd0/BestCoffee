@@ -97,6 +97,8 @@ export interface BrewGuide {
   totalTime: string;
   difficulty: "Fácil" | "Media" | "Avanzada";
   steps: { title: string; body: string; durationSec: number }[];
+  /** Portada escrita en el panel (URL libre; ver lib/remote-image.ts). */
+  coverUrl?: string | null;
 }
 
 export const BREW_GUIDES: BrewGuide[] = [

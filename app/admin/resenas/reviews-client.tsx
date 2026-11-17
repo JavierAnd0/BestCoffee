@@ -31,13 +31,18 @@ export function AdminReviewsClient({ initialReviews }: { initialReviews: AdminRe
   const [reviews, setReviews] = useState<AdminReview[]>(initialReviews);
   const [filter, setFilter] = useState<(typeof TABS)[number]["key"]>("PENDING");
   const [isPending, startTransition] = useTransition();
+  const [feedback, setFeedback] = useState<{ ok: boolean; text: string } | null>(null);
 
   const handleModerate = (id: string, status: "APPROVED" | "REJECTED") => {
-    setReviews((prev) =>
-      prev.map((r) => (r.id === id ? { ...r, status } : r)),
-    );
+    setFeedback(null);
     startTransition(async () => {
-      await moderateReviewAction(id, status);
+      const res = await moderateReviewAction(id, status);
+      if (res.ok) {
+        setReviews((prev) => prev.map((r) => (r.id === id ? { ...r, status } : r)));
+        setFeedback({ ok: true, text: res.message });
+      } else {
+        setFeedback({ ok: false, text: res.error });
+      }
     });
   };
 
@@ -63,6 +68,20 @@ export function AdminReviewsClient({ initialReviews }: { initialReviews: AdminRe
           </button>
         ))}
       </div>
+
+      {feedback && (
+        <div
+          role={feedback.ok ? "status" : "alert"}
+          className={
+            "rounded-md border px-4 py-2.5 text-sm " +
+            (feedback.ok
+              ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-800"
+              : "border-destructive/30 bg-destructive/10 text-destructive")
+          }
+        >
+          {feedback.text}
+        </div>
+      )}
 
       <div className="space-y-3">
         {filtered.length === 0 ? (

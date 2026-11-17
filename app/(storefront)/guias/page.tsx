@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import { Badge } from "@/components/ui/badge";
 import { Eyebrow } from "@/components/ui/eyebrow";
 import { listBrewGuides } from "@/lib/data/static";
+import { remoteImage } from "@/lib/remote-image";
 
 export const metadata: Metadata = { title: "Guías de preparación" };
 
@@ -33,7 +34,10 @@ export default async function GuiasIndex() {
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {guides.map((g) => {
+          // Portada cargada en el panel; si no hay, una foto genérica del método.
+          const cover = remoteImage(g.coverUrl);
           const imgSrc =
+            cover?.src ||
             GUIDE_IMAGES[g.slug.toLowerCase()] ||
             (g.slug.includes("v60")
               ? GUIDE_IMAGES.v60
@@ -50,6 +54,7 @@ export default async function GuiasIndex() {
               <div className="relative aspect-[4/3] bg-muted rounded-lg mb-4 overflow-hidden">
                 <Image
                   src={imgSrc}
+                  unoptimized={cover?.unoptimized}
                   alt={g.method}
                   fill
                   sizes="(min-width: 1024px) 33vw, 50vw"

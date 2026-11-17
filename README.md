@@ -107,5 +107,19 @@ lo que solo el backend real puede comprobar se omite de forma explícita (ver
 `e2e/env.ts`). Para la suite completa, levantar el backend con la demo sembrada y
 correr sin `USE_MOCKS` en el entorno.
 
+`e2e/admin-real-api.spec.ts` maneja el panel `/admin` en el navegador contra la API
+real (productos, cupones, pedidos, configuración, reseñas). Con el front sin mocks
+apuntando a una API con base de pruebas (nunca producción):
+
+```bash
+PLAYWRIGHT_TEST_BASE_URL=http://demo.localhost:3201 E2E_API_URL=http://localhost:3002 \
+E2E_JWT_SECRET=<JWT_SECRET del backend> E2E_INTERNAL_SECRET=<REVALIDATE_SECRET del backend> \
+E2E_OPERATOR_ID=<id del dueño de demo> E2E_OPERATOR_EMAIL=<su correo> \
+pnpm exec playwright test e2e/admin-real-api.spec.ts
+```
+
+Sin esas variables, o con `USE_MOCKS=true`, se omite. Crea datos con nombres únicos,
+archiva los productos y borra los cupones al terminar.
+
 El estado del plan hacia producción vive en `docs/PLAN-CIERRE.md` del repo del backend.
 

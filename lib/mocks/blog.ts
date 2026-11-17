@@ -10,6 +10,8 @@ export interface BlogPost {
   tags: string[];
   pullQuote?: string;
   featured?: boolean;
+  /** Portada escrita en el panel (URL libre; ver lib/remote-image.ts). */
+  coverUrl?: string | null;
 }
 
 export const BLOG_CATEGORIES = [

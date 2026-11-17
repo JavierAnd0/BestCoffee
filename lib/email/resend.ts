@@ -153,7 +153,7 @@ export async function sendContactNotificationEmail({
       Nuevo mensaje de contacto recibido
     </h2>
     <p>Se ha recibido una nueva consulta desde la tienda web:</p>
-    <div style="background: #f7f5f0; border-left: 4px solid ${brandColors.accent}; padding: 16px; margin: 20px 0; border-radius: 4px;">
+    <div style="background: #f7f5f0; border: 1px solid ${brandColors.border}; padding: 16px; margin: 20px 0; border-radius: 8px;">
       <p style="margin: 0 0 8px;"><strong>Nombre:</strong> ${name}</p>
       <p style="margin: 0 0 8px;"><strong>Correo:</strong> <a href="mailto:${email}">${email}</a></p>
       <p style="margin: 0 0 8px;"><strong>Motivo:</strong> ${subject}</p>

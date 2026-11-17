@@ -75,7 +75,7 @@ export function FeaturedPack({ content }: { content: FeaturedPackContent }) {
               {formatCop(content.priceCents)}
             </span>
             <span className="text-xs text-muted-foreground tracking-wide">
-              {content.bagsCount} bolsas · ahorra {content.savingsPct}%
+              {content.bagsCount} {content.bagsCount === 1 ? "bolsa" : "bolsas"}
             </span>
           </div>
 

@@ -88,6 +88,7 @@ export function CheckoutWizard({
   onlinePayments = true,
   customer,
   savedAddresses = [],
+  canSubscribe = true,
 }: {
   paymentProvider?: string | null;
   mpPublicKey?: string | null;
@@ -96,6 +97,8 @@ export function CheckoutWizard({
   onlinePayments?: boolean;
   customer?: MockCustomer | null;
   savedAddresses?: MockAddress[];
+  /** La tienda ofrece suscripciones (feature `subscriptions` del plan). */
+  canSubscribe?: boolean;
 }) {
   const router = useRouter();
   const cart = useCart();
@@ -292,15 +295,27 @@ export function CheckoutWizard({
     }
 
     cart.clear();
-    router.push(`/checkout/confirmacion?orderId=${encodeURIComponent(result.orderId)}`);
+    const subsParam = result.subscriptionIds.length
+      ? `&suscripciones=${encodeURIComponent(result.subscriptionIds.join(","))}`
+      : "";
+    router.push(
+      `/checkout/confirmacion?orderId=${encodeURIComponent(result.orderId)}${subsParam}`,
+    );
   };
 
   const isMp = onlinePayments && paymentProvider === "mercadopago" && !!mpPublicKey;
 
   // Una suscripción necesita cuenta propia (cobros recurrentes): un invitado
   // debe iniciar sesión antes de pagar, en vez de toparse con un error al final.
-  const subscriptionNeedsLogin =
-    !useMocks && !customer?.email && cart.items.some((i) => i.mode === "SUBSCRIPTION");
+  const subItems = cart.items.filter((i) => i.mode === "SUBSCRIPTION");
+  const hasSubscription = subItems.length > 0;
+  const subscriptionNeedsLogin = !useMocks && !customer?.email && hasSubscription;
+  // La tienda no ofrece suscripciones (plan): no se cobra el precio de
+  // suscripción sin una suscripción real detrás.
+  const subscriptionUnavailable = hasSubscription && !canSubscribe;
+  // El pedido se cotiza en un solo modo: suscripción y compra única van aparte.
+  const mixedCart = hasSubscription && subItems.length !== cart.items.length;
+  const subscriptionBlocked = subscriptionUnavailable || mixedCart;
 
   // Estado Carrito Vacío
   if (cart.items.length === 0) {
@@ -728,9 +743,6 @@ export function CheckoutWizard({
                       <p>
                         Entrega tu pago en efectivo o mediante datáfono inalámbrico cuando recibas tu pedido en tu domicilio.
                       </p>
-                      <p className="text-[11px] text-primary">
-                        Disponible para despachos en Bogotá D.C. y Medellín.
-                      </p>
                     </>
                   ) : (
                     <p>
@@ -743,7 +755,48 @@ export function CheckoutWizard({
             </div>
           )}
 
-          {subscriptionNeedsLogin && (
+          {hasSubscription && !subscriptionBlocked && (
+            <div className="mt-6 rounded-lg border border-border bg-muted/40 p-3 text-xs leading-relaxed text-muted-foreground space-y-1.5">
+              <p className="font-semibold text-foreground text-sm">Cómo funciona tu suscripción</p>
+              <ul className="space-y-1">
+                {subItems.map((i) => (
+                  <li key={i.variantId}>
+                    {i.productName} · {i.variantLabel} · 1 unidad{" "}
+                    {i.frequencyDays ? `cada ${i.frequencyDays / 7} sem` : "cada 30 días"}
+                  </li>
+                ))}
+              </ul>
+              <p>
+                Este pedido es el primer envío. La suscripción se activa cuando se confirma su pago;
+                después, cada envío genera un pedido nuevo que se paga igual que este
+                {onlinePayments ? "" : " (la tienda te contacta para coordinar el pago)"}. Puedes
+                pausarla, saltar un envío o cancelarla desde tu cuenta.
+              </p>
+            </div>
+          )}
+
+          {subscriptionUnavailable && (
+            <div
+              role="alert"
+              className="mt-6 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-900"
+            >
+              Esta tienda no ofrece suscripciones. Quita del carrito los productos marcados como
+              suscripción y agrégalos como compra única desde su ficha.
+            </div>
+          )}
+
+          {mixedCart && !subscriptionUnavailable && (
+            <div
+              role="alert"
+              className="mt-6 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-900"
+            >
+              Las suscripciones se piden por separado de las compras únicas. Quita de tu carrito
+              los productos de compra única (o las suscripciones), confirma este pedido y luego
+              haz el otro.
+            </div>
+          )}
+
+          {subscriptionNeedsLogin && !subscriptionBlocked && (
             <div
               role="alert"
               className="mt-6 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-900"
@@ -763,7 +816,7 @@ export function CheckoutWizard({
           <Button
             size="lg"
             className="mt-6 w-full h-12 text-base justify-center gap-2"
-            disabled={placing || subscriptionNeedsLogin}
+            disabled={placing || subscriptionNeedsLogin || subscriptionBlocked}
             onClick={isMp ? submitMpForm : handlePlainPay}
           >
             {placing ? (

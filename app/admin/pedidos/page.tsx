@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/admin/page-header";
-import { listAdminOrders } from "@/lib/data/admin";
+import { listAdminOrders, type AdminPaymentStatus } from "@/lib/data/admin";
 import { ORDER_STATUS_LABEL, type OrderStatus } from "@/lib/mocks/account";
 import { formatCop } from "@/lib/format";
 
@@ -14,6 +14,20 @@ const STATUS_TONE: Record<OrderStatus, string> = {
   SHIPPED: "bg-sky-500/10 text-sky-700 border-sky-500/20",
   DELIVERED: "bg-emerald-500/10 text-emerald-700 border-emerald-500/20",
   CANCELLED: "bg-muted text-muted-foreground border-border",
+};
+
+const PAYMENT_LABEL: Record<AdminPaymentStatus, string> = {
+  PAID: "Pagado",
+  PENDING: "Pendiente",
+  FAILED: "Fallido",
+  REFUNDED: "Reembolsado",
+};
+
+const PAYMENT_TONE: Record<AdminPaymentStatus, string> = {
+  PAID: "bg-emerald-500/10 text-emerald-700 border-emerald-500/20",
+  PENDING: "bg-amber-500/10 text-amber-700 border-amber-500/20",
+  FAILED: "bg-destructive/10 text-destructive border-destructive/20",
+  REFUNDED: "bg-muted text-muted-foreground border-border",
 };
 
 const FILTERS: { label: string; value?: OrderStatus }[] = [
@@ -54,7 +68,7 @@ export default async function AdminOrdersPage({
     <div className="space-y-6">
       <PageHeader
         title="Pedidos"
-        description={`${rows.length} pedidos en los últimos 30 días`}
+        description={`${rows.length} ${rows.length === 1 ? "pedido" : "pedidos"} · ${allOrders.filter((o) => o.paymentStatus === "PENDING" && o.status !== "CANCELLED").length} por confirmar pago`}
         actions={
           <form method="GET" className="relative">
             {activeStatus && (
@@ -105,6 +119,7 @@ export default async function AdminOrdersPage({
               <th className="px-4 py-3 font-medium">Cliente</th>
               <th className="px-4 py-3 font-medium">Origen</th>
               <th className="px-4 py-3 font-medium">Total</th>
+              <th className="px-4 py-3 font-medium">Pago</th>
               <th className="px-4 py-3 font-medium">Estado</th>
               <th className="px-4 py-3 font-medium">Fecha</th>
             </tr>
@@ -128,6 +143,11 @@ export default async function AdminOrdersPage({
                   {formatCop(o.totalCents)}
                 </td>
                 <td className="px-4 py-3">
+                  <Badge variant="outline" className={PAYMENT_TONE[o.paymentStatus]}>
+                    {PAYMENT_LABEL[o.paymentStatus]}
+                  </Badge>
+                </td>
+                <td className="px-4 py-3">
                   <Badge variant="outline" className={STATUS_TONE[o.status] ?? "bg-muted text-muted-foreground border-border"}>
                     {ORDER_STATUS_LABEL[o.status] ?? o.status}
                   </Badge>
@@ -137,7 +157,7 @@ export default async function AdminOrdersPage({
             ))}
             {rows.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-4 py-10 text-center text-muted-foreground text-sm">
+                <td colSpan={7} className="px-4 py-10 text-center text-muted-foreground text-sm">
                   No se encontraron pedidos con esos criterios.
                 </td>
               </tr>

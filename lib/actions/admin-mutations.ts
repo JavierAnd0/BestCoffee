@@ -13,11 +13,19 @@ import type {
   ProductType,
 } from "../types";
 
+/**
+ * Montos: la API guarda y devuelve todo en centavos COP (ver
+ * `CreateVariantDto`, `formatCop`). El panel muestra y recibe pesos; la
+ * conversión se hace solo aquí (al guardar) y en el formulario (al cargar).
+ */
+const toCents = (pesos: number) => Math.round(pesos * 100);
+
+type VariantField = "priceOneTime" | "priceSubscription" | "stock";
+
 export interface SaveProductInput {
   id?: string;
   name: string;
-  shortDescription: string;
-  longDescription: string;
+  description: string;
   type: ProductType;
   origin: string;
   producerStory: string;
@@ -26,48 +34,81 @@ export interface SaveProductInput {
   badges: string[];
   status: ProductStatus;
   subscriptionAvailability: Product["subscriptionAvailability"];
+  /** Precios en pesos COP (lo que escribe el operador). */
   variants: Array<{
     sizeGrams: number;
     grind: GrindFormat;
     priceOneTime: number;
+    /** 0 = sin precio de suscripción. */
     priceSubscription: number;
     stock: number;
+    /**
+     * Campos que el operador no tocó en esa presentación: en una variante que
+     * ya existe se dejan como están (p. ej. el stock propio de cada molienda).
+     */
+    preserve?: VariantField[];
   }>;
   pendingImages?: ProductImage[];
 }
 
-// Esquema mínimo que coincide con el DTO real de creación/edición de
-// productos del backend (nombre + al menos una variante con precio válido).
 const saveProductSchema = z.object({
   id: z.string().optional(),
-  name: z.string().trim().min(1, "El nombre del producto es obligatorio."),
-  shortDescription: z.string().optional().default(""),
-  longDescription: z.string().optional().default(""),
-  type: z.string(),
-  origin: z.string().optional().default(""),
-  producerStory: z.string().optional().default(""),
-  roastLevel: z.number(),
-  flavorNotes: z.array(z.string()).default([]),
-  badges: z.array(z.string()).default([]),
-  status: z.string(),
-  subscriptionAvailability: z.unknown(),
+  name: z
+    .string()
+    .trim()
+    .min(2, "El nombre del producto debe tener al menos 2 caracteres.")
+    .max(120, "El nombre no puede pasar de 120 caracteres."),
+  description: z.string().max(2000, "La descripción no puede pasar de 2.000 caracteres."),
+  type: z.enum(["BLEND", "SINGLE_ORIGIN", "DECAF", "ACCESSORY"]),
+  origin: z.string().max(120, "El origen no puede pasar de 120 caracteres."),
+  producerStory: z.string().max(4000, "La historia no puede pasar de 4.000 caracteres."),
+  roastLevel: z.number().int().min(1).max(9),
+  flavorNotes: z.array(z.string()).max(12, "Máximo 12 notas de sabor."),
+  badges: z.array(z.string()).max(8),
+  status: z.enum(["ACTIVE", "DRAFT", "ARCHIVED"]),
+  subscriptionAvailability: z.enum(["YES", "NO", "SUBSCRIPTION_ONLY"]),
   variants: z
     .array(
       z.object({
-        sizeGrams: z.number().positive(),
-        grind: z.string(),
-        priceOneTime: z.number().nonnegative(),
-        priceSubscription: z.number().nonnegative(),
-        stock: z.number().nonnegative(),
+        sizeGrams: z.number().int("El tamaño debe ser un número entero de gramos.").positive("El tamaño debe ser mayor que 0."),
+        grind: z.enum(["WHOLE_BEAN", "ESPRESSO", "FILTER", "FRENCH_PRESS"]),
+        priceOneTime: z.number().positive("Cada tamaño necesita un precio mayor que 0."),
+        priceSubscription: z.number().nonnegative("El precio de suscripción no puede ser negativo."),
+        stock: z.number().int("El stock debe ser un número entero.").nonnegative("El stock no puede ser negativo."),
+        preserve: z.array(z.enum(["priceOneTime", "priceSubscription", "stock"])).optional(),
       }),
     )
-    .min(1, "El producto necesita al menos una variante válida."),
-  pendingImages: z.array(z.unknown()).optional(),
+    .min(1, "El producto necesita al menos un tamaño y una molienda."),
+  pendingImages: z.array(z.object({ url: z.string(), alt: z.string().optional() }).passthrough()).optional(),
 });
 
 export type AdminMutationResult<T = undefined> =
   | { ok: true; message: string; data?: T }
   | { ok: false; error: string };
+
+interface ApiVariantRow {
+  id: string;
+  sizeGrams: number;
+  grind: string;
+  priceOneTime: number;
+  priceSubscription: number | null;
+  stock: number;
+}
+
+interface ApiProductRow {
+  id: string;
+  slug: string;
+  variants?: ApiVariantRow[];
+}
+
+const variantKey = (sizeGrams: number, grind: string) => `${sizeGrams}|${grind}`;
+
+const GRIND_LABEL: Record<string, string> = {
+  WHOLE_BEAN: "grano",
+  ESPRESSO: "espresso",
+  FILTER: "filtro",
+  FRENCH_PRESS: "prensa francesa",
+};
 
 export async function saveProductAction(
   input: SaveProductInput,
@@ -76,10 +117,15 @@ export async function saveProductAction(
   if (!parsed.success) {
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Datos de producto inválidos." };
   }
+  const p = parsed.data;
+
+  const keys = p.variants.map((v) => variantKey(v.sizeGrams, v.grind));
+  if (new Set(keys).size !== keys.length) {
+    return { ok: false, error: "Hay tamaños repetidos: cada tamaño debe aparecer una sola vez." };
+  }
 
   if (env.useMocks) {
     revalidatePath("/admin/productos");
-    revalidatePath("/catalogo");
     return {
       ok: true,
       message: "Producto guardado correctamente.",
@@ -87,87 +133,160 @@ export async function saveProductAction(
     };
   }
 
-  const slug = input.name
-    .trim()
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)/g, "");
-
-  const payload = {
-    name: input.name.trim(),
-    slug,
-    shortDescription: input.shortDescription.trim(),
-    longDescription: input.longDescription.trim(),
-    type: input.type,
-    origin: input.origin.trim(),
-    producerStory: input.producerStory.trim(),
-    roastLevel: input.roastLevel,
-    flavorNotes: input.flavorNotes,
-    badges: input.badges,
-    status: input.status,
-    subscriptionAvailability: input.subscriptionAvailability,
-    variants: input.variants.map((v) => ({
-      sizeGrams: v.sizeGrams,
-      grind: v.grind,
-      priceOneTimeCents: Math.round(v.priceOneTime * 100),
-      priceSubscriptionCents: Math.round(v.priceSubscription * 100),
-      priceOneTime: v.priceOneTime,
-      priceSubscription: v.priceSubscription,
-      stock: v.stock,
-    })),
+  // Campos de `CreateProductDto` / `UpdateProductDto` (sin slug: la API lo
+  // deriva del nombre y lo hace único; cambiarlo rompería enlaces ya compartidos).
+  const fields = {
+    name: p.name.trim(),
+    type: p.type,
+    description: p.description.trim(),
+    origin: p.origin.trim(),
+    producerStory: p.producerStory.trim(),
+    roastLevel: p.roastLevel,
+    flavorNotes: p.flavorNotes,
+    badges: p.badges,
+    status: p.status,
+    subscriptionAvailability: p.subscriptionAvailability,
   };
 
-  const isUpdate = Boolean(input.id);
-  const path = isUpdate
-    ? `/v1/admin/products/${encodeURIComponent(input.id!)}`
-    : "/v1/admin/products";
-
-  const res = await operatorFetch<{ id?: string }>(path, {
-    method: isUpdate ? "PATCH" : "POST",
-    body: payload,
+  const variantBody = (v: (typeof p.variants)[number]) => ({
+    sizeGrams: v.sizeGrams,
+    grind: v.grind,
+    priceOneTime: toCents(v.priceOneTime),
+    ...(v.priceSubscription > 0 ? { priceSubscription: toCents(v.priceSubscription) } : {}),
+    stock: v.stock,
   });
 
-  if (!res.ok) {
-    return { ok: false, error: res.error || "No se pudo guardar el producto." };
+  // ── Alta ───────────────────────────────────────────────────────────────────
+  if (!p.id) {
+    const body = {
+      ...fields,
+      // En el alta, vacío = no enviar (la API guarda null).
+      description: fields.description || undefined,
+      origin: fields.origin || undefined,
+      producerStory: fields.producerStory || undefined,
+      variants: p.variants.map(variantBody),
+    };
+    const res = await operatorFetch<ApiProductRow>("/v1/admin/products", {
+      method: "POST",
+      body,
+    });
+    if (!res.ok) {
+      return { ok: false, error: res.error || "No se pudo crear el producto." };
+    }
+
+    const failedImages: string[] = [];
+    for (const img of p.pendingImages ?? []) {
+      const r = await operatorFetch(
+        `/v1/admin/products/${encodeURIComponent(res.data.id)}/images`,
+        { method: "POST", body: { url: img.url, ...(img.alt ? { alt: img.alt } : {}) } },
+      );
+      if (!r.ok) failedImages.push(r.error);
+    }
+
+    revalidateProduct(res.data.id, res.data.slug);
+    if (failedImages.length > 0) {
+      return {
+        ok: false,
+        error: `El producto se creó, pero ${failedImages.length} imagen(es) no se pudieron asociar: ${failedImages[0]}. Edítalo para volver a subirlas.`,
+      };
+    }
+    return { ok: true, message: "Producto creado correctamente.", data: { id: res.data.id } };
   }
 
-  const productId = res.data?.id ?? input.id ?? slug;
+  // ── Edición: datos del producto y luego variantes (la API las gestiona aparte) ──
+  const id = encodeURIComponent(p.id);
+  const current = await operatorFetch<ApiProductRow>(`/v1/admin/products/${id}`);
+  if (!current.ok) {
+    return { ok: false, error: current.error || "No se encontró el producto." };
+  }
 
-  // Si es producto nuevo y había imágenes subidas a Blob pendientes de asociar
-  if (!isUpdate && input.pendingImages?.length && res.data?.id) {
-    for (const img of input.pendingImages) {
-      await operatorFetch(`/v1/admin/products/${encodeURIComponent(res.data.id)}/images`, {
+  const res = await operatorFetch<ApiProductRow>(`/v1/admin/products/${id}`, {
+    method: "PATCH",
+    body: fields,
+  });
+  if (!res.ok) {
+    return { ok: false, error: res.error || "No se pudo actualizar el producto." };
+  }
+
+  const existing = new Map(
+    (current.data.variants ?? []).map((v) => [variantKey(v.sizeGrams, v.grind), v]),
+  );
+  const errors: string[] = [];
+  const label = (sizeGrams: number, grind: string) =>
+    `${sizeGrams} g ${GRIND_LABEL[grind] ?? grind}`;
+
+  for (const v of p.variants) {
+    const key = variantKey(v.sizeGrams, v.grind);
+    const prev = existing.get(key);
+    if (!prev) {
+      const r = await operatorFetch(`/v1/admin/products/${id}/variants`, {
         method: "POST",
-        body: { url: img.url, alt: img.alt },
+        body: variantBody(v),
       });
+      if (!r.ok) errors.push(`${label(v.sizeGrams, v.grind)}: ${r.error}`);
+      continue;
+    }
+    existing.delete(key);
+    const keep = new Set(v.preserve ?? []);
+    const patch: Record<string, number> = {};
+    const nextOneTime = toCents(v.priceOneTime);
+    if (!keep.has("priceOneTime") && nextOneTime !== prev.priceOneTime) {
+      patch.priceOneTime = nextOneTime;
+    }
+    // La API no permite quitar el precio de suscripción (solo cambiarlo).
+    if (!keep.has("priceSubscription") && v.priceSubscription > 0) {
+      const nextSub = toCents(v.priceSubscription);
+      if (nextSub !== prev.priceSubscription) patch.priceSubscription = nextSub;
+    }
+    if (!keep.has("stock") && v.stock !== prev.stock) patch.stock = v.stock;
+    if (Object.keys(patch).length === 0) continue;
+    const r = await operatorFetch(
+      `/v1/admin/products/variants/${encodeURIComponent(prev.id)}`,
+      { method: "PATCH", body: patch },
+    );
+    if (!r.ok) errors.push(`${label(v.sizeGrams, v.grind)}: ${r.error}`);
+  }
+
+  // Presentaciones que el operador quitó del formulario.
+  for (const v of existing.values()) {
+    const r = await operatorFetch(
+      `/v1/admin/products/variants/${encodeURIComponent(v.id)}`,
+      { method: "DELETE" },
+    );
+    if (!r.ok) {
+      errors.push(
+        `${label(v.sizeGrams, v.grind)}: no se pudo eliminar (puede tener suscripciones activas).`,
+      );
     }
   }
 
-  revalidatePath("/admin/productos");
-  revalidatePath(`/admin/productos/${productId}`);
-  revalidatePath("/catalogo");
-  revalidatePath(`/p/${slug}`);
+  revalidateProduct(p.id, res.data.slug);
+  if (errors.length > 0) {
+    return {
+      ok: false,
+      error: `Los datos del producto se guardaron, pero algunas variantes no: ${errors.join(" · ")}`,
+    };
+  }
+  return { ok: true, message: "Producto actualizado correctamente.", data: { id: p.id } };
+}
 
-  return {
-    ok: true,
-    message: isUpdate
-      ? "Producto actualizado correctamente."
-      : "Producto creado correctamente.",
-    data: { id: productId },
-  };
+function revalidateProduct(id: string, slug?: string) {
+  revalidatePath("/admin/productos");
+  revalidatePath(`/admin/productos/${id}`);
+  revalidatePath("/catalogo");
+  if (slug) revalidatePath(`/p/${slug}`);
 }
 
 /**
  * Cambios del pedido desde su detalle. El backend separa el estado
- * (`PATCH /:id/status`, con sus transiciones) del resto (`PATCH /:id`: guía,
- * notas y dirección), y rechaza campos que no conoce.
+ * (`PATCH /:id/status`, con sus transiciones) del resto (`PATCH /:id`: pago,
+ * enlace de seguimiento, notas y dirección), y rechaza campos que no conoce.
  */
 export async function updateOrderStatusAction(
   orderId: string,
   patch: {
     status?: "RECEIVED" | "PREPARING" | "SHIPPED" | "DELIVERED" | "CANCELLED";
+    /** Número de guía o enlace de seguimiento (la API lo guarda en `trackingUrl`). */
     trackingNumber?: string;
     internalNotes?: string;
     shippingAddress?: AdminShippingAddress;
@@ -214,30 +333,78 @@ export async function updateOrderStatusAction(
     }
   }
 
-  revalidatePath("/admin");
-  revalidatePath("/admin/pedidos");
-  revalidatePath(`/admin/pedidos/${orderId}`);
+  revalidateOrder(orderId);
   return {
     ok: true,
     message: patch.shippingAddress ? "Dirección actualizada." : "Pedido actualizado correctamente.",
   };
 }
 
+/**
+ * Confirma a mano que el cliente pagó (transferencia, contra entrega…).
+ * La API liquida el pedido: descuenta inventario, cuenta el cupón y envía la
+ * confirmación. Es idempotente y rechaza pedidos cancelados o reembolsados.
+ */
+export async function markOrderPaidAction(orderId: string): Promise<AdminMutationResult> {
+  if (!env.useMocks) {
+    const res = await operatorFetch(`/v1/admin/orders/${encodeURIComponent(orderId)}`, {
+      method: "PATCH",
+      body: { paymentStatus: "PAID" },
+    });
+    if (!res.ok) return { ok: false, error: res.error || "No se pudo marcar el pedido como pagado." };
+  }
+  revalidateOrder(orderId);
+  return { ok: true, message: "Pago confirmado. Se descontó el inventario y se avisó al cliente." };
+}
+
+function revalidateOrder(orderId: string) {
+  revalidatePath("/admin");
+  revalidatePath("/admin/pedidos");
+  revalidatePath(`/admin/pedidos/${orderId}`);
+}
+
+/** Pesos escritos por el operador ("45.000", "45000") → centavos; `undefined` si está vacío. */
+function pesosField(formData: FormData, name: string): number | undefined | "invalid" {
+  const raw = String(formData.get(name) ?? "").replace(/[.\s$]/g, "").trim();
+  if (!raw) return undefined;
+  const n = Number(raw);
+  if (!Number.isFinite(n) || n < 0 || !Number.isInteger(n)) return "invalid";
+  return toCents(n);
+}
+
+/**
+ * Guarda la configuración del dueño con los nombres de `UpdateSettingsDto`:
+ * nombre, envío (`features`) y datos de la empresa (`branding`).
+ */
 export async function saveAdminSettingsAction(
   _prev: AdminMutationResult | null,
   formData: FormData,
 ): Promise<AdminMutationResult> {
+  const str = (name: string) => String(formData.get(name) ?? "").trim();
+  const name = str("name");
+  if (name.length < 2) {
+    return { ok: false, error: "El nombre de la tienda es obligatorio." };
+  }
+  const threshold = pesosField(formData, "freeShippingThreshold");
+  const flat = pesosField(formData, "shippingFlat");
+  if (threshold === "invalid" || flat === "invalid") {
+    return { ok: false, error: "Los montos de envío deben ser números enteros en pesos." };
+  }
+
   const payload = {
-    freeShippingThresholdCop: Number(formData.get("freeShippingThresholdCop") ?? 45000),
-    subscriptionDiscountPct: Number(formData.get("subscriptionDiscountPct") ?? 15),
-    legalName: String(formData.get("legalName") ?? "").trim(),
-    taxId: String(formData.get("taxId") ?? "").trim(),
-    fiscalAddress: String(formData.get("fiscalAddress") ?? "").trim(),
-    contactEmail: String(formData.get("contactEmail") ?? "").trim(),
-    instagramUrl: String(formData.get("instagramUrl") ?? "").trim(),
-    tiktokUrl: String(formData.get("tiktokUrl") ?? "").trim(),
-    xUrl: String(formData.get("xUrl") ?? "").trim(),
-    youtubeUrl: String(formData.get("youtubeUrl") ?? "").trim(),
+    name,
+    shipping: {
+      ...(threshold !== undefined ? { freeShippingThresholdCents: threshold } : {}),
+      ...(flat !== undefined ? { shippingFlatCents: flat } : {}),
+    },
+    // Cadena vacía = borrar el dato (la API fusiona el objeto).
+    branding: {
+      legalName: str("legalName"),
+      legalId: str("legalId"),
+      contactEmail: str("contactEmail"),
+      contactPhone: str("contactPhone"),
+      city: str("city"),
+    },
   };
 
   if (!env.useMocks) {
@@ -245,19 +412,23 @@ export async function saveAdminSettingsAction(
       method: "PATCH",
       body: payload,
     });
-    if (!res.ok && res.status !== 503) {
+    if (!res.ok) {
       return {
         ok: false,
-        error: res.error || "No se pudo guardar la configuración de la tienda.",
+        error:
+          res.status === 403
+            ? "Solo el dueño de la tienda puede cambiar la configuración."
+            : res.error || "No se pudo guardar la configuración de la tienda.",
       };
     }
   }
 
   revalidatePath("/admin/configuracion");
-  revalidatePath("/");
+  revalidatePath("/", "layout");
   return { ok: true, message: "Configuración guardada correctamente." };
 }
 
+/** Crea un cupón con los nombres de `CreateDiscountCodeDto`. */
 export async function createDiscountCodeAction(
   _prev: AdminMutationResult | null,
   formData: FormData,
@@ -265,56 +436,97 @@ export async function createDiscountCodeAction(
   const code = String(formData.get("code") ?? "")
     .trim()
     .toUpperCase();
-  const type = String(formData.get("type") ?? "PERCENT") as
-    | "PERCENT"
-    | "FIXED"
-    | "FREE_SHIPPING";
-  const rawValue = Number(formData.get("value") ?? 0);
-  const usesLimitRaw = String(formData.get("usesLimit") ?? "").trim();
-  const expiresAtRaw = String(formData.get("expiresAt") ?? "").trim();
+  const type = String(formData.get("type") ?? "PERCENTAGE");
+  const rawValue = Number(String(formData.get("value") ?? "").replace(/[.\s$]/g, ""));
+  const maxRaw = String(formData.get("maxRedemptions") ?? "").trim();
+  const minRaw = String(formData.get("minSubtotal") ?? "").replace(/[.\s$]/g, "").trim();
+  const endsAtRaw = String(formData.get("endsAt") ?? "").trim();
 
-  if (!code) {
-    return { ok: false, error: "El código promocional es obligatorio." };
+  if (!/^[A-Z0-9_-]{3,40}$/.test(code)) {
+    return {
+      ok: false,
+      error: "El código debe tener de 3 a 40 caracteres: letras, números, guion o guion bajo.",
+    };
+  }
+  if (type !== "PERCENTAGE" && type !== "FIXED") {
+    return { ok: false, error: "Tipo de descuento no válido." };
+  }
+  if (!Number.isInteger(rawValue) || rawValue < 1) {
+    return { ok: false, error: "El valor del descuento debe ser un número entero mayor que 0." };
+  }
+  if (type === "PERCENTAGE" && rawValue > 100) {
+    return { ok: false, error: "Un porcentaje no puede pasar de 100." };
+  }
+  const maxRedemptions = maxRaw ? Number(maxRaw) : undefined;
+  if (maxRedemptions !== undefined && (!Number.isInteger(maxRedemptions) || maxRedemptions < 1)) {
+    return { ok: false, error: "El límite de usos debe ser un número entero mayor que 0." };
+  }
+  const minSubtotal = minRaw ? Number(minRaw) : undefined;
+  if (minSubtotal !== undefined && (!Number.isInteger(minSubtotal) || minSubtotal < 0)) {
+    return { ok: false, error: "La compra mínima debe ser un número entero en pesos." };
   }
 
+  const body = {
+    code,
+    type,
+    // PERCENTAGE: 1-100 · FIXED: centavos COP (el operador escribe pesos).
+    value: type === "FIXED" ? toCents(rawValue) : rawValue,
+    active: true,
+    ...(maxRedemptions !== undefined ? { maxRedemptions } : {}),
+    ...(minSubtotal ? { minSubtotalCents: toCents(minSubtotal) } : {}),
+    // Vence al final del día elegido (hora de Colombia, UTC-5).
+    ...(endsAtRaw ? { endsAt: new Date(`${endsAtRaw}T23:59:59-05:00`).toISOString() } : {}),
+  };
+
   if (!env.useMocks) {
-    const body: Record<string, unknown> = {
-      code,
-      type,
-      active: true,
-      ...(type === "PERCENT" ? { discountPct: rawValue } : {}),
-      ...(type === "FIXED" ? { discountAmount: Math.round(rawValue * 100) } : {}),
-      ...(usesLimitRaw ? { usesLimit: Number(usesLimitRaw) } : {}),
-      ...(expiresAtRaw ? { expiresAt: expiresAtRaw } : {}),
-    };
-
-    const res = await operatorFetch("/v1/admin/discount-codes", {
-      method: "POST",
-      body,
-    });
-
-    if (!res.ok && res.status !== 503) {
+    const res = await operatorFetch("/v1/admin/discount-codes", { method: "POST", body });
+    if (!res.ok) {
       return { ok: false, error: res.error || "No se pudo crear el código de descuento." };
     }
   }
 
   revalidatePath("/admin/promociones");
-  return { ok: true, message: `Código ${code} creado exitosamente.` };
+  return { ok: true, message: `Código ${code} creado.` };
 }
 
+export async function setDiscountCodeActiveAction(
+  id: string,
+  active: boolean,
+): Promise<AdminMutationResult> {
+  if (!env.useMocks) {
+    const res = await operatorFetch(`/v1/admin/discount-codes/${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      body: { active },
+    });
+    if (!res.ok) return { ok: false, error: res.error || "No se pudo actualizar el código." };
+  }
+  revalidatePath("/admin/promociones");
+  return { ok: true, message: active ? "Código activado." : "Código desactivado." };
+}
+
+export async function deleteDiscountCodeAction(id: string): Promise<AdminMutationResult> {
+  if (!env.useMocks) {
+    const res = await operatorFetch(`/v1/admin/discount-codes/${encodeURIComponent(id)}`, {
+      method: "DELETE",
+    });
+    if (!res.ok) return { ok: false, error: res.error || "No se pudo eliminar el código." };
+  }
+  revalidatePath("/admin/promociones");
+  return { ok: true, message: "Código eliminado." };
+}
+
+/** Moderación: la API expone `POST /v1/admin/reviews/:id/approve` y `/reject`. */
 export async function moderateReviewAction(
   reviewId: string,
   status: "APPROVED" | "REJECTED",
 ): Promise<AdminMutationResult> {
   if (!env.useMocks) {
+    const verb = status === "APPROVED" ? "approve" : "reject";
     const res = await operatorFetch(
-      `/v1/admin/reviews/${encodeURIComponent(reviewId)}`,
-      {
-        method: "PATCH",
-        body: { status },
-      },
+      `/v1/admin/reviews/${encodeURIComponent(reviewId)}/${verb}`,
+      { method: "POST", ...(status === "APPROVED" ? { body: {} } : {}) },
     );
-    if (!res.ok && res.status !== 503) {
+    if (!res.ok) {
       return { ok: false, error: res.error || "No se pudo actualizar la reseña." };
     }
   }

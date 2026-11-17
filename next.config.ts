@@ -4,6 +4,9 @@ const nextConfig: NextConfig = {
   // Next 16.4+ escribe un AGENTS.md en la raíz al correr `next dev`; el repo
   // es público y no lleva archivos de herramientas de agentes.
   agentRules: false,
+  // Permite levantar un segundo `next dev` (p. ej. contra la API local de
+  // pruebas) junto al de desarrollo: cada uno usa su propia carpeta de build.
+  distDir: process.env.NEXT_DIST_DIR || ".next",
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "*.public.blob.vercel-storage.com" },

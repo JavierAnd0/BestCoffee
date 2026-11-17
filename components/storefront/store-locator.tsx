@@ -11,13 +11,10 @@ import {
   Copy,
   Check,
   Search,
-  Sparkles,
-  Coffee,
   Store,
   ChevronRight,
 } from "lucide-react";
 import type { StoreLocation } from "@/lib/mocks/static";
-import { Eyebrow } from "@/components/ui/eyebrow";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -26,24 +23,28 @@ import { cn } from "@/lib/utils";
 
 interface StoreLocatorProps {
   stores: StoreLocation[];
+  /** Muestra la invitación a comprar en línea (la tienda tiene catálogo). */
+  showOnlineShop?: boolean;
 }
 
-const FILTER_TAGS = [
-  "Todas",
-  "Barra de filtrados",
-  "Pet friendly",
-  "Terraza",
-  "Molienda personalizada",
-  "Casona colonial",
-] as const;
+/** El mapper deja 0,0 cuando la sede no tiene coordenadas: no va al mapa. */
+function hasCoords(store: StoreLocation): boolean {
+  return store.coordinates.lat !== 0 || store.coordinates.lng !== 0;
+}
 
-export function StoreLocator({ stores }: StoreLocatorProps) {
-  const [selectedSlug, setSelectedSlug] = useState<string>(
-    stores[0]?.slug ?? "chapinero"
-  );
+function fullAddress(store: StoreLocation): string {
+  return [store.address, store.city].filter(Boolean).join(", ");
+}
+
+export function StoreLocator({ stores, showOnlineShop = false }: StoreLocatorProps) {
+  // Solo las sedes con coordenadas se pueden ubicar en el mapa; todas van en la lista.
+  const mappable = stores.filter(hasCoords);
+  const [selectedSlug, setSelectedSlug] = useState<string>(mappable[0]?.slug ?? "");
   const [searchQuery, setSearchQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState<string>("Todas");
   const [copiedSlug, setCopiedSlug] = useState<string | null>(null);
+  // Filtros con los servicios que las sedes declaran (sin lista fija).
+  const filterTags = ["Todas", ...new Set(stores.flatMap((s) => s.features ?? []))];
 
   // Filtrado de tiendas por texto y etiquetas
   const filteredStores = stores.filter((store) => {
@@ -66,28 +67,26 @@ export function StoreLocator({ stores }: StoreLocatorProps) {
     return matchesSearch && matchesFilter;
   });
 
-  const selectedStore =
-    stores.find((s) => s.slug === selectedSlug) ||
-    filteredStores[0] ||
-    stores[0];
+  const selectedStore = mappable.find((s) => s.slug === selectedSlug) ?? mappable[0];
 
   function handleCopyAddress(store: StoreLocation) {
     if (!navigator?.clipboard) return;
-    navigator.clipboard.writeText(`${store.address}, Bogotá, Colombia`);
+    const address = fullAddress(store);
+    navigator.clipboard.writeText(address);
     setCopiedSlug(store.slug);
     toast({
       title: "Dirección copiada",
-      description: `${store.address} copiada al portapapeles.`,
+      description: `${address} copiada al portapapeles.`,
     });
     setTimeout(() => {
       setCopiedSlug(null);
     }, 2000);
   }
 
-  // URL para el mapa embebido de Google Maps
-  const embedMapUrl = selectedStore?.coordinates
+  // URL para el mapa embebido de Google Maps (solo sedes con coordenadas)
+  const embedMapUrl = selectedStore
     ? `https://maps.google.com/maps?q=${selectedStore.coordinates.lat},${selectedStore.coordinates.lng}&hl=es&z=16&output=embed`
-    : `https://maps.google.com/maps?q=Bogota+Colombia+Cra+13+57-32&hl=es&z=13&output=embed`;
+    : null;
 
   return (
     <div className="space-y-12">
@@ -104,36 +103,43 @@ export function StoreLocator({ stores }: StoreLocatorProps) {
         </div>
 
         {/* Chips de filtro */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 scrollbar-none">
-          {FILTER_TAGS.map((tag) => (
-            <button
-              key={tag}
-              type="button"
-              onClick={() => setActiveFilter(tag)}
-              className={cn(
-                "text-xs px-3 py-1.5 rounded-full whitespace-nowrap transition-colors border",
-                activeFilter === tag
-                  ? "bg-primary text-primary-foreground border-primary font-medium shadow-xs"
-                  : "bg-background text-muted-foreground border-border hover:bg-muted hover:text-foreground"
-              )}
-            >
-              {tag}
-            </button>
-          ))}
-        </div>
+        {filterTags.length > 1 && (
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 scrollbar-none">
+            {filterTags.map((tag) => (
+              <button
+                key={tag}
+                type="button"
+                onClick={() => setActiveFilter(tag)}
+                className={cn(
+                  "text-xs px-3 py-1.5 rounded-full whitespace-nowrap transition-colors border",
+                  activeFilter === tag
+                    ? "bg-primary text-primary-foreground border-primary font-medium shadow-xs"
+                    : "bg-background text-muted-foreground border-border hover:bg-muted hover:text-foreground"
+                )}
+              >
+                {tag}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Grid principal: Lista de tiendas + Mapa interactivo */}
-      <div className="grid lg:grid-cols-[1fr_1.1fr] gap-8 items-start">
+      <div
+        className={cn(
+          "grid gap-8 items-start",
+          embedMapUrl ? "lg:grid-cols-[1fr_1.1fr]" : "max-w-3xl",
+        )}
+      >
         {/* Columna Izquierda: Lista de Tiendas */}
         <div className="space-y-4">
           <div className="flex items-center justify-between text-xs text-muted-foreground px-1">
             <span>
               Mostrando {filteredStores.length} de {stores.length} tiendas
             </span>
-            {selectedStore && (
+            {selectedStore && embedMapUrl && (
               <span className="hidden sm:inline">
-                Tienda seleccionada:{" "}
+                En el mapa:{" "}
                 <strong className="text-foreground">{selectedStore.name}</strong>
               </span>
             )}
@@ -161,13 +167,15 @@ export function StoreLocator({ stores }: StoreLocatorProps) {
             </div>
           ) : (
             filteredStores.map((store) => {
-              const isSelected = selectedStore?.slug === store.slug;
+              const onMap = hasCoords(store);
+              const isSelected = onMap && selectedStore?.slug === store.slug;
               return (
                 <article
                   key={store.slug}
-                  onClick={() => setSelectedSlug(store.slug)}
+                  onClick={onMap ? () => setSelectedSlug(store.slug) : undefined}
                   className={cn(
-                    "cursor-pointer rounded-xl border p-6 space-y-4 transition-all text-left bg-background shadow-xs",
+                    onMap && "cursor-pointer",
+                    "rounded-xl border p-6 space-y-4 transition-all text-left bg-background shadow-xs",
                     isSelected
                       ? "border-primary ring-2 ring-primary/20 shadow-md bg-primary/[0.015]"
                       : "border-border hover:border-foreground/30 hover:shadow-sm"
@@ -175,34 +183,31 @@ export function StoreLocator({ stores }: StoreLocatorProps) {
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-                        <Badge variant="outline" className="text-xs font-normal">
-                          {store.neighborhood || "Bogotá"}
-                        </Badge>
-                        <span className="inline-flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-medium">
-                          <span className="relative flex size-2">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                            <span className="relative inline-flex rounded-full size-2 bg-emerald-500"></span>
-                          </span>
-                          Abierto hoy
-                        </span>
-                      </div>
+                      {store.neighborhood && (
+                        <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                          <Badge variant="outline" className="text-xs font-normal">
+                            {store.neighborhood}
+                          </Badge>
+                        </div>
+                      )}
                       <h2 className="font-display text-2xl font-semibold tracking-tight text-foreground">
                         {store.name}
                       </h2>
                     </div>
 
-                    <Button
-                      variant={isSelected ? "default" : "outline"}
-                      size="xs"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedSlug(store.slug);
-                      }}
-                      className="shrink-0"
-                    >
-                      {isSelected ? "En el mapa" : "Ver en mapa"}
-                    </Button>
+                    {onMap && (
+                      <Button
+                        variant={isSelected ? "default" : "outline"}
+                        size="xs"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedSlug(store.slug);
+                        }}
+                        className="shrink-0"
+                      >
+                        {isSelected ? "En el mapa" : "Ver en mapa"}
+                      </Button>
+                    )}
                   </div>
 
                   {store.description && (
@@ -213,30 +218,32 @@ export function StoreLocator({ stores }: StoreLocatorProps) {
 
                   {/* Datos clave de la tienda */}
                   <div className="space-y-2 text-sm text-foreground/85 pt-1 border-t border-border/60">
-                    <div className="flex items-start gap-2.5">
-                      <MapPin className="size-4 text-primary shrink-0 mt-0.5" />
-                      <span className="flex-1 font-medium">
-                        {store.address}, {store.city}
-                      </span>
-                    </div>
+                    {fullAddress(store) && (
+                        <div className="flex items-start gap-2.5">
+                          <MapPin className="size-4 text-primary shrink-0 mt-0.5" />
+                          <span className="flex-1 font-medium">{fullAddress(store)}</span>
+                        </div>
+                    )}
 
-                    <div className="flex items-start gap-2.5">
-                      <Clock className="size-4 text-muted-foreground shrink-0 mt-0.5" />
-                      <span className="text-xs text-muted-foreground">
-                        {store.hours}
-                      </span>
-                    </div>
+                    {store.hours && (
+                      <div className="flex items-start gap-2.5">
+                        <Clock className="size-4 text-muted-foreground shrink-0 mt-0.5" />
+                        <span className="text-xs text-muted-foreground">{store.hours}</span>
+                      </div>
+                    )}
 
-                    <div className="flex items-start gap-2.5">
-                      <Phone className="size-4 text-muted-foreground shrink-0 mt-0.5" />
-                      <a
-                        href={`tel:${store.phone.replace(/[^0-9+]/g, "")}`}
-                        onClick={(e) => e.stopPropagation()}
-                        className="text-xs text-muted-foreground hover:text-foreground hover:underline transition-colors"
-                      >
-                        {store.phone}
-                      </a>
-                    </div>
+                    {store.phone.trim() && (
+                      <div className="flex items-start gap-2.5">
+                        <Phone className="size-4 text-muted-foreground shrink-0 mt-0.5" />
+                        <a
+                          href={`tel:${store.phone.replace(/[^0-9+]/g, "")}`}
+                          onClick={(e) => e.stopPropagation()}
+                          className="text-xs text-muted-foreground hover:text-foreground hover:underline transition-colors"
+                        >
+                          {store.phone}
+                        </a>
+                      </div>
+                    )}
                   </div>
 
                   {/* Amenities / Características */}
@@ -255,26 +262,25 @@ export function StoreLocator({ stores }: StoreLocatorProps) {
 
                   {/* Botones de acción */}
                   <div className="flex flex-wrap items-center gap-2 pt-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      render={
-                        <a
-                          href={
-                            store.googleMapsUrl ||
-                            `https://www.google.com/maps/dir/?api=1&destination=${store.coordinates.lat},${store.coordinates.lng}`
-                          }
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          onClick={(e) => e.stopPropagation()}
-                        />
-                      }
-                      className="gap-1.5 text-xs"
-                    >
-                      <Navigation className="size-3.5" />
-                      Cómo llegar
-                      <ExternalLink className="size-3 opacity-60" />
-                    </Button>
+                    {store.googleMapsUrl && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        render={
+                          <a
+                            href={store.googleMapsUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                        }
+                        className="gap-1.5 text-xs"
+                      >
+                        <Navigation className="size-3.5" />
+                        Cómo llegar
+                        <ExternalLink className="size-3 opacity-60" />
+                      </Button>
+                    )}
 
                     {store.wazeUrl && (
                       <Button
@@ -294,6 +300,7 @@ export function StoreLocator({ stores }: StoreLocatorProps) {
                       </Button>
                     )}
 
+                    {fullAddress(store) && (
                     <Button
                       variant="ghost"
                       size="sm"
@@ -315,6 +322,7 @@ export function StoreLocator({ stores }: StoreLocatorProps) {
                         </>
                       )}
                     </Button>
+                    )}
                   </div>
                 </article>
               );
@@ -323,202 +331,141 @@ export function StoreLocator({ stores }: StoreLocatorProps) {
         </div>
 
         {/* Columna Derecha: Mapa Interactivo con Google Maps */}
-        <div className="sticky top-20 self-start space-y-3">
-          <div className="rounded-2xl border border-border bg-card overflow-hidden shadow-lg">
-            {/* Header superior del mapa */}
-            <div className="p-4 bg-muted/60 border-b border-border flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2 min-w-0">
-                <div className="size-2 rounded-full bg-emerald-500 shrink-0 animate-pulse" />
-                <span className="text-xs font-medium text-foreground truncate">
-                  {selectedStore?.name || "Mapa de tiendas"}
-                </span>
-                {selectedStore?.neighborhood && (
-                  <Badge variant="secondary" className="text-[10px] hidden sm:inline-flex">
-                    {selectedStore.neighborhood}
-                  </Badge>
+        {selectedStore && embedMapUrl && (
+          <div className="sticky top-20 self-start space-y-3">
+            <div className="rounded-2xl border border-border bg-card overflow-hidden shadow-lg">
+              {/* Header superior del mapa */}
+              <div className="p-4 bg-muted/60 border-b border-border flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2 min-w-0">
+                  <div className="size-2 rounded-full bg-emerald-500 shrink-0 animate-pulse" />
+                  <span className="text-xs font-medium text-foreground truncate">
+                    {selectedStore.name}
+                  </span>
+                  {selectedStore.neighborhood && (
+                    <Badge variant="secondary" className="text-[10px] hidden sm:inline-flex">
+                      {selectedStore.neighborhood}
+                    </Badge>
+                  )}
+                </div>
+
+                {selectedStore && (
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <a
+                      href={
+                        selectedStore.googleMapsUrl ||
+                        `https://www.google.com/maps/search/?api=1&query=${selectedStore.coordinates.lat},${selectedStore.coordinates.lng}`
+                      }
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-xs text-primary hover:underline font-medium px-2 py-1 rounded-md hover:bg-background/80 transition-colors"
+                    >
+                      <span>Google Maps</span>
+                      <ExternalLink className="size-3" />
+                    </a>
+                  </div>
                 )}
               </div>
 
-              {selectedStore && (
-                <div className="flex items-center gap-1.5 shrink-0">
-                  <a
-                    href={
-                      selectedStore.googleMapsUrl ||
-                      `https://www.google.com/maps/search/?api=1&query=${selectedStore.coordinates.lat},${selectedStore.coordinates.lng}`
-                    }
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-xs text-primary hover:underline font-medium px-2 py-1 rounded-md hover:bg-background/80 transition-colors"
-                  >
-                    <span>Google Maps</span>
-                    <ExternalLink className="size-3" />
-                  </a>
-                </div>
-              )}
-            </div>
+              {/* Contenedor del Iframe de Mapa */}
+              <div className="relative w-full h-[460px] lg:h-[540px] bg-muted/30">
+                <iframe
+                  title={`Mapa de ${selectedStore.name}`}
+                  src={embedMapUrl}
+                  width="100%"
+                  height="100%"
+                  style={{ border: 0 }}
+                  allowFullScreen={false}
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                  className="w-full h-full grayscale-[0.1] contrast-[1.02]"
+                />
 
-            {/* Contenedor del Iframe de Mapa */}
-            <div className="relative w-full h-[460px] lg:h-[540px] bg-muted/30">
-              <iframe
-                title={`Mapa de ${selectedStore?.name || "Nuestras tiendas en Bogotá"}`}
-                src={embedMapUrl}
-                width="100%"
-                height="100%"
-                style={{ border: 0 }}
-                allowFullScreen={false}
-                loading="lazy"
-                referrerPolicy="no-referrer-when-downgrade"
-                className="w-full h-full grayscale-[0.1] contrast-[1.02]"
-              />
+                {/* Botón flotante inferior con resumen y acción directa */}
+                {selectedStore && (
+                  <div className="absolute bottom-4 inset-x-4 bg-background/95 backdrop-blur-md border border-border/80 rounded-xl p-3.5 shadow-lg flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-xs font-semibold text-foreground truncate">
+                        {selectedStore.name}
+                      </p>
+                      <p className="text-[11px] text-muted-foreground truncate">
+                        {[selectedStore.address, selectedStore.hours].filter(Boolean).join(" · ")}
+                      </p>
+                    </div>
 
-              {/* Botón flotante inferior con resumen y acción directa */}
-              {selectedStore && (
-                <div className="absolute bottom-4 inset-x-4 bg-background/95 backdrop-blur-md border border-border/80 rounded-xl p-3.5 shadow-lg flex items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="text-xs font-semibold text-foreground truncate">
-                      {selectedStore.name}
-                    </p>
-                    <p className="text-[11px] text-muted-foreground truncate">
-                      {selectedStore.address} · {selectedStore.hours}
-                    </p>
+                    <Button
+                      variant="default"
+                      size="sm"
+                      render={
+                        <a
+                          href={
+                            selectedStore.googleMapsUrl ||
+                            `https://www.google.com/maps/dir/?api=1&destination=${selectedStore.coordinates.lat},${selectedStore.coordinates.lng}`
+                          }
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        />
+                      }
+                      className="gap-1.5 text-xs shrink-0 shadow-sm"
+                    >
+                      <Navigation className="size-3.5" />
+                      Ruta
+                    </Button>
                   </div>
+                )}
+              </div>
 
-                  <Button
-                    variant="default"
-                    size="sm"
-                    render={
-                      <a
-                        href={
-                          selectedStore.googleMapsUrl ||
-                          `https://www.google.com/maps/dir/?api=1&destination=${selectedStore.coordinates.lat},${selectedStore.coordinates.lng}`
-                        }
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      />
-                    }
-                    className="gap-1.5 text-xs shrink-0 shadow-sm"
-                  >
-                    <Navigation className="size-3.5" />
-                    Ruta
-                  </Button>
+              {/* Selector rápido de tiendas en la base del mapa */}
+              <div className="p-3 bg-muted/30 border-t border-border flex items-center justify-between gap-2 overflow-x-auto">
+                <span className="text-[11px] text-muted-foreground whitespace-nowrap pl-1 font-medium">
+                  Cambiar tienda:
+                </span>
+                <div className="flex items-center gap-1.5">
+                  {mappable.map((s) => (
+                    <button
+                      key={s.slug}
+                      type="button"
+                      onClick={() => setSelectedSlug(s.slug)}
+                      className={cn(
+                        "text-xs px-2.5 py-1 rounded-lg border transition-all whitespace-nowrap font-medium",
+                        selectedStore?.slug === s.slug
+                          ? "bg-primary text-primary-foreground border-primary shadow-xs"
+                          : "bg-background text-muted-foreground border-border hover:bg-muted hover:text-foreground"
+                      )}
+                    >
+                      {s.neighborhood || s.name}
+                    </button>
+                  ))}
                 </div>
-              )}
-            </div>
-
-            {/* Selector rápido de tiendas en la base del mapa */}
-            <div className="p-3 bg-muted/30 border-t border-border flex items-center justify-between gap-2 overflow-x-auto">
-              <span className="text-[11px] text-muted-foreground whitespace-nowrap pl-1 font-medium">
-                Cambiar tienda:
-              </span>
-              <div className="flex items-center gap-1.5">
-                {stores.map((s) => (
-                  <button
-                    key={s.slug}
-                    type="button"
-                    onClick={() => setSelectedSlug(s.slug)}
-                    className={cn(
-                      "text-xs px-2.5 py-1 rounded-lg border transition-all whitespace-nowrap font-medium",
-                      selectedStore?.slug === s.slug
-                        ? "bg-primary text-primary-foreground border-primary shadow-xs"
-                        : "bg-background text-muted-foreground border-border hover:bg-muted hover:text-foreground"
-                    )}
-                  >
-                    {s.neighborhood || s.name}
-                  </button>
-                ))}
               </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
 
-      {/* Sección 2: Experiencia en tienda */}
-      <section className="pt-8 border-t border-border space-y-8">
-        <div className="text-center max-w-2xl mx-auto space-y-2">
-          <Eyebrow>Visítanos</Eyebrow>
-          <h2 className="font-display text-3xl font-semibold tracking-tight">
-            ¿Qué vivirás en nuestras tiendas?
-          </h2>
-          <p className="text-sm text-muted-foreground">
-            Diseñamos cada espacio para que sientas la cultura cafetera desde el primer aroma hasta el último sorbo.
-          </p>
-        </div>
-
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className="p-6 rounded-xl border border-border bg-card space-y-3">
-            <div className="size-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
-              <Coffee className="size-5" />
-            </div>
-            <h3 className="font-semibold text-base">Barra de filtrados</h3>
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              Disfruta tus microlotes favoritos preparados en V60, Chemex, Aeropress u Origami con ratios calibrados a diario.
+      {/* Invitación a la tienda en línea */}
+      {showOnlineShop && (
+        <section className="rounded-2xl border border-border bg-gradient-to-br from-muted/60 via-background to-muted/40 p-8 sm:p-12 text-center space-y-6">
+          <div className="max-w-2xl mx-auto space-y-3">
+            <h2 className="font-display text-3xl sm:text-4xl font-semibold tracking-tight">
+              ¿No puedes venir? Compra en línea
+            </h2>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              Encuentra los mismos cafés en nuestra tienda en línea.
             </p>
           </div>
 
-          <div className="p-6 rounded-xl border border-border bg-card space-y-3">
-            <div className="size-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
-              <Sparkles className="size-5" />
-            </div>
-            <h3 className="font-semibold text-base">Molienda a tu medida</h3>
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              Elige cualquier café en grano y te lo molemos en el acto según tu cafetera en nuestros molinos profesionales Mahlkönig.
-            </p>
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            <Button
+              size="lg"
+              render={<Link href="/catalogo" />}
+              className="gap-2"
+            >
+              Explorar catálogo online
+              <ChevronRight className="size-4" />
+            </Button>
           </div>
-
-          <div className="p-6 rounded-xl border border-border bg-card space-y-3">
-            <div className="size-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
-              <Store className="size-5" />
-            </div>
-            <h3 className="font-semibold text-base">Catas y talleres</h3>
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              Los sábados abrimos sesiones guiadas para explorar orígenes de Huila, Nariño, Tolima y Cauca con baristas Q-Grader.
-            </p>
-          </div>
-
-          <div className="p-6 rounded-xl border border-border bg-card space-y-3">
-            <div className="size-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
-              <Navigation className="size-5" />
-            </div>
-            <h3 className="font-semibold text-base">Frasco retornable</h3>
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              Trae tu envase o frasco reutilizable a cualquiera de nuestras sedes y recibe un descuento de $2.000 COP en tu recarga.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* Sección 3: Banner de Despacho Nacional */}
-      <section className="rounded-2xl border border-border bg-gradient-to-br from-muted/60 via-background to-muted/40 p-8 sm:p-12 text-center space-y-6">
-        <div className="max-w-2xl mx-auto space-y-3">
-          <Badge variant="outline" className="px-3 py-1 text-xs">
-            Despacho a toda Colombia
-          </Badge>
-          <h2 className="font-display text-3xl sm:text-4xl font-semibold tracking-tight">
-            ¿No estás en Bogotá? Llevamos el café a tu puerta
-          </h2>
-          <p className="text-sm text-muted-foreground leading-relaxed">
-            Tostamos semanalmente microlotes de pequeños productores y los enviamos empacados en válvula desgasificadora a cualquier municipio de Colombia. Envíos gratis desde $90.000 COP.
-          </p>
-        </div>
-
-        <div className="flex flex-wrap items-center justify-center gap-3">
-          <Button
-            size="lg"
-            render={<Link href="/catalogo" />}
-            className="gap-2"
-          >
-            Explorar catálogo online
-            <ChevronRight className="size-4" />
-          </Button>
-          <Button
-            variant="outline"
-            size="lg"
-            render={<Link href="/quiz" />}
-          >
-            Encuentra tu café ideal
-          </Button>
-        </div>
-      </section>
+        </section>
+      )}
     </div>
   );
 }

@@ -67,7 +67,7 @@ export async function getHomeSpotlight(): Promise<SpotlightContent | null> {
   const product = await getProductBySlug(spot.productSlug);
   if (!product) return null;
   return {
-    eyebrow: "Origen único · spotlight",
+    eyebrow: "Destacado",
     title: spot.title ?? product.name,
     body: product.shortDescription || product.producerStory || "",
     roastLevel: product.roastLevel,
@@ -86,18 +86,15 @@ export async function getFeaturedPack(): Promise<FeaturedPackContent | null> {
   if (!bundle || slugs.length === 0) return null;
   // Price the bundle as the sum of each product's cheapest variant.
   const products = await Promise.all(slugs.map((s) => getProductBySlug(s)));
-  const priceCents = products.reduce(
-    (sum, p) => sum + (p ? cheapestPriceCents(p) : 0),
-    0,
-  );
+  // Sin precio propio de paquete: no hay ahorro que anunciar.
+  const found = products.filter((p) => p !== null && p !== undefined);
+  const priceCents = found.reduce((sum, p) => sum + cheapestPriceCents(p), 0);
   return {
     eyebrow: "Paquete destacado",
     title: bundle.title,
-    description:
-      "Una selección curada de nuestros orígenes para descubrir tu favorito.",
+    description: "Una selección de la tienda para descubrir tu favorito.",
     priceCents,
-    bagsCount: slugs.length,
-    savingsPct: 12,
+    bagsCount: found.length,
     productSlug: slugs[0] ?? "",
   };
 }

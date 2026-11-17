@@ -33,7 +33,12 @@ export interface PlaceOrderInput {
 }
 
 export type PlaceOrderResult =
-  | { success: true; orderId: string }
+  | {
+      success: true;
+      orderId: string;
+      /** Suscripciones creadas con el pedido (esperan su pago para activarse). */
+      subscriptionIds: string[];
+    }
   | { error: string };
 
 // Esquema mínimo que coincide con el DTO real `CreateOrderDto` del backend
@@ -84,7 +89,19 @@ export async function placeOrderAction(
       `${input.shipping.firstName || ""} ${input.shipping.lastName || ""}`.trim() || undefined;
 
     const demoExtra = await demoHeaders();
+    // El backend cotiza el pedido entero en un solo modo: un carrito que mezcla
+    // suscripción y compra única cobraría la compra única a precio de
+    // suscripción. Se piden por separado.
     const hasSubscription = input.items.some((i) => i.mode === "SUBSCRIPTION");
+    if (hasSubscription && input.items.some((i) => i.mode !== "SUBSCRIPTION")) {
+      return {
+        error:
+          "Las suscripciones se piden por separado de las compras únicas. Quita una de las dos del carrito.",
+      };
+    }
+    if (hasSubscription && !token && !env.useMocks) {
+      return { error: "Para suscribirte necesitas iniciar sesión o crear una cuenta." };
+    }
 
     // Cada línea debe apuntar a una variante real. Antes, una línea sin variante
     // (o con un id de datos de ejemplo) se cambiaba por el primer producto del
@@ -99,10 +116,17 @@ export async function placeOrderAction(
           "Hay un producto en tu carrito que ya no está disponible. Quítalo y vuelve a agregarlo.",
       };
     }
-    const resolvedItems = input.items.map((i) => ({
-      variantId: i.variantId,
-      quantity: Math.max(1, i.qty),
-    }));
+    // En una suscripción cada línea es una suscripción de una unidad por envío
+    // con su propia frecuencia (la que eligió en la ficha del producto).
+    const resolvedItems = input.items.map((i) =>
+      hasSubscription
+        ? {
+            variantId: i.variantId,
+            quantity: 1,
+            ...(i.frequencyDays ? { frequencyDays: i.frequencyDays } : {}),
+          }
+        : { variantId: i.variantId, quantity: Math.max(1, i.qty) },
+    );
 
     // Formato exacto requerido por el DTO del backend NestJS
     const body: Record<string, unknown> = {
@@ -135,7 +159,7 @@ export async function placeOrderAction(
     // Modo Mocks explícito
     if (env.useMocks) {
       const mockId = `ORG-${Math.floor(10000 + Math.random() * 90000)}`;
-      return { success: true, orderId: mockId };
+      return { success: true, orderId: mockId, subscriptionIds: [] };
     }
 
     let res: Response;
@@ -199,6 +223,7 @@ export async function placeOrderAction(
     const data = (await res.json().catch(() => ({}))) as {
       orderId?: string;
       id?: string;
+      summary?: { subscriptionIds?: string[] };
     };
 
     if (!data.orderId && !data.id) {
@@ -210,7 +235,11 @@ export async function placeOrderAction(
 
     const finalOrderId = data.orderId ?? data.id!;
 
-    return { success: true, orderId: finalOrderId };
+    return {
+      success: true,
+      orderId: finalOrderId,
+      subscriptionIds: data.summary?.subscriptionIds ?? [],
+    };
   } catch (err) {
     console.error("Error en placeOrderAction:", err);
     return { error: "Ocurrió un error inesperado al procesar la compra." };

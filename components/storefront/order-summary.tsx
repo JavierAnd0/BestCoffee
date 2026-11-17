@@ -37,11 +37,6 @@ export function OrderSummary({
     subtotalCents >= threshold;
   const shippingCents = hasFreeShipping ? 0 : shippingFlatCents;
 
-  // Subscription discount on already-discounted items shows as a saved-line
-  const subscriptionSavings = items
-    .filter((i) => i.mode === "SUBSCRIPTION")
-    .reduce((n, i) => n + Math.round(i.unitPriceCents * 0.15 * i.qty), 0);
-
   // Descuento por cupón
   const discountAmountCents = appliedDiscount ? appliedDiscount.discountCents : 0;
 
@@ -104,7 +99,7 @@ export function OrderSummary({
                 {i.mode === "SUBSCRIPTION" && (
                   <div className="text-[11px] text-primary font-medium mt-1 inline-flex items-center gap-1">
                     <Truck className="size-3" />
-                    Suscripción {i.frequencyDays ? `c/${i.frequencyDays / 7} sem` : ""}
+                    Suscripción {i.frequencyDays ? `cada ${i.frequencyDays / 7} sem` : ""} · 1 por envío
                   </div>
                 )}
               </div>
@@ -209,16 +204,6 @@ export function OrderSummary({
             }
           />
         )}
-        {subscriptionSavings > 0 && (
-          <Row
-            label="Ahorro por suscripción (15%)"
-            value={
-              <span className="text-primary font-medium">
-                –{formatCop(subscriptionSavings)}
-              </span>
-            }
-          />
-        )}
       </div>
 
       {/* Total final */}
@@ -233,7 +218,7 @@ export function OrderSummary({
         <div className="mt-5 flex items-start gap-2.5 rounded-lg bg-muted/60 p-3 text-xs text-muted-foreground leading-relaxed">
           <Truck className="size-4 flex-shrink-0 mt-0.5 text-primary" />
           <span>
-            Incluye una suscripción: primer despacho en 24–48 horas tras tostar, luego según la frecuencia que elegiste. Modifica o cancela cuando quieras sin penalidad.
+            Este es el primer pedido de tu suscripción y ya incluye el precio de suscriptor. La suscripción se activa cuando se confirma su pago; después, cada envío genera un pedido nuevo con la frecuencia que elegiste, que se paga igual que este. Puedes pausarla, saltar un envío o cancelarla desde tu cuenta.
           </span>
         </div>
       )}

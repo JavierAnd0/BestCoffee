@@ -1,85 +1,82 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Truck, Package, AlertTriangle, Settings2, ExternalLink } from "lucide-react";
+import { Truck, Package, Clock, ExternalLink } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/admin/page-header";
 import { formatCop } from "@/lib/format";
+import { getLogisticsData, type LogisticsOrder } from "@/lib/data/admin-logistics";
 
 export const metadata: Metadata = { title: "Logística · Admin" };
 
-interface Carrier {
-  id: string;
-  name: string;
-  active: boolean;
-  pendingShipments: number;
-  avgDeliveryDays: string;
-  accountId: string;
+const STATUS_LABEL: Record<LogisticsOrder["status"], string> = {
+  RECEIVED: "Recibido",
+  PREPARING: "Preparando",
+  SHIPPED: "Enviado",
+  DELIVERED: "Entregado",
+  CANCELLED: "Cancelado",
+};
+
+function ago(iso?: string): string {
+  if (!iso) return "—";
+  const m = Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 60_000));
+  if (m < 60) return `hace ${m} min`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `hace ${h} h`;
+  const d = Math.floor(h / 24);
+  return `hace ${d} ${d === 1 ? "día" : "días"}`;
 }
 
-interface ShippingZone {
-  zone: string;
-  label: string;
-  rateCents: number | null;
-  freeAboveCents: number | null;
-  active: boolean;
+function shortId(id: string): string {
+  return id.slice(-8).toUpperCase();
 }
 
-interface PendingDispatch {
-  id: string;
-  customer: string;
-  carrier: string;
-  items: number;
-  paidAt: string;
+function safeUrl(url?: string | null): string | null {
+  if (!url) return null;
+  try {
+    const u = new URL(url);
+    return u.protocol === "https:" || u.protocol === "http:" ? u.toString() : null;
+  } catch {
+    return null;
+  }
 }
 
-const CARRIERS: Carrier[] = [
-  { id: "servientrega", name: "Servientrega", active: true, pendingShipments: 14, avgDeliveryDays: "1–2 días", accountId: "SRV-49201" },
-  { id: "tcc", name: "TCC", active: true, pendingShipments: 6, avgDeliveryDays: "2–3 días", accountId: "TCC-10483" },
-  { id: "coordinadora", name: "Coordinadora", active: false, pendingShipments: 0, avgDeliveryDays: "2–4 días", accountId: "CRD-00291" },
-];
+function OrderLink({ id }: { id: string }) {
+  return (
+    <Link
+      href={`/admin/pedidos/${id}`}
+      className="font-mono text-xs font-medium hover:text-accent transition-colors"
+    >
+      #{shortId(id)}
+    </Link>
+  );
+}
 
-const ZONES: ShippingZone[] = [
-  { zone: "bog", label: "Bogotá D.C.", rateCents: 6_000_00, freeAboveCents: 45_000_00, active: true },
-  { zone: "med", label: "Medellín y Área Metro", rateCents: 8_000_00, freeAboveCents: 45_000_00, active: true },
-  { zone: "cal", label: "Cali y Eje Cafetero", rateCents: 9_500_00, freeAboveCents: 60_000_00, active: true },
-  { zone: "coast", label: "Costa Atlántica", rateCents: 12_000_00, freeAboveCents: 80_000_00, active: true },
-  { zone: "other", label: "Resto del país", rateCents: 14_000_00, freeAboveCents: null, active: true },
-  { zone: "intl", label: "Internacional", rateCents: null, freeAboveCents: null, active: false },
-];
+const TH = "px-4 py-2.5 text-[11px] font-medium text-muted-foreground uppercase tracking-wide whitespace-nowrap";
 
-const PENDING: PendingDispatch[] = [
-  { id: "ORG-10428", customer: "María Restrepo", carrier: "Servientrega", items: 3, paidAt: "hace 12 min" },
-  { id: "ORG-10427", customer: "Andrés Pérez", carrier: "TCC", items: 1, paidAt: "hace 38 min" },
-  { id: "ORG-10426", customer: "Clara Torres", carrier: "Servientrega", items: 2, paidAt: "hace 1 h" },
-  { id: "ORG-10425", customer: "Jorge Camargo", carrier: "Servientrega", items: 1, paidAt: "hace 2 h" },
-  { id: "ORG-10424", customer: "Lina Mejía", carrier: "TCC", items: 2, paidAt: "hace 3 h" },
-];
+export default async function LogisticsPage() {
+  const data = await getLogisticsData();
 
-const KPIS = [
-  { label: "Pendientes de despacho", value: "20", icon: Package, tone: "text-amber-600" },
-  { label: "Enviados hoy", value: "18", icon: Truck, tone: "text-foreground" },
-  { label: "Transportistas activos", value: "2", icon: Truck, tone: "text-foreground" },
-  { label: "Incidencias abiertas", value: "1", icon: AlertTriangle, tone: "text-red-600" },
-] as const;
+  const kpis = [
+    { label: "Pagados por despachar", value: data.toDispatch.length, icon: Package, tone: "text-amber-600" },
+    { label: "En camino", value: data.shippedTotal, icon: Truck, tone: "text-foreground" },
+    { label: "Esperando pago", value: data.awaitingPayment, icon: Clock, tone: "text-muted-foreground" },
+  ];
 
-export default function LogisticsPage() {
   return (
     <div>
       <PageHeader
         title="Logística"
-        description="Transportistas, zonas de envío y pedidos pendientes de despacho."
-        actions={
-          <Button variant="outline" size="sm" className="gap-1.5">
-            <Settings2 className="size-4" />
-            Configuración
-          </Button>
-        }
+        description="Pedidos pagados pendientes de despacho y pedidos en camino. El despacho y la guía se registran en el detalle de cada pedido."
       />
 
-      {/* KPI strip */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        {KPIS.map(({ label, value, icon: Icon, tone }) => (
+      {data.error && (
+        <div className="mb-6 rounded-md border border-red-300/60 bg-red-50 px-4 py-3 text-sm text-red-800">
+          No se pudieron cargar los pedidos: {data.error}
+        </div>
+      )}
+
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+        {kpis.map(({ label, value, icon: Icon, tone }) => (
           <div key={label} className="rounded-lg border border-border bg-background p-4">
             <Icon className={`size-4 mb-2 ${tone}`} />
             <div className="text-2xl font-display font-semibold tabular-nums">{value}</div>
@@ -88,130 +85,115 @@ export default function LogisticsPage() {
         ))}
       </div>
 
-      <div className="grid lg:grid-cols-2 gap-6 mb-6">
-        {/* Carriers */}
-        <section className="rounded-lg border border-border bg-background">
-          <div className="flex items-center justify-between px-5 py-4 border-b border-border">
-            <h2 className="font-medium">Transportistas</h2>
-            <Button variant="outline" size="sm">+ Agregar</Button>
-          </div>
-          <ul className="divide-y divide-border">
-            {CARRIERS.map((c) => (
-              <li key={c.id} className="flex items-center gap-4 px-5 py-4">
-                <div className={
-                  "size-9 rounded-full bg-muted grid place-items-center text-[10px] font-bold shrink-0 " +
-                  (c.active ? "opacity-100" : "opacity-40")
-                }>
-                  {c.name.slice(0, 2).toUpperCase()}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium text-sm">{c.name}</span>
-                    <Badge
-                      variant="outline"
-                      className={c.active
-                        ? "bg-emerald-500/10 text-emerald-700 border-emerald-500/20"
-                        : "bg-muted text-muted-foreground"}
-                    >
-                      {c.active ? "Activo" : "Inactivo"}
-                    </Badge>
-                  </div>
-                  <div className="text-xs text-muted-foreground truncate">
-                    {c.accountId} · {c.avgDeliveryDays}
-                    {c.active && c.pendingShipments > 0 && ` · ${c.pendingShipments} pendientes`}
-                  </div>
-                </div>
-                <Button variant="ghost" size="sm" className="text-xs gap-1 shrink-0">
-                  <ExternalLink className="size-3" />
-                  Portal
-                </Button>
-              </li>
-            ))}
-          </ul>
-        </section>
-
-        {/* Zones */}
-        <section className="rounded-lg border border-border bg-background">
-          <div className="flex items-center justify-between px-5 py-4 border-b border-border">
-            <h2 className="font-medium">Zonas y tarifas</h2>
-            <Button variant="outline" size="sm">Editar zonas</Button>
-          </div>
-          <ul className="divide-y divide-border">
-            {ZONES.map((z) => (
-              <li
-                key={z.zone}
-                className={"flex items-center gap-4 px-5 py-3 " + (!z.active ? "opacity-40" : "")}
-              >
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium">{z.label}</div>
-                  <div className="text-xs text-muted-foreground">
-                    {z.active && z.rateCents
-                      ? `${formatCop(z.rateCents)} · Gratis desde ${z.freeAboveCents ? formatCop(z.freeAboveCents) : "—"}`
-                      : z.active
-                      ? "Sin tarifa configurada"
-                      : "Desactivada"}
-                  </div>
-                </div>
-                {!z.active && (
-                  <Badge variant="outline" className="text-xs shrink-0">
-                    Desactivada
-                  </Badge>
-                )}
-              </li>
-            ))}
-          </ul>
-        </section>
-      </div>
-
-      {/* Pending dispatch */}
-      <section className="rounded-lg border border-border bg-background">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-border">
-          <div>
-            <h2 className="font-medium">Pendientes de despacho</h2>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              {PENDING.length} pedidos listos · ordenados por antigüedad
-            </p>
-          </div>
-          <Button size="sm" className="gap-1.5">
-            <Truck className="size-4" />
-            Generar guías
-          </Button>
+      <section className="rounded-lg border border-border bg-background mb-6">
+        <div className="px-5 py-4 border-b border-border">
+          <h2 className="font-medium">Pendientes de despacho</h2>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Pagados y sin enviar · del más antiguo al más reciente
+            {data.awaitingPayment > 0 &&
+              ` · ${data.awaitingPayment} ${data.awaitingPayment === 1 ? "pedido espera" : "pedidos esperan"} el pago y no aparecen aquí hasta marcarse como pagados`}
+          </p>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-muted/30">
-              <tr className="text-left">
-                {["Pedido", "Cliente", "Transportista", "Artículos", "Pagado", ""].map((h) => (
-                  <th key={h} className="px-4 py-2.5 text-[11px] font-medium text-muted-foreground uppercase tracking-wide whitespace-nowrap">
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {PENDING.map((p) => (
-                <tr key={p.id} className="hover:bg-muted/20 transition-colors">
-                  <td className="px-4 py-3">
-                    <Link
-                      href={`/admin/pedidos/${p.id}`}
-                      className="font-mono text-xs font-medium hover:text-accent transition-colors"
-                    >
-                      {p.id}
-                    </Link>
-                  </td>
-                  <td className="px-4 py-3">{p.customer}</td>
-                  <td className="px-4 py-3 text-muted-foreground">{p.carrier}</td>
-                  <td className="px-4 py-3 text-muted-foreground tabular-nums">{p.items}</td>
-                  <td className="px-4 py-3 text-muted-foreground">{p.paidAt}</td>
-                  <td className="px-4 py-3 text-right">
-                    <Button variant="outline" size="sm">Despachar</Button>
-                  </td>
+        {data.toDispatch.length === 0 ? (
+          <p className="px-5 py-10 text-sm text-muted-foreground text-center">
+            No hay pedidos pagados pendientes de despacho.
+          </p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/30">
+                <tr className="text-left">
+                  {["Pedido", "Cliente", "Ciudad", "Artículos", "Total", "Estado", "Recibido"].map((h) => (
+                    <th key={h} className={TH}>
+                      {h}
+                    </th>
+                  ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {data.toDispatch.map((o) => (
+                  <tr key={o.id} className="hover:bg-muted/20 transition-colors">
+                    <td className="px-4 py-3"><OrderLink id={o.id} /></td>
+                    <td className="px-4 py-3">{o.customer}</td>
+                    <td className="px-4 py-3 text-muted-foreground">{o.city ?? "—"}</td>
+                    <td className="px-4 py-3 text-muted-foreground tabular-nums">{o.items}</td>
+                    <td className="px-4 py-3 tabular-nums">{formatCop(o.totalCents)}</td>
+                    <td className="px-4 py-3">
+                      <Badge variant="outline" className="font-normal">{STATUS_LABEL[o.status]}</Badge>
+                    </td>
+                    <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">{ago(o.createdAt)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </section>
+
+      <section className="rounded-lg border border-border bg-background">
+        <div className="px-5 py-4 border-b border-border">
+          <h2 className="font-medium">En camino</h2>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Pedidos despachados, con su enlace de seguimiento cuando se registró
+            {data.shippedTotal > data.shipped.length && " · se muestran los 50 más recientes"}
+          </p>
+        </div>
+        {data.shipped.length === 0 ? (
+          <p className="px-5 py-10 text-sm text-muted-foreground text-center">
+            No hay pedidos en camino.
+          </p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/30">
+                <tr className="text-left">
+                  {["Pedido", "Cliente", "Ciudad", "Seguimiento", "Actualizado"].map((h) => (
+                    <th key={h} className={TH}>
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {data.shipped.map((o) => {
+                  const tracking = safeUrl(o.trackingUrl);
+                  return (
+                    <tr key={o.id} className="hover:bg-muted/20 transition-colors">
+                      <td className="px-4 py-3"><OrderLink id={o.id} /></td>
+                      <td className="px-4 py-3">{o.customer}</td>
+                      <td className="px-4 py-3 text-muted-foreground">{o.city ?? "—"}</td>
+                      <td className="px-4 py-3">
+                        {tracking ? (
+                          <a
+                            href={tracking}
+                            target="_blank"
+                            rel="noreferrer noopener"
+                            className="inline-flex items-center gap-1 text-xs hover:text-accent"
+                          >
+                            Ver guía
+                            <ExternalLink className="size-3" />
+                          </a>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">Sin enlace</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">
+                        {ago(o.updatedAt ?? o.createdAt)}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+
+      {data.truncated && (
+        <p className="mt-4 text-xs text-muted-foreground">
+          Hay más pedidos de los que se cargaron en esta vista; revisa el listado de pedidos.
+        </p>
+      )}
     </div>
   );
 }

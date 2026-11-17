@@ -78,7 +78,7 @@ export async function GET() {
     out.push("- Compra en línea: no. El sitio muestra catálogo y precios; los pedidos se coordinan por contacto directo.");
   }
   if (f.subscriptions) {
-    out.push(`- Suscripción de café: sí, con ${tenant.subscriptionDiscountPct}% de descuento sobre el precio normal.`);
+    out.push("- Suscripción de café: sí, con entregas periódicas que se pueden pausar, saltar o cancelar.");
   }
   out.push("");
 

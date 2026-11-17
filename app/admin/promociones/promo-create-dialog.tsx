@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Plus, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,13 +18,18 @@ import {
 } from "@/lib/actions/admin-mutations";
 
 export function PromoCreateDialog() {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
+  const [type, setType] = useState<"PERCENTAGE" | "FIXED">("PERCENTAGE");
   const [state, dispatch, isPending] = useActionState<
     AdminMutationResult | null,
     FormData
   >(async (prev, formData) => {
     const res = await createDiscountCodeAction(prev, formData);
-    if (res.ok) setOpen(false);
+    if (res.ok) {
+      setOpen(false);
+      router.refresh();
+    }
     return res;
   }, null);
 
@@ -71,24 +77,27 @@ export function PromoCreateDialog() {
                 </span>
                 <select
                   name="type"
-                  defaultValue="PERCENT"
+                  value={type}
+                  onChange={(e) => setType(e.target.value as "PERCENTAGE" | "FIXED")}
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:border-foreground/40"
                 >
-                  <option value="PERCENT">Porcentaje (%)</option>
+                  <option value="PERCENTAGE">Porcentaje (%)</option>
                   <option value="FIXED">Monto fijo (COP)</option>
-                  <option value="FREE_SHIPPING">Envío gratis</option>
                 </select>
               </label>
 
               <label className="block">
                 <span className="block text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground mb-1.5">
-                  Valor
+                  {type === "PERCENTAGE" ? "Porcentaje" : "Monto (COP)"}
                 </span>
                 <input
+                  key={type}
                   name="value"
                   type="number"
-                  min={0}
-                  defaultValue={15}
+                  required
+                  min={1}
+                  max={type === "PERCENTAGE" ? 100 : undefined}
+                  defaultValue={type === "PERCENTAGE" ? 15 : 10000}
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:border-foreground/40 tabular-nums"
                 />
               </label>
@@ -100,7 +109,7 @@ export function PromoCreateDialog() {
                   Límite de usos (opcional)
                 </span>
                 <input
-                  name="usesLimit"
+                  name="maxRedemptions"
                   type="number"
                   min={1}
                   placeholder="Sin límite"
@@ -113,12 +122,25 @@ export function PromoCreateDialog() {
                   Vencimiento (opcional)
                 </span>
                 <input
-                  name="expiresAt"
+                  name="endsAt"
                   type="date"
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:border-foreground/40"
                 />
               </label>
             </div>
+
+            <label className="block">
+              <span className="block text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground mb-1.5">
+                Compra mínima en COP (opcional)
+              </span>
+              <input
+                name="minSubtotal"
+                type="number"
+                min={0}
+                placeholder="Sin mínimo"
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:border-foreground/40 tabular-nums"
+              />
+            </label>
 
             <DialogFooter className="pt-2">
               <Button

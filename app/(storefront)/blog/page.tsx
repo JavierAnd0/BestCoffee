@@ -1,12 +1,13 @@
 import { getCurrentTenant } from "@/lib/data/tenant";
 import Link from "next/link";
+import Image from "next/image";
 import type { Metadata } from "next";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Eyebrow } from "@/components/ui/eyebrow";
-import { BLOG_CATEGORIES } from "@/lib/mocks/blog";
 import { listBlogPosts, getFeaturedPost } from "@/lib/data/blog";
 import { requireFeature } from "@/lib/data/feature-guard";
+import { remoteImage } from "@/lib/remote-image";
 
 export const metadata: Metadata = { title: "Blog · Café y comunidad" };
 
@@ -31,7 +32,12 @@ export default async function BlogIndex({
           (p) => p.category.toLowerCase() === activeCategory.toLowerCase(),
         );
 
+  // Filtros con las categorías que la tienda usa de verdad; con una sola, sobran.
+  const categories = [...new Set(all.map((p) => p.category))];
+  const showCategories = categories.length > 1;
+
   const showFeatured = activeCategory === "Todos" ? featured : filtered[0] ?? null;
+  const featuredCover = remoteImage(showFeatured?.coverUrl);
   const rest = showFeatured
     ? filtered.filter((p) => p.slug !== showFeatured.slug)
     : filtered;
@@ -56,38 +62,57 @@ export default async function BlogIndex({
         </div>
       </section>
 
-      <div className="border-b border-border">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 flex flex-wrap justify-center gap-2">
-          {BLOG_CATEGORIES.map((c) => {
-            const isActive = activeCategory.toLowerCase() === c.toLowerCase();
-            const href =
-              c === "Todos"
-                ? "/blog"
-                : `/blog?categoria=${encodeURIComponent(c)}`;
-            return (
-              <Link
-                key={c}
-                href={href}
-                data-active={isActive}
-                className="editorial-select-row border border-border px-4 py-1.5 text-sm font-medium"
-              >
-                <span>{c}</span>
-              </Link>
-            );
-          })}
+      {showCategories && (
+        <div className="border-b border-border">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 flex flex-wrap justify-center gap-2">
+            {["Todos", ...categories].map((c) => {
+              const isActive = activeCategory.toLowerCase() === c.toLowerCase();
+              const href =
+                c === "Todos"
+                  ? "/blog"
+                  : `/blog?categoria=${encodeURIComponent(c)}`;
+              return (
+                <Link
+                  key={c}
+                  href={href}
+                  data-active={isActive}
+                  className="editorial-select-row border border-border px-4 py-1.5 text-sm font-medium"
+                >
+                  <span>{c}</span>
+                </Link>
+              );
+            })}
+          </div>
         </div>
-      </div>
+      )}
 
       {showFeatured && (
         <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-16">
           <Eyebrow>Artículo destacado</Eyebrow>
-          <article className="mt-6 grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
-            <Link
-              href={`/blog/${showFeatured.slug}`}
-              className="aspect-[4/3] rounded-lg bg-muted grid place-items-center text-sm text-muted-foreground"
-            >
-              {showFeatured.title}
-            </Link>
+          <article
+            className={
+              "mt-6 grid gap-10 lg:gap-16 items-center " +
+              (featuredCover ? "lg:grid-cols-2" : "max-w-3xl")
+            }
+          >
+            {featuredCover && (
+              <Link
+                href={`/blog/${showFeatured.slug}`}
+                tabIndex={-1}
+                aria-hidden
+                className="relative block aspect-[4/3] rounded-lg bg-muted overflow-hidden"
+              >
+                <Image
+                  src={featuredCover.src}
+                  unoptimized={featuredCover.unoptimized}
+                  alt=""
+                  fill
+                  priority
+                  sizes="(min-width: 1024px) 50vw, 100vw"
+                  className="object-cover"
+                />
+              </Link>
+            )}
             <div>
               <div className="flex items-center gap-3">
                 <Badge variant="outline" className="uppercase tracking-[0.12em] font-normal">
@@ -143,14 +168,26 @@ export default async function BlogIndex({
 }
 
 function ArticleCard({ post }: { post: Awaited<ReturnType<typeof listBlogPosts>>[number] }) {
+  const cover = remoteImage(post.coverUrl);
   return (
     <article>
-      <Link
-        href={`/blog/${post.slug}`}
-        className="block aspect-[16/10] rounded-lg bg-muted mb-4 hover:opacity-90 transition-opacity grid place-items-center text-xs text-muted-foreground"
-      >
-        {post.title}
-      </Link>
+      {cover && (
+        <Link
+          href={`/blog/${post.slug}`}
+          tabIndex={-1}
+          aria-hidden
+          className="relative block aspect-[16/10] rounded-lg bg-muted mb-4 overflow-hidden hover:opacity-90 transition-opacity"
+        >
+          <Image
+            src={cover.src}
+            unoptimized={cover.unoptimized}
+            alt=""
+            fill
+            sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+            className="object-cover"
+          />
+        </Link>
+      )}
       <div className="flex items-center gap-2 text-xs">
         <Badge variant="outline" className="uppercase tracking-[0.12em] font-normal">
           {post.category}

@@ -61,6 +61,8 @@ export interface ApiTenant {
     popupEnabled?: boolean;
     welcomeOffer?: { code?: string; label?: string } | null;
   };
+  /** Regla de envío real de la tienda (la misma que aplica el carrito). */
+  shipping?: { freeShippingThresholdCents?: number; shippingFlatCents?: number };
 }
 
 interface ApiCta {
@@ -212,10 +214,16 @@ export function mapTenant(t: ApiTenant): Tenant {
             }
           : null,
     },
-    // These may move into the API settings endpoint later; sensible defaults
-    // matching the seeded tenant for now.
-    freeShippingThresholdCents: num("freeShippingThresholdCents", 150_000_00),
-    shippingFlatCents: num("shippingFlatCents", 12_000_00),
+    // Envío: la API manda la regla que aplica el carrito; los valores por
+    // defecto son los mismos de la API, solo para una API antigua sin `shipping`.
+    freeShippingThresholdCents:
+      typeof t.shipping?.freeShippingThresholdCents === "number"
+        ? t.shipping.freeShippingThresholdCents
+        : num("freeShippingThresholdCents", 150_000_00),
+    shippingFlatCents:
+      typeof t.shipping?.shippingFlatCents === "number"
+        ? t.shipping.shippingFlatCents
+        : num("shippingFlatCents", 12_000_00),
     subscriptionDiscountPct: num("subscriptionDiscountPct", 10),
     currency: "COP",
     // El backend manda el enum en mayúsculas ("MERCADOPAGO"); aquí se compara en

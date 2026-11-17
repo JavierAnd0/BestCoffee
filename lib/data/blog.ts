@@ -1,5 +1,6 @@
 import { env } from "../env";
 import { apiServer } from "../api/client";
+import { getCurrentTenant } from "./tenant";
 import { BLOG_POSTS, findPost as findMock, featuredPost as featMock, type BlogPost } from "../mocks/blog";
 
 // API list item: { id, slug, title, excerpt, coverUrl, publishedAt }. The
@@ -10,7 +11,7 @@ interface ApiBlogItem {
   slug: string;
   title: string;
   excerpt?: string;
-  coverUrl?: string;
+  coverUrl?: string | null;
   publishedAt?: string;
   category?: string;
   readMinutes?: number;
@@ -33,33 +34,53 @@ function fmtDate(iso?: string): string {
   }
 }
 
-function mapPost(p: ApiBlogItem): BlogPost {
-  const body = Array.isArray(p.body) ? p.body : p.body ? [p.body] : [p.excerpt ?? ""];
+// El panel guarda el cuerpo como texto plano: cada bloque separado por una
+// línea en blanco es un párrafo en la página pública.
+function splitParagraphs(body: string): string[] {
+  return body
+    .split(/\r?\n\s*\r?\n/)
+    .map((p) => p.trim())
+    .filter(Boolean);
+}
+
+function readingMinutes(paragraphs: string[]): number {
+  const words = paragraphs.join(" ").split(/\s+/).filter(Boolean).length;
+  return Math.max(1, Math.round(words / 200));
+}
+
+/** `brand`: nombre de la tienda, para firmar los artículos sin autor propio. */
+function mapPost(p: ApiBlogItem, brand: string): BlogPost {
+  const body = Array.isArray(p.body)
+    ? p.body
+    : p.body
+      ? splitParagraphs(p.body)
+      : [];
   return {
     slug: p.slug,
-    category: p.category ?? "Origen",
+    category: p.category ?? "Blog",
     title: p.title,
     excerpt: p.excerpt ?? "",
     body,
     publishedAt: fmtDate(p.publishedAt),
-    readMinutes: p.readMinutes ?? 5,
-    author: { name: p.author?.name ?? "Equipo ORÍGEN", role: p.author?.role ?? "Editorial" },
+    readMinutes: p.readMinutes ?? readingMinutes([p.excerpt ?? "", ...body]),
+    author: { name: p.author?.name ?? `Equipo ${brand}`, role: p.author?.role ?? "Editorial" },
     tags: p.tags ?? [],
     pullQuote: p.pullQuote,
+    coverUrl: p.coverUrl ?? null,
   };
 }
 
 export async function listBlogPosts(): Promise<BlogPost[]> {
   if (env.useMocks) return BLOG_POSTS;
   try {
-    const api = await apiServer();
+    const [api, tenant] = await Promise.all([apiServer(), getCurrentTenant()]);
     const { data, error } = await api.GET("/v1/blog");
     if (error || !data) return [];
     const items =
       (data as unknown as { items?: ApiBlogItem[]; data?: ApiBlogItem[] }).items ??
       (data as unknown as { items?: ApiBlogItem[]; data?: ApiBlogItem[] }).data ??
       [];
-    return items.map(mapPost);
+    return items.map((p) => mapPost(p, tenant.brand));
   } catch {
     return [];
   }
@@ -68,7 +89,7 @@ export async function listBlogPosts(): Promise<BlogPost[]> {
 export async function getBlogPost(slug: string): Promise<BlogPost | undefined> {
   if (env.useMocks) return findMock(slug);
   try {
-    const api = await apiServer();
+    const [api, tenant] = await Promise.all([apiServer(), getCurrentTenant()]);
     const { data, error } = await api.GET("/v1/blog/{slug}", {
       params: { path: { slug } },
     });
@@ -77,7 +98,7 @@ export async function getBlogPost(slug: string): Promise<BlogPost | undefined> {
       const all = await listBlogPosts();
       return all.find((p) => p.slug === slug);
     }
-    return mapPost(data as unknown as ApiBlogItem);
+    return mapPost(data as unknown as ApiBlogItem, tenant.brand);
   } catch {
     return undefined;
   }

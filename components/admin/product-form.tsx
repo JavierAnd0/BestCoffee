@@ -8,37 +8,67 @@ import { Badge } from "@/components/ui/badge";
 import { Roast } from "@/components/ui/roast";
 import type { GrindFormat, Product, ProductImage, ProductStatus } from "@/lib/types";
 import { GRIND_OPTIONS, sortGrinds } from "@/lib/grind";
+import { formatCop } from "@/lib/format";
 import { saveProductAction } from "@/lib/actions/admin-mutations";
 import { ProductImages } from "./product-images";
 
-/** Presentación (tamaño) con su precio. Se replica para cada molienda ofrecida. */
+type VariantField = "priceOneTime" | "priceSubscription" | "stock";
+
+/**
+ * Presentación (tamaño) con su precio, en pesos COP. Se replica para cada
+ * molienda ofrecida. `initial` guarda lo cargado para saber qué tocó el
+ * operador; `mixed` marca campos que hoy difieren entre moliendas.
+ */
 interface DraftSize {
   sizeGrams: number;
   priceOneTime: number;
   priceSubscription: number;
   stock: number;
+  initial?: { sizeGrams: number; priceOneTime: number; priceSubscription: number; stock: number };
+  mixed?: Partial<Record<VariantField, string>>;
 }
 
-/** Variante tal como la espera la API (`CreateVariantDto`), precios en COP. */
-export interface ExpandedVariant extends DraftSize {
+/** Variante para `saveProductAction` (pesos; la action convierte a centavos). */
+export interface ExpandedVariant {
+  sizeGrams: number;
+  priceOneTime: number;
+  priceSubscription: number;
+  stock: number;
   grind: GrindFormat;
+  preserve?: VariantField[];
 }
 
 const DEFAULT_SIZE: DraftSize = { sizeGrams: 340, priceOneTime: 60_000, priceSubscription: 51_000, stock: 0 };
 
+const pesos = (cents: number | null | undefined) => (cents ?? 0) / 100;
+
 function sizesFromProduct(p?: Product): DraftSize[] {
   if (!p || p.variants.length === 0) return [{ ...DEFAULT_SIZE }];
-  const bySize = new Map<number, DraftSize>();
+  const groups = new Map<number, Product["variants"]>();
   for (const v of p.variants) {
-    if (bySize.has(v.sizeGrams)) continue;
-    bySize.set(v.sizeGrams, {
-      sizeGrams: v.sizeGrams,
-      priceOneTime: v.priceOneTimeCents / 100,
-      priceSubscription: (v.priceSubscriptionCents ?? 0) / 100,
-      stock: v.stock,
-    });
+    groups.set(v.sizeGrams, [...(groups.get(v.sizeGrams) ?? []), v]);
   }
-  return Array.from(bySize.values()).sort((a, b) => a.sizeGrams - b.sizeGrams);
+  return Array.from(groups.entries())
+    .sort(([a], [b]) => a - b)
+    .map(([sizeGrams, vs]) => {
+      const first = vs[0];
+      const values = {
+        sizeGrams,
+        priceOneTime: pesos(first.priceOneTimeCents),
+        priceSubscription: pesos(first.priceSubscriptionCents),
+        stock: first.stock,
+      };
+      const mixed: DraftSize["mixed"] = {};
+      const distinct = (pick: (v: Product["variants"][number]) => number) =>
+        Array.from(new Set(vs.map(pick)));
+      const stocks = distinct((v) => v.stock);
+      if (stocks.length > 1) mixed.stock = stocks.join(" / ");
+      const one = distinct((v) => v.priceOneTimeCents);
+      if (one.length > 1) mixed.priceOneTime = one.map((c) => formatCop(c)).join(" / ");
+      const sub = distinct((v) => v.priceSubscriptionCents ?? 0);
+      if (sub.length > 1) mixed.priceSubscription = sub.map((c) => formatCop(c)).join(" / ");
+      return { ...values, initial: values, mixed };
+    });
 }
 
 function grindsFromProduct(p?: Product): GrindFormat[] {
@@ -48,7 +78,24 @@ function grindsFromProduct(p?: Product): GrindFormat[] {
 
 /** Una variante por cada combinación tamaño × molienda. */
 export function expandVariants(sizes: DraftSize[], grinds: GrindFormat[]): ExpandedVariant[] {
-  return sizes.flatMap((s) => grinds.map((grind) => ({ ...s, grind })));
+  return sizes.flatMap((s) => {
+    // Lo que el operador no cambió se conserva tal cual en cada variante
+    // existente (p. ej. el stock propio de cada molienda).
+    const preserve: VariantField[] =
+      s.initial && s.initial.sizeGrams === s.sizeGrams
+        ? (["priceOneTime", "priceSubscription", "stock"] as const).filter(
+            (f) => s[f] === s.initial![f],
+          )
+        : [];
+    return grinds.map((grind) => ({
+      sizeGrams: s.sizeGrams,
+      priceOneTime: s.priceOneTime,
+      priceSubscription: s.priceSubscription,
+      stock: s.stock,
+      grind,
+      preserve,
+    }));
+  });
 }
 
 const BADGE_LABEL: Record<string, string> = {
@@ -62,8 +109,7 @@ const BADGE_LABEL: Record<string, string> = {
 export function ProductForm({ product }: { product?: Product }) {
   const router = useRouter();
   const [name, setName] = useState(product?.name ?? "");
-  const [shortDesc, setShortDesc] = useState(product?.shortDescription ?? "");
-  const [longDesc, setLongDesc] = useState(product?.longDescription ?? "");
+  const [description, setDescription] = useState(product?.longDescription ?? product?.shortDescription ?? "");
   const [type, setType] = useState(product?.type ?? "BLEND");
   const [origin, setOrigin] = useState(product?.origin ?? "");
   const [story, setStory] = useState(product?.producerStory ?? "");
@@ -104,8 +150,7 @@ export function ProductForm({ product }: { product?: Product }) {
       const res = await saveProductAction({
         id: product?.id,
         name,
-        shortDescription: shortDesc,
-        longDescription: longDesc,
+        description,
         type,
         origin,
         producerStory: story,
@@ -125,6 +170,8 @@ export function ProductForm({ product }: { product?: Product }) {
         setFeedback({ ok: true, text: res.message });
         if (!product?.id) {
           router.push("/admin/productos");
+        } else {
+          router.refresh();
         }
       } else {
         setFeedback({ ok: false, text: res.error });
@@ -154,16 +201,10 @@ export function ProductForm({ product }: { product?: Product }) {
       )}
       <Section title="Identificación">
         <Field label="Nombre del producto" value={name} onChange={setName} placeholder="Mezcla del alba" />
-        <Field
-          label="Descripción corta"
-          value={shortDesc}
-          onChange={setShortDesc}
-          placeholder="Una línea que resuma el producto"
-        />
         <TextArea
-          label="Descripción larga"
-          value={longDesc}
-          onChange={setLongDesc}
+          label="Descripción"
+          value={description}
+          onChange={setDescription}
           rows={4}
           placeholder="Notas de cata, sugerencias de preparación, historia..."
         />
@@ -179,6 +220,7 @@ export function ProductForm({ product }: { product?: Product }) {
               { value: "BLEND", label: "Mezcla" },
               { value: "SINGLE_ORIGIN", label: "Origen único" },
               { value: "DECAF", label: "Descafeinado" },
+              { value: "ACCESSORY", label: "Accesorio" },
             ]}
           />
           <Field label="País / región" value={origin} onChange={setOrigin} placeholder="Huila, Colombia" />
@@ -278,16 +320,23 @@ export function ProductForm({ product }: { product?: Product }) {
                 label="Precio (COP)"
                 value={s.priceOneTime}
                 onChange={(n) => updateSize(i, { priceOneTime: n })}
+                hint={s.mixed?.priceOneTime && `Hoy por molienda: ${s.mixed.priceOneTime}`}
               />
               <NumberField
-                label="Precio suscr."
+                label="Precio suscr. (COP)"
                 value={s.priceSubscription}
                 onChange={(n) => updateSize(i, { priceSubscription: n })}
+                hint={
+                  s.mixed?.priceSubscription
+                    ? `Hoy por molienda: ${s.mixed.priceSubscription}`
+                    : "0 = sin precio de suscripción"
+                }
               />
               <NumberField
-                label="Stock"
+                label="Stock por molienda"
                 value={s.stock}
                 onChange={(n) => updateSize(i, { stock: n })}
+                hint={s.mixed?.stock && `Hoy: ${s.mixed.stock}. Si lo cambias, se aplica a todas.`}
               />
               <Button
                 type="button"
@@ -306,7 +355,8 @@ export function ProductForm({ product }: { product?: Product }) {
             Agregar tamaño
           </Button>
           <p className="text-xs text-muted-foreground">
-            El precio aplica a todas las moliendas marcadas. Se generarán{" "}
+            El precio y el stock aplican a cada molienda marcada; lo que no cambies se
+            conserva como está. Se generarán{" "}
             <span className="font-medium text-foreground tabular-nums">{variantCount}</span>{" "}
             variantes ({sizes.length} {sizes.length === 1 ? "tamaño" : "tamaños"} × {grinds.length}{" "}
             {grinds.length === 1 ? "molienda" : "moliendas"}).
@@ -432,10 +482,12 @@ function NumberField({
   label,
   value,
   onChange,
+  hint,
 }: {
   label: string;
   value: number;
   onChange: (n: number) => void;
+  hint?: string | false;
 }) {
   return (
     <label className="block">
@@ -444,8 +496,10 @@ function NumberField({
         type="number"
         value={value}
         onChange={(e) => onChange(+e.target.value)}
+        min={0}
         className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:border-foreground/40 tabular-nums"
       />
+      {hint && <span className="mt-1 block text-[11px] text-muted-foreground">{hint}</span>}
     </label>
   );
 }

@@ -22,8 +22,8 @@ const COLUMNS: { title: string; links: FooterLink[] }[] = [
     title: "Tienda",
     links: [
       { label: "Catálogo", href: "/catalogo", feature: "catalog" },
+      { label: "Colecciones", href: "/colecciones", feature: "catalog" },
       { label: "Suscripciones", href: "/suscripciones", feature: "subscriptions" },
-      { label: "Paquetes", href: "/catalogo?coleccion=paquetes", feature: "catalog" },
       { label: "Accesorios", href: "/accesorios", feature: "accessories" },
       { label: "Nuestras tiendas", href: "/tiendas", page: "tiendas" },
     ],
@@ -33,7 +33,6 @@ const COLUMNS: { title: string; links: FooterLink[] }[] = [
     links: [
       { label: "Guías de preparación", href: "/guias" },
       { label: "Blog", href: "/blog", feature: "blog" },
-      { label: "Origen", href: "/historia", page: "historia" },
     ],
   },
   {
@@ -62,6 +61,8 @@ interface FooterProps {
   /** Capacidades del plan: ocultan los enlaces a secciones que la tienda no tiene. */
   features?: TenantFeatures;
   pages?: Record<EditorialPage, boolean>;
+  /** La tienda tiene colecciones publicadas (calculado en el servidor). */
+  hasCollections?: boolean;
 }
 
 export function Footer({
@@ -70,8 +71,10 @@ export function Footer({
   welcomeOffer = null,
   features,
   pages,
+  hasCollections = false,
 }: FooterProps) {
   const visible = (l: FooterLink) =>
+    (l.href !== "/colecciones" || hasCollections) &&
     (l.page ? (pages?.[l.page] ?? true) : true) &&
     (!l.feature ||
     !features ||

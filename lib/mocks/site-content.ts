@@ -41,6 +41,5 @@ export const FEATURED_PACK_HOME: FeaturedPackContent = {
     "Tres bolsas de 340 g: una mezcla insignia y dos orígenes únicos rotativos cada mes.",
   priceCents: 148_000_00,
   bagsCount: 3,
-  savingsPct: 12,
   productSlug: "trio-trotamundos",
 };
