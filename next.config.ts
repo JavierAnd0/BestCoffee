@@ -1,6 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Next 16.4+ escribe un AGENTS.md en la raíz al correr `next dev`; el repo
+  // es público y no lleva archivos de herramientas de agentes.
+  agentRules: false,
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "*.public.blob.vercel-storage.com" },
