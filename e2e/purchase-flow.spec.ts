@@ -137,7 +137,8 @@ test.describe("Flujo de Compra Completo — Cliente y Usuario", () => {
 
     // Confirmación exitosa
     await expect(page).toHaveURL(/\/checkout\/confirmacion/, { timeout: 15_000 });
-    await expect(page.locator("h1")).toContainText(/¡Gracias por tu compra!/i);
+    // Sin pasarela el pedido queda pendiente de pago: aún no es "¡Gracias por tu compra!".
+    await expect(page.locator("h1")).toContainText(/¡Recibimos tu pedido!/i);
     await expect(page.locator("body")).toContainText(/Pedido #(?:ORG-|BC-|c[a-z0-9]+)/i);
   });
 

@@ -17,6 +17,7 @@ import {
   SPOTLIGHT_HOME,
   FEATURED_PACK_HOME,
 } from "../mocks/site-content";
+import { EDITORIAL_PAGES } from "../mocks/editorial-pages";
 
 // Política multi-tenant: el contenido demo (ORÍGEN) solo existe con USE_MOCKS.
 // En modo real, si la tienda no configuró un bloque, devuelve null/[] y la
@@ -110,7 +111,7 @@ export async function getFeaturedPack(): Promise<FeaturedPackContent | null> {
  * nunca se rellena con el texto de otra marca. Con mocks no hay contenido.
  */
 export async function getEditorialPage(slug: ContentPageSlug): Promise<EditorialPageContent | null> {
-  if (env.useMocks) return null;
+  if (env.useMocks) return EDITORIAL_PAGES[slug] ?? null;
   try {
     const h = await headers();
     const tenantSlug = h.get("x-tenant-slug") ?? env.defaultTenantSlug;
