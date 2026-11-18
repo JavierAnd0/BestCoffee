@@ -20,6 +20,7 @@ export interface TierFeatures {
   reviews: boolean;
   gifts: boolean;
   customDomain: boolean;
+  advancedAnalytics: boolean;
   maxProducts: number;
 }
 
@@ -42,6 +43,11 @@ const FEATURE_META: { key: BooleanFeatureKey; label: string; help: string }[] = 
   { key: "reviews", label: "Reseñas", help: "Opiniones de clientes" },
   { key: "gifts", label: "Regalos", help: "Tarjetas y suscripciones de regalo" },
   { key: "customDomain", label: "Dominio propio", help: "Conectar un dominio personalizado" },
+  {
+    key: "advancedAnalytics",
+    label: "Analítica avanzada",
+    help: "Plan de tueste y clientes en riesgo en Métricas",
+  },
 ];
 
 const BOOLEAN_KEYS = FEATURE_META.map((f) => f.key);

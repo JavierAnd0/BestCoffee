@@ -1,7 +1,7 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { LayoutDashboard, Store, KeyRound } from "lucide-react";
+import { LayoutDashboard, Store, KeyRound, ChartColumn } from "lucide-react";
 import { platformFetch } from "@/lib/api/platform";
 import { OperatorLogoutButton } from "@/components/admin/operator-logout-button";
 
@@ -9,6 +9,7 @@ const SECURITY_PATH = "/platform/superadmin/seguridad";
 
 const NAV = [
   { href: "/platform/superadmin", label: "Dashboard", icon: LayoutDashboard, exact: true },
+  { href: "/platform/superadmin/metricas", label: "Métricas", icon: ChartColumn },
   { href: "/platform/superadmin/tenants", label: "Tenants", icon: Store },
   { href: "/platform/superadmin/seguridad", label: "Seguridad", icon: KeyRound },
 ];

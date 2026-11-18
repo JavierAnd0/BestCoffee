@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatCop } from "@/lib/format";
 import { platformFetch } from "@/lib/api/platform";
+import { getPlatformRevenue } from "@/lib/data/analytics";
 import {
   BillingBadge,
   isOverdue,
@@ -55,14 +56,6 @@ const TIER_BAR: Record<Tier, string> = {
   BUSINESS: "bg-violet-500",
 };
 
-// Cuota mensual indicativa por plan (COP). Es el ingreso recurrente estimado de
-// la plataforma; ajusta estos valores a tus precios reales de mantenimiento.
-const TIER_MRR_COP: Record<Tier, number> = {
-  STARTER: 80_000,
-  PRO: 200_000,
-  BUSINESS: 450_000,
-};
-
 const BILLING_ATTENTION_LABEL: Record<BillingStatus, string> = {
   ACTIVE: "Renovación vencida",
   PAST_DUE: "Pago pendiente",
@@ -71,7 +64,13 @@ const BILLING_ATTENTION_LABEL: Record<BillingStatus, string> = {
 };
 
 export default async function SuperadminDashboard() {
-  const tenants = await platformFetch<TenantRow[]>("/v1/platform/tenants");
+  // El MRR sale del monto y la frecuencia de cobro de cada tienda
+  // (/v1/platform/analytics/revenue), no de una tarifa fija por plan.
+  const [tenants, revenue] = await Promise.all([
+    platformFetch<TenantRow[]>("/v1/platform/tenants"),
+    getPlatformRevenue({ preset: "30d" }),
+  ]);
+  const rev = revenue.ok ? revenue.data : null;
 
   const now = new Date();
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -89,11 +88,6 @@ export default async function SuperadminDashboard() {
       acc.orders += t._count.orders;
       acc.customers += t._count.customers;
       acc.byTier[t.tier] += 1;
-      // MRR fijo: tenants al día con cobro fijo. La comisión es ingreso variable
-      // (depende de sus ventas) → no se suma al MRR estimado.
-      if (t.billingStatus === "ACTIVE" && t.billingType !== "COMMISSION") {
-        acc.mrrCents += TIER_MRR_COP[t.tier] * 100;
-      }
       if (t._count.orders > 0) acc.active += 1;
       if (new Date(t.createdAt) >= startOfMonth) acc.newThisMonth += 1;
       return acc;
@@ -103,7 +97,6 @@ export default async function SuperadminDashboard() {
       customers: 0,
       active: 0,
       newThisMonth: 0,
-      mrrCents: 0,
       byTier: { STARTER: 0, PRO: 0, BUSINESS: 0 } as Record<Tier, number>,
     },
   );
@@ -160,9 +153,15 @@ export default async function SuperadminDashboard() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           icon={Wallet}
-          label="MRR estimado"
-          value={formatCop(stats.mrrCents)}
-          hint="ingreso recurrente mensual"
+          label="MRR"
+          value={rev ? formatCop(rev.mrrCents) : "—"}
+          hint={
+            !rev
+              ? "no se pudo calcular"
+              : rev.missingAmount.length > 0
+                ? `${rev.missingAmount.length} sin monto de cobro`
+                : "ingreso recurrente mensual"
+          }
           accent
         />
         <StatCard
@@ -199,7 +198,6 @@ export default async function SuperadminDashboard() {
             {TIERS.map((t) => {
               const count = stats.byTier[t];
               const pct = total > 0 ? Math.round((count / total) * 100) : 0;
-              const mrr = TIER_MRR_COP[t] * 100 * count;
               return (
                 <div key={t}>
                   <div className="flex items-center justify-between text-sm mb-1.5">
@@ -209,7 +207,9 @@ export default async function SuperadminDashboard() {
                         {count} · {pct}%
                       </span>
                     </div>
-                    <span className="font-medium tabular-nums">{formatCop(mrr)}</span>
+                    <span className="font-medium tabular-nums">
+                      {rev ? formatCop(rev.mrrByTier[t]) : "—"}
+                    </span>
                   </div>
                   <div className="h-2 rounded-full bg-muted overflow-hidden">
                     <div

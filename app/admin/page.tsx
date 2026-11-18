@@ -101,21 +101,14 @@ export default async function AdminDashboard() {
         <div className="lg:col-span-2 rounded-lg border border-border bg-background p-6">
           <div className="flex items-center justify-between mb-5">
             <h2 className="font-display text-lg font-semibold">Ventas · últimos 14 días</h2>
-            <div className="flex gap-2 text-xs">
-              {["14 d", "30 d", "90 d"].map((p, i) => (
-                <button
-                  key={p}
-                  className={
-                    "rounded-md px-2.5 py-1 transition-colors " +
-                    (i === 0
-                      ? "bg-foreground text-background"
-                      : "text-muted-foreground hover:text-foreground")
-                  }
-                >
-                  {p}
-                </button>
-              ))}
-            </div>
+            {tenant.features.checkout && (
+              <Link
+                href="/admin/metricas"
+                className="text-xs text-muted-foreground transition-colors hover:text-foreground"
+              >
+                Ver métricas →
+              </Link>
+            )}
           </div>
           <SalesChart data={sales} />
         </div>

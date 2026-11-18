@@ -133,6 +133,7 @@ const MINIMAL_FEATURES: TenantFeatures = {
   reviews: false,
   gifts: false,
   customDomain: false,
+  advancedAnalytics: false,
   maxProducts: 10,
 };
 

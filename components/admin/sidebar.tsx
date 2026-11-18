@@ -17,6 +17,7 @@ import {
   Truck,
   KeyRound,
   UserCog,
+  ChartColumn,
   type LucideIcon,
 } from "lucide-react";
 import type { TenantFeatures } from "@/lib/types";
@@ -49,6 +50,7 @@ const NAV: {
   roles?: StaffRole[];
 }[] = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
+  { href: "/admin/metricas", label: "Métricas", icon: ChartColumn, feature: "checkout", roles: [...EDITOR, ...ORDERS] },
   { href: "/admin/productos", label: "Productos", icon: Coffee, roles: EDITOR },
   { href: "/admin/colecciones", label: "Colecciones", icon: FolderOpen, feature: "catalog", roles: EDITOR },
   { href: "/admin/pedidos", label: "Pedidos", icon: ClipboardList, roles: ORDERS },

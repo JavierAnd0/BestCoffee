@@ -73,6 +73,8 @@ export interface TenantFeatures {
   reviews: boolean;
   gifts: boolean;
   customDomain: boolean;
+  /** Plan de tueste, clientes en riesgo y exportación (BUSINESS). */
+  advancedAnalytics: boolean;
   accessories: boolean;
   maxProducts: number;
 }
