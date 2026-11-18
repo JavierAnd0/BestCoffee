@@ -19,6 +19,7 @@ const FALLBACK: Record<BooleanFeature, string> = {
   reviews: "/",
   gifts: "/",
   customDomain: "/",
+  advancedAnalytics: "/",
   accessories: "/catalogo",
 };
 

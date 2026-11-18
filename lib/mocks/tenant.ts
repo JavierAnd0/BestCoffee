@@ -29,6 +29,7 @@ export const TENANT_ORIGEN: Tenant = {
     reviews: true,
     gifts: false,
     customDomain: false,
+    advancedAnalytics: false,
     accessories: true,
     onlinePayments: true,
     maxProducts: 50,
