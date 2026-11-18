@@ -1,25 +1,32 @@
 import type { ContentKind } from "@/lib/data/admin-content";
 
 /** Qué es cada tipo de bloque y dónde lo muestra la tienda (lib/data/content.ts). */
-export const BLOCK_KINDS: Record<ContentKind, { label: string; where: string; many: boolean }> = {
+export const BLOCK_KINDS: Record<
+  ContentKind,
+  { label: string; where: string; many: boolean; add: string }
+> = {
   ANNOUNCEMENT: {
     label: "Anuncio",
-    where: "Barra superior de todas las páginas. Los anuncios activos rotan.",
+    add: "Agregar anuncio",
+    where: "La franja delgada arriba de todas las páginas. Si hay varios visibles, se turnan.",
     many: true,
   },
   HERO: {
     label: "Portada (hero)",
-    where: "Titular y botón principal del inicio. Se usa el primero activo por orden.",
+    add: "Agregar portada",
+    where: "Lo primero que se ve al entrar: el titular grande y el botón principal. Se muestra una sola.",
     many: false,
   },
   SPOTLIGHT: {
     label: "Producto destacado",
-    where: "Sección destacada del inicio con un producto. Se usa el primero activo por orden.",
+    add: "Agregar destacado",
+    where: "Una sección del inicio dedicada a un solo producto. Se muestra uno solo.",
     many: false,
   },
   FEATURED_BUNDLE: {
     label: "Paquete destacado",
-    where: "Paquete de varios productos en el inicio. Se usa el primero activo por orden.",
+    add: "Agregar paquete",
+    where: "Un grupo de productos que se venden juntos, en el inicio. Se muestra uno solo.",
     many: false,
   },
 };

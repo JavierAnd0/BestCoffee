@@ -9,6 +9,7 @@ import { getCurrentTenant } from "@/lib/data/tenant";
 import { JsonLd } from "@/components/seo/json-ld";
 import { breadcrumbLd, getSiteUrl } from "@/lib/seo";
 import { remoteImage } from "@/lib/remote-image";
+import { ArticleBody } from "@/components/storefront/article-body";
 
 export async function generateMetadata({
   params,
@@ -119,11 +120,7 @@ export default async function BlogArticle({
           <p className="font-display text-xl text-foreground leading-relaxed">
             {post.excerpt}
           </p>
-          {post.body.map((para, i) => (
-            <p key={i} className="text-base text-foreground/90 leading-relaxed">
-              {para}
-            </p>
-          ))}
+          <ArticleBody markdown={post.body.join("\n\n")} />
 
           {post.pullQuote && (
             <blockquote className="my-10 border-l-2 border-foreground pl-6 py-2">

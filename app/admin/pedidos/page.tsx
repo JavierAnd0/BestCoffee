@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/admin/page-header";
 import { listAdminOrders, type AdminPaymentStatus } from "@/lib/data/admin";
 import { ORDER_STATUS_LABEL, type OrderStatus } from "@/lib/mocks/account";
-import { formatCop } from "@/lib/format";
+import { formatCop, formatOrderCode } from "@/lib/format";
 
 export const metadata: Metadata = { title: "Pedidos · Admin" };
 
@@ -23,11 +23,12 @@ const PAYMENT_LABEL: Record<AdminPaymentStatus, string> = {
   REFUNDED: "Reembolsado",
 };
 
-const PAYMENT_TONE: Record<AdminPaymentStatus, string> = {
-  PAID: "bg-emerald-500/10 text-emerald-700 border-emerald-500/20",
-  PENDING: "bg-amber-500/10 text-amber-700 border-amber-500/20",
-  FAILED: "bg-destructive/10 text-destructive border-destructive/20",
-  REFUNDED: "bg-muted text-muted-foreground border-border",
+// El pago va como punto + texto (secundario); el estado del pedido es la única píldora.
+const PAYMENT_TONE: Record<AdminPaymentStatus, { dot: string; text: string }> = {
+  PAID: { dot: "bg-emerald-600", text: "text-muted-foreground" },
+  PENDING: { dot: "bg-amber-500", text: "text-amber-800 font-medium" },
+  FAILED: { dot: "bg-destructive", text: "text-destructive font-medium" },
+  REFUNDED: { dot: "bg-muted-foreground/50", text: "text-muted-foreground" },
 };
 
 const FILTERS: { label: string; value?: OrderStatus }[] = [
@@ -58,6 +59,7 @@ export default async function AdminOrdersPage({
     if (query) {
       return (
         String(o.id ?? "").toLowerCase().includes(query) ||
+        formatOrderCode(String(o.id ?? "")).toLowerCase().includes(query.replace(/^#/, "")) ||
         String(o.customer ?? "").toLowerCase().includes(query)
       );
     }
@@ -111,53 +113,65 @@ export default async function AdminOrdersPage({
         })}
       </div>
 
-      <div className="rounded-lg border border-border bg-background overflow-hidden">
-        <table className="w-full text-sm">
+      <div className="rounded-lg border border-border bg-background overflow-x-auto">
+        <table className="w-full min-w-[720px] text-sm">
           <thead>
-            <tr className="text-left text-xs uppercase tracking-[0.08em] text-muted-foreground bg-muted/30 border-b border-border">
-              <th className="px-4 py-3 font-medium">#</th>
+            <tr className="text-left text-[11px] uppercase tracking-[0.16em] text-muted-foreground bg-muted/30 border-b border-border">
+              <th className="px-4 py-3 font-medium">Pedido</th>
               <th className="px-4 py-3 font-medium">Cliente</th>
-              <th className="px-4 py-3 font-medium">Origen</th>
-              <th className="px-4 py-3 font-medium">Total</th>
+              <th className="px-4 py-3 font-medium text-right">Total</th>
               <th className="px-4 py-3 font-medium">Pago</th>
               <th className="px-4 py-3 font-medium">Estado</th>
-              <th className="px-4 py-3 font-medium">Fecha</th>
+              <th className="px-4 py-3 font-medium text-right">Fecha</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
-            {rows.map((o) => (
-              <tr key={o.id} className="hover:bg-muted/30 transition-colors">
-                <td className="px-4 py-3">
-                  <Link
-                    href={`/admin/pedidos/${o.id}`}
-                    className="font-medium hover:underline underline-offset-2"
-                  >
-                    #{o.id}
-                  </Link>
-                </td>
-                <td className="px-4 py-3">{o.customer}</td>
-                <td className="px-4 py-3 text-muted-foreground">
-                  {o.fromSub ? "Suscripción" : "Compra directa"}
-                </td>
-                <td className="px-4 py-3 font-semibold tabular-nums">
-                  {formatCop(o.totalCents)}
-                </td>
-                <td className="px-4 py-3">
-                  <Badge variant="outline" className={PAYMENT_TONE[o.paymentStatus]}>
-                    {PAYMENT_LABEL[o.paymentStatus]}
-                  </Badge>
-                </td>
-                <td className="px-4 py-3">
-                  <Badge variant="outline" className={STATUS_TONE[o.status] ?? "bg-muted text-muted-foreground border-border"}>
-                    {ORDER_STATUS_LABEL[o.status] ?? o.status}
-                  </Badge>
-                </td>
-                <td className="px-4 py-3 text-xs text-muted-foreground">{o.createdAt}</td>
-              </tr>
-            ))}
+            {rows.map((o) => {
+              const pay = PAYMENT_TONE[o.paymentStatus] ?? PAYMENT_TONE.REFUNDED;
+              return (
+                <tr key={o.id} className="group relative hover:bg-muted/30 transition-colors">
+                  <td className="px-4 py-3.5">
+                    {/* El enlace cubre toda la fila: se hace clic en cualquier parte. */}
+                    <Link
+                      href={`/admin/pedidos/${o.id}`}
+                      title={String(o.id)}
+                      className="font-semibold tabular-nums tracking-wide underline-offset-4 group-hover:underline after:absolute after:inset-0 focus-visible:outline-none focus-visible:after:outline-2 focus-visible:after:outline-offset-[-2px] focus-visible:after:outline-[var(--accent)]"
+                    >
+                      {formatOrderCode(String(o.id))}
+                    </Link>
+                  </td>
+                  <td className="px-4 py-3.5">
+                    <div className="font-medium">{o.customer}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {o.fromSub ? "Suscripción" : "Compra directa"}
+                    </div>
+                  </td>
+                  <td className="px-4 py-3.5 text-right font-semibold tabular-nums">
+                    {formatCop(o.totalCents)}
+                  </td>
+                  <td className="px-4 py-3.5">
+                    <span className={"inline-flex items-center gap-2 " + pay.text}>
+                      <span className={"size-1.5 rounded-full " + pay.dot} aria-hidden />
+                      {PAYMENT_LABEL[o.paymentStatus] ?? o.paymentStatus}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3.5">
+                    <Badge
+                      variant="outline"
+                      className={STATUS_TONE[o.status] ?? "bg-muted text-muted-foreground border-border"}
+                    >
+                      {ORDER_STATUS_LABEL[o.status] ?? o.status}
+                    </Badge>
+                  </td>
+                  <td className="px-4 py-3.5 text-right text-xs text-muted-foreground whitespace-nowrap">
+                    {o.createdAt}
+                  </td>
+                </tr>
+              );
+            })}
             {rows.length === 0 && (
               <tr>
-                <td colSpan={7} className="px-4 py-10 text-center text-muted-foreground text-sm">
+                <td colSpan={6} className="px-4 py-10 text-center text-muted-foreground text-sm">
                   No se encontraron pedidos con esos criterios.
                 </td>
               </tr>

@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Pause, Play, SkipForward, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { toast } from "@/components/ui/toast";
 import {
   runAdminSubscriptionAction,
   updateAdminSubscriptionTermsAction,
@@ -12,6 +13,13 @@ import {
 import type { AdminSubDisplayStatus } from "@/lib/data/admin-subscriptions";
 
 const FREQS = [7, 14, 21, 28, 42, 56];
+
+const DONE_TITLE: Record<AdminSubscriptionAction, string> = {
+  pause: "Suscripción pausada",
+  resume: "Suscripción reanudada",
+  skipNext: "Próximo envío saltado",
+  cancel: "Suscripción cancelada",
+};
 
 export function SubscriptionRowActions({
   id,
@@ -38,13 +46,20 @@ export function SubscriptionRowActions({
     setError(null);
     if (
       action === "cancel" &&
-      !window.confirm(`¿Cancelar la suscripción de ${customerName}? No se generarán más pedidos.`)
+      !window.confirm(`¿Cancelar la suscripción de ${customerName}? No se generarán más pedidos y se le avisará por correo.`)
     ) {
       return;
     }
     startTransition(async () => {
       const res = await runAdminSubscriptionAction(id, action);
-      if (!res.ok) setError(res.error);
+      if (res.ok) {
+        toast({
+          title: DONE_TITLE[action],
+          description: `Se le envía un aviso por correo a ${customerName}.`,
+        });
+      } else {
+        setError(res.error);
+      }
       router.refresh();
     });
   };
@@ -53,7 +68,14 @@ export function SubscriptionRowActions({
     setError(null);
     startTransition(async () => {
       const res = await updateAdminSubscriptionTermsAction(id, { frequencyDays: days });
-      if (!res.ok) setError(res.error);
+      if (res.ok) {
+        toast({
+          title: `Frecuencia cambiada: cada ${days / 7} sem`,
+          description: `Se le envía un aviso por correo a ${customerName}.`,
+        });
+      } else {
+        setError(res.error);
+      }
       router.refresh();
     });
   };

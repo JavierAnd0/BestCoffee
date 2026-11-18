@@ -1,26 +1,10 @@
-import type { Metadata } from "next";
-import { notFound } from "next/navigation";
-import { getContentBlock } from "@/lib/data/admin-content";
-import { LoadError, SectionHeader } from "../../_components/fields";
-import { BLOCK_KINDS } from "../../_components/block-kinds";
-import { BlockForm } from "../block-form";
-import { productOptions } from "../products";
+import { redirect } from "next/navigation";
 
-export const metadata: Metadata = { title: "Editar bloque · Admin" };
-
+/**
+ * Los bloques se editan en la misma lista de Contenido. Esta dirección queda
+ * solo para enlaces viejos o guardados: abre el bloque ahí mismo.
+ */
 export default async function EditBlockPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const res = await getContentBlock(id);
-  if (!res.ok && res.status === 404) notFound();
-  if (!res.ok) return <LoadError error={res.error} />;
-  const block = res.data;
-  if (!block) notFound();
-  const products =
-    block.kind === "SPOTLIGHT" || block.kind === "FEATURED_BUNDLE" ? await productOptions() : [];
-  return (
-    <div>
-      <SectionHeader title={`Editar bloque · ${BLOCK_KINDS[block.kind].label}`} />
-      <BlockForm kind={block.kind} block={block} products={products} />
-    </div>
-  );
+  redirect(`/admin/contenido?editar=${encodeURIComponent(id)}`);
 }

@@ -28,6 +28,25 @@ function safeFileName(name: string): string {
 }
 
 /**
+ * Sube una imagen de contenido a Blob (carpeta de la tienda) y devuelve su URL.
+ * Lanza un Error con un mensaje para el operador si el archivo no sirve o la
+ * subida falla. La usa el editor del blog para las imágenes dentro del texto.
+ */
+export async function uploadContentImage(folder: ContentFolder, file: File): Promise<string> {
+  if (!ACCEPT.split(",").includes(file.type)) {
+    throw new Error("Formato no soportado: usa JPG, PNG, WebP o AVIF.");
+  }
+  if (file.size > MAX_BYTES) throw new Error("La imagen pesa más de 8 MB.");
+  const prefix = await contentUploadPrefixAction(folder);
+  if (!prefix.ok) throw new Error(prefix.error);
+  const blob = await upload(`${prefix.data}${safeFileName(file.name)}`, file, {
+    access: "public",
+    handleUploadUrl: "/api/admin/blob-upload",
+  });
+  return blob.url;
+}
+
+/**
  * Campo de imagen del panel de contenido: pegar una URL o subir un archivo a
  * Vercel Blob (carpeta de la tienda). El valor viaja en un input normal con
  * `name`, así que sirve en formularios de acción y en formularios controlados

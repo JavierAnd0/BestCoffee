@@ -96,7 +96,9 @@ export interface BrewGuide {
   summary: string;
   totalTime: string;
   difficulty: "Fácil" | "Media" | "Avanzada";
-  steps: { title: string; body: string; durationSec: number }[];
+  steps: { title: string; body: string; durationSec: number; waterG?: number | null }[];
+  /** Receta base (café, agua, temperatura, molienda); null si la guía no la tiene. */
+  recipe?: import("../brew").BrewRecipe | null;
   /** Portada escrita en el panel (URL libre; ver lib/remote-image.ts). */
   coverUrl?: string | null;
 }
@@ -108,11 +110,12 @@ export const BREW_GUIDES: BrewGuide[] = [
     summary: "El método más versátil para descubrir notas frutales y florales.",
     totalTime: "3 min",
     difficulty: "Media",
+    recipe: { coffeeG: 15, waterMl: 250, tempC: 93, grind: "Media-fina" },
     steps: [
       { title: "Calienta y enjuaga", body: "Hierve 300 g de agua a 93°C. Enjuaga el filtro de papel.", durationSec: 30 },
       { title: "Pesa y muele", body: "15 g de café molido medio-fino, como sal de mesa.", durationSec: 30 },
-      { title: "Bloom", body: "Vierte 40 g de agua, espera 30 segundos. El café crece.", durationSec: 30 },
-      { title: "Vertidos", body: "Vertidos circulares hasta llegar a 250 g totales.", durationSec: 90 },
+      { title: "Bloom", body: "Vierte 40 g de agua, espera 30 segundos. El café crece.", durationSec: 30, waterG: 40 },
+      { title: "Vertidos", body: "Vertidos circulares hasta llegar a 250 g totales.", durationSec: 90, waterG: 250 },
       { title: "Sirve", body: "El goteo termina en ~2:45. Sirve y disfruta.", durationSec: 15 },
     ],
   },

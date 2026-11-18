@@ -4,6 +4,7 @@ import { getAdminBilling, getCurrentOperator } from "@/lib/data/admin";
 import { getCurrentTenant } from "@/lib/data/tenant";
 import { getOperatorTenantRole, isOwnerRole, ROLE_LABELS } from "@/lib/data/operator-role";
 import { BrandProvider } from "@/components/storefront/brand-context";
+import { Toaster } from "@/components/ui/toast";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const operator = await getCurrentOperator();
@@ -54,6 +55,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         )}
         <main className="max-w-7xl mx-auto p-8">{children}</main>
       </div>
+      <Toaster />
     </div>
     </BrandProvider>
   );
