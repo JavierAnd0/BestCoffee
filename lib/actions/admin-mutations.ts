@@ -228,15 +228,17 @@ export async function saveProductAction(
     }
     existing.delete(key);
     const keep = new Set(v.preserve ?? []);
-    const patch: Record<string, number> = {};
+    const patch: Record<string, number | null> = {};
     const nextOneTime = toCents(v.priceOneTime);
     if (!keep.has("priceOneTime") && nextOneTime !== prev.priceOneTime) {
       patch.priceOneTime = nextOneTime;
     }
-    // La API no permite quitar el precio de suscripción (solo cambiarlo).
-    if (!keep.has("priceSubscription") && v.priceSubscription > 0) {
-      const nextSub = toCents(v.priceSubscription);
-      if (nextSub !== prev.priceSubscription) patch.priceSubscription = nextSub;
+    // Vacío o 0 = sin suscripción. Quitarlo no afecta a las suscripciones que
+    // ya existen (cada renovación usa el precio de su primer pedido); solo
+    // impide suscribirse de nuevo a esta presentación.
+    if (!keep.has("priceSubscription")) {
+      const nextSub = v.priceSubscription > 0 ? toCents(v.priceSubscription) : null;
+      if (nextSub !== (prev.priceSubscription ?? null)) patch.priceSubscription = nextSub;
     }
     if (!keep.has("stock") && v.stock !== prev.stock) patch.stock = v.stock;
     if (Object.keys(patch).length === 0) continue;
@@ -254,9 +256,8 @@ export async function saveProductAction(
       { method: "DELETE" },
     );
     if (!r.ok) {
-      errors.push(
-        `${label(v.sizeGrams, v.grind)}: no se pudo eliminar (puede tener suscripciones activas).`,
-      );
+      // La API explica por qué (suscripciones o regalos que la usan).
+      errors.push(`${label(v.sizeGrams, v.grind)}: ${r.error || "no se pudo eliminar."}`);
     }
   }
 

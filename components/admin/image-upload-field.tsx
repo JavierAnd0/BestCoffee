@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { upload } from "@vercel/blob/client";
 import { Loader2, Upload, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -56,9 +56,40 @@ export function ImageUploadField({
   const value = controlled ?? internal;
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // Archivos subidos en esta edición: si se reemplazan, se borran de Blob.
+  // Archivos subidos en esta edición y aún sin guardar: si se reemplazan, o si
+  // se sale sin guardar, se borran de Blob. Al enviar el formulario, el valor
+  // actual deja de estar en la lista (lo guardó el formulario; si al guardar
+  // reemplaza una imagen anterior, esa la borra la acción del servidor).
   const uploaded = useRef<Set<string>>(new Set());
   const fileRef = useRef<HTMLInputElement>(null);
+  const textRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const input = textRef.current;
+    const form = input?.form;
+    const pending = uploaded.current;
+    // El input refleja el valor actual (también en modo controlado).
+    const onSubmit = () => {
+      if (input) pending.delete(input.value);
+    };
+    // Al cerrar la pestaña o salir del sitio no hay tiempo para una acción de
+    // servidor: el aviso va con sendBeacon.
+    const onPageHide = () => {
+      if (!pending.size) return;
+      const body = new Blob([JSON.stringify({ urls: [...pending] })], { type: "application/json" });
+      navigator.sendBeacon?.("/api/admin/content-image-discard", body);
+      pending.clear();
+    };
+    form?.addEventListener("submit", onSubmit);
+    window.addEventListener("pagehide", onPageHide);
+    return () => {
+      form?.removeEventListener("submit", onSubmit);
+      window.removeEventListener("pagehide", onPageHide);
+      // Salir del formulario dentro del panel (o quitar una sección) sin guardar.
+      for (const url of pending) void discardContentImageAction(url);
+      pending.clear();
+    };
+  }, []);
 
   function setValue(next: string) {
     const prev = value;
@@ -114,6 +145,7 @@ export function ImageUploadField({
           <img src={value} alt="" className="size-10 shrink-0 rounded border border-border object-cover bg-muted" />
         )}
         <input
+          ref={textRef}
           type="text"
           inputMode="url"
           name={name}

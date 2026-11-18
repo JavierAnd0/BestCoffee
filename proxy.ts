@@ -311,7 +311,9 @@ export default async function middleware(req: NextRequest) {
     return NextResponse.next({ request: { headers: requestHeaders } });
   }
 
-  if (!tenantSlug && !url.pathname.startsWith("/platform")) {
+  // Las rutas /api/* son las mismas en cualquier host (p. ej. /api/revalidate,
+  // a la que avisa el backend): no se reescriben a /platform/api/…, que no existe.
+  if (!tenantSlug && !url.pathname.startsWith("/platform") && !url.pathname.startsWith("/api/")) {
     const rewriteUrl = url.clone();
     rewriteUrl.pathname = `/platform${url.pathname === "/" ? "" : url.pathname}`;
     return NextResponse.rewrite(rewriteUrl, { request: { headers: requestHeaders } });

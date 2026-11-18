@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Coffee, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -15,8 +16,30 @@ function demoStoreUrl(): string | null {
   return `${local ? "http" : "https"}://${env.defaultTenantSlug}.${domain}`;
 }
 
+/**
+ * "Solicitar mi tienda": aún no hay alta automática (las tiendas las crea el
+ * superadmin), así que el botón abre un correo a PLATFORM_CONTACT_EMAIL. Sin
+ * esa variable no se muestra (nunca se cae al correo personal del dueño).
+ */
+function requestStoreHref(): string | null {
+  const email = process.env.PLATFORM_CONTACT_EMAIL?.trim();
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return null;
+  const subject = encodeURIComponent("Quiero mi tienda en BestCoffee");
+  const body = encodeURIComponent(
+    "Hola, quiero abrir la tienda en línea de mi tostadora.\n\nNombre de la marca:\nCiudad:\nQué vendo (café, accesorios, suscripciones):\n",
+  );
+  return `mailto:${email}?subject=${subject}&body=${body}`;
+}
+
+export const metadata: Metadata = {
+  title: "BestCoffee · Tiendas en línea para tostadores de café",
+  description:
+    "Catálogo, suscripciones, panel de administración y contenido editorial para tostadores de café de especialidad.",
+};
+
 export default function PlatformLanding() {
   const demoUrl = demoStoreUrl();
+  const requestUrl = requestStoreHref();
   return (
     <div className="min-h-screen flex flex-col">
       <header className="border-b border-border">
@@ -26,19 +49,15 @@ export default function PlatformLanding() {
             BestCoffee
           </Link>
           <nav className="flex items-center gap-6 text-sm">
-            <Link href="#" className="text-foreground/80 hover:text-foreground">
-              Cómo funciona
+            <Link href="#funciones" className="text-foreground/80 hover:text-foreground">
+              Qué incluye
             </Link>
-            <Link href="#" className="text-foreground/80 hover:text-foreground">
-              Precios
-            </Link>
-            <Link href="/platform/login" className="text-foreground/80 hover:text-foreground">
+            <Link href="/acceso" className="text-foreground/80 hover:text-foreground">
               Iniciar sesión
             </Link>
-            <Button
-              size="sm"
-              render={<Link href="/platform/onboarding">Crear tienda</Link>}
-            />
+            {requestUrl && (
+              <Button size="sm" render={<a href={requestUrl}>Solicitar mi tienda</a>} />
+            )}
           </nav>
         </div>
       </header>
@@ -57,14 +76,16 @@ export default function PlatformLanding() {
             café de especialidad.
           </p>
           <div className="mt-10 flex flex-wrap justify-center gap-3">
-            <Button
-              size="lg"
-              render={
-                <Link href="/platform/onboarding">
-                  Crear mi tienda <ArrowRight className="size-4" />
-                </Link>
-              }
-            />
+            {requestUrl && (
+              <Button
+                size="lg"
+                render={
+                  <a href={requestUrl}>
+                    Solicitar mi tienda <ArrowRight className="size-4" />
+                  </a>
+                }
+              />
+            )}
             {demoUrl && (
               <Button
                 size="lg"
@@ -80,7 +101,7 @@ export default function PlatformLanding() {
           )}
         </section>
 
-        <section className="border-t border-border bg-muted/40">
+        <section id="funciones" className="scroll-mt-6 border-t border-border bg-muted/40">
           <div className="mx-auto max-w-6xl px-6 py-24 grid md:grid-cols-3 gap-12">
             {[
               {
@@ -93,7 +114,7 @@ export default function PlatformLanding() {
               },
               {
                 title: "Motor de suscripciones",
-                body: "Cobros recurrentes con Stripe, reintentos automáticos, recordatorios, pausas, saltos y suscripciones de regalo prepagadas.",
+                body: "Suscripciones recurrentes con pedido automático en cada renovación, aviso al cliente, pausas, saltos y suscripciones de regalo prepagadas.",
               },
             ].map((f) => (
               <div key={f.title}>

@@ -8,6 +8,8 @@ import { getOperatorSession } from "../auth/session-store";
 import { tenantCacheTag } from "../data/cache-tags";
 import type { BrewDifficulty, ContentKind } from "../data/admin-content";
 import { isContentPageSlug, type EditorialPageContent } from "../editorial-pages";
+import { operatorStorageTenant } from "../auth/operator-guard";
+import { contentImagePrefix, deleteBlobWithin } from "../storage/blob-paths";
 
 // Acciones del panel para el contenido editorial: bloques de la home, blog,
 // guías y sedes. El backend valida, aísla por tienda y avisa al front
@@ -49,6 +51,44 @@ async function send(
     return { ok: false, error: r.error || fallback };
   }
   return { ok: true, data: r.data };
+}
+
+// ── Imágenes que dejan de usarse ──────────────────────────────────────────────
+// Al reemplazar o quitar una portada (o una imagen de página) y guardar, o al
+// borrar el contenido, la imagen anterior se borra de Blob. Solo se tocan
+// archivos de content/<tienda>/ (las URLs externas y /img/… se ignoran) y cada
+// subida tiene sufijo aleatorio, así que ningún otro contenido comparte archivo.
+
+/** URLs de imagen (`coverUrl` / `imageUrl`) en cualquier nivel del objeto. */
+function imageUrls(value: unknown, out: Set<string> = new Set()): Set<string> {
+  if (Array.isArray(value)) {
+    for (const v of value) imageUrls(v, out);
+  } else if (value && typeof value === "object") {
+    for (const [k, v] of Object.entries(value)) {
+      if ((k === "coverUrl" || k === "imageUrl") && typeof v === "string" && v) out.add(v);
+      else imageUrls(v, out);
+    }
+  }
+  return out;
+}
+
+/** Imágenes que tiene guardadas hoy un contenido (vacío si no se pudo leer). */
+async function savedImages(path: string): Promise<Set<string>> {
+  if (env.useMocks) return new Set();
+  const r = await operatorFetch(path, { method: "GET" });
+  return r.ok ? imageUrls(r.data) : new Set();
+}
+
+/** Borra de Blob las imágenes de `before` que ya no están en `after`. */
+async function discardUnusedImages(before: Set<string>, after: unknown = null): Promise<void> {
+  if (!before.size) return;
+  const keep = imageUrls(after);
+  const gone = [...before].filter((url) => !keep.has(url));
+  if (!gone.length) return;
+  const tenantSlug = await operatorStorageTenant();
+  if (!tenantSlug) return;
+  const prefix = contentImagePrefix(tenantSlug);
+  await Promise.all(gone.map((url) => deleteBlobWithin(url, prefix)));
 }
 
 // ── Bloques de la home (/v1/admin/content) ────────────────────────────────────
@@ -194,10 +234,12 @@ export async function saveBlogPostAction(
     ...(publishedAt && { publishedAt }),
   };
 
+  const before = id ? await savedImages(`/v1/admin/blog/${encodeURIComponent(id)}`) : new Set<string>();
   const r = id
     ? await send(`/v1/admin/blog/${encodeURIComponent(id)}`, "PATCH", payload, "No se pudo guardar el artículo.")
     : await send("/v1/admin/blog", "POST", payload, "No se pudo crear el artículo.");
   if (!r.ok) return r;
+  await discardUnusedImages(before, payload);
 
   const saved = r.data as { slug?: string } | undefined;
   await refreshStorefront(["blog", ...(saved?.slug ? [`blog:${saved.slug}`] : [])]);
@@ -220,8 +262,10 @@ export async function setBlogPostPublishedAction(id: string, published: boolean)
 }
 
 export async function deleteBlogPostAction(id: string): Promise<ContentActionResult> {
+  const before = await savedImages(`/v1/admin/blog/${encodeURIComponent(id)}`);
   const r = await send(`/v1/admin/blog/${encodeURIComponent(id)}`, "DELETE", undefined, "No se pudo borrar el artículo.");
   if (!r.ok) return r;
+  await discardUnusedImages(before);
   await refreshStorefront(["blog"]);
   revalidatePath(`${BASE}/blog`);
   return { ok: true };
@@ -284,10 +328,12 @@ export async function saveBrewGuideAction(
     ...(slug && { slug }),
   };
 
+  const before = id ? await savedImages(`/v1/admin/brew-guides/${encodeURIComponent(id)}`) : new Set<string>();
   const r = id
     ? await send(`/v1/admin/brew-guides/${encodeURIComponent(id)}`, "PATCH", payload, "No se pudo guardar la guía.")
     : await send("/v1/admin/brew-guides", "POST", payload, "No se pudo crear la guía.");
   if (!r.ok) return r;
+  await discardUnusedImages(before, payload);
 
   const saved = r.data as { slug?: string } | undefined;
   await refreshStorefront(["brew-guides", ...(saved?.slug ? [`brew-guide:${saved.slug}`] : [])]);
@@ -296,8 +342,10 @@ export async function saveBrewGuideAction(
 }
 
 export async function deleteBrewGuideAction(id: string): Promise<ContentActionResult> {
+  const before = await savedImages(`/v1/admin/brew-guides/${encodeURIComponent(id)}`);
   const r = await send(`/v1/admin/brew-guides/${encodeURIComponent(id)}`, "DELETE", undefined, "No se pudo borrar la guía.");
   if (!r.ok) return r;
+  await discardUnusedImages(before);
   await refreshStorefront(["brew-guides"]);
   revalidatePath(`${BASE}/guias`);
   return { ok: true };
@@ -415,6 +463,7 @@ export async function saveEditorialPageAction(
     return { ok: false, error: "Cada cifra necesita el dato y lo que mide." };
   }
 
+  const before = await savedImages(`/v1/admin/pages/${slug}`);
   const r = await send(
     `/v1/admin/pages/${slug}`,
     "PUT",
@@ -422,6 +471,7 @@ export async function saveEditorialPageAction(
     "No se pudo guardar la página.",
   );
   if (!r.ok) return r;
+  await discardUnusedImages(before, cleaned);
   await refreshPage(slug);
   redirect(`${BASE}/paginas`);
 }
