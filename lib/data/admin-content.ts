@@ -1,3 +1,4 @@
+import type { BrewRecipe } from "../brew";
 import { env } from "../env";
 import { operatorFetch } from "../api/gateway";
 import type { AdminEditorialPage } from "../editorial-pages";
@@ -71,6 +72,7 @@ export interface AdminBrewStep {
   title: string;
   body: string;
   durationSec: number;
+  waterG?: number | null;
 }
 
 export interface AdminBrewGuide {
@@ -82,6 +84,7 @@ export interface AdminBrewGuide {
   summary: string;
   totalTime: string;
   difficulty: BrewDifficulty;
+  recipe?: BrewRecipe | null;
   steps: AdminBrewStep[];
   updatedAt: string;
 }

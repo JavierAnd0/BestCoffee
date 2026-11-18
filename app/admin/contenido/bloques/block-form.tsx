@@ -29,10 +29,13 @@ export function BlockForm({
   kind,
   block,
   products,
+  inline,
 }: {
   kind: ContentKind;
   block?: ContentBlock;
   products: ProductOption[];
+  /** Abierto dentro de la lista de bloques, sin cambiar de página. */
+  inline?: boolean;
 }) {
   const { error, onSubmit, pending } = useContentForm(saveContentBlockAction);
   const data = block?.data;
@@ -40,13 +43,13 @@ export function BlockForm({
   const bundle = Array.isArray(data?.productSlugs) ? (data.productSlugs as string[]) : [];
 
   return (
-    <form onSubmit={onSubmit} className="space-y-6 max-w-3xl">
+    <form onSubmit={onSubmit} className={inline ? "space-y-6" : "space-y-6 max-w-3xl"}>
       {block && <input type="hidden" name="id" value={block.id} />}
       <input type="hidden" name="kind" value={kind} />
-      <p className="text-sm text-muted-foreground">{BLOCK_KINDS[kind].where}</p>
+      {!inline && <p className="text-sm text-muted-foreground">{BLOCK_KINDS[kind].where}</p>}
       <FormError error={error} />
 
-      <FormSection>
+      <FormSection plain={inline}>
         {kind === "ANNOUNCEMENT" && (
           <TextField label="Texto" name="text" required maxLength={200} defaultValue={str(data, "text")} />
         )}
@@ -97,7 +100,7 @@ export function BlockForm({
                 <div className="grid sm:grid-cols-2 gap-1.5 max-h-64 overflow-y-auto rounded-md border border-border p-3">
                   {products.map((p) => (
                     <label key={p.slug} className="inline-flex items-center gap-2 text-sm">
-                      <input type="checkbox" name="productSlugs" value={p.slug} defaultChecked={bundle.includes(p.slug)} />
+                      <input type="checkbox" className="size-4 accent-foreground" name="productSlugs" value={p.slug} defaultChecked={bundle.includes(p.slug)} />
                       {p.name}
                     </label>
                   ))}
@@ -108,23 +111,28 @@ export function BlockForm({
         )}
       </FormSection>
 
-      <FormSection title="Visibilidad">
+      <FormSection plain={inline} title="Visibilidad">
         <label className="inline-flex items-center gap-2 text-sm">
-          <input type="checkbox" name="active" defaultChecked={block?.active ?? true} />
+          <input type="checkbox" className="size-4 accent-foreground" name="active" defaultChecked={block?.active ?? true} />
           Activo
         </label>
-        <div className="grid sm:grid-cols-3 gap-4">
+        <div className={inline ? "grid grid-cols-2 gap-4" : "grid sm:grid-cols-3 gap-4"}>
           <FieldLabel label="Desde (opcional)">
             <input type="datetime-local" name="startsAt" defaultValue={toLocalInput(block?.startsAt)} className={inputClass} />
           </FieldLabel>
           <FieldLabel label="Hasta (opcional)">
             <input type="datetime-local" name="endsAt" defaultValue={toLocalInput(block?.endsAt)} className={inputClass} />
           </FieldLabel>
-          <TextField label="Orden" name="position" type="number" min={0} defaultValue={block?.position ?? 0} hint="Menor = primero." />
+          <TextField label="Orden" name="position" type="number" min={0} defaultValue={block?.position ?? 0} hint="El número más bajo va primero. Si hay dos portadas visibles, se muestra la de número más bajo." />
         </div>
       </FormSection>
 
-      <FormActions pending={pending} cancelHref="/admin/contenido" submitLabel={block ? "Guardar cambios" : "Crear bloque"} />
+      <FormActions
+        pending={pending}
+        cancelHref="/admin/contenido"
+        keepScroll={inline}
+        submitLabel={block ? "Guardar cambios" : "Crear bloque"}
+      />
     </form>
   );
 }

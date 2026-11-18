@@ -59,9 +59,18 @@ export function FormError({ error }: { error?: string | null }) {
   );
 }
 
-export function FormSection({ title, children }: { title?: string; children: React.ReactNode }) {
+export function FormSection({
+  title,
+  children,
+  plain,
+}: {
+  title?: string;
+  children: React.ReactNode;
+  /** Sin caja: para formularios que ya van dentro de una tarjeta (edición en línea). */
+  plain?: boolean;
+}) {
   return (
-    <section className="rounded-lg border border-border bg-background p-6 space-y-4">
+    <section className={plain ? "space-y-4" : "rounded-lg border border-border bg-background p-6 space-y-4"}>
       {title && <h2 className="font-display text-lg font-semibold">{title}</h2>}
       {children}
     </section>

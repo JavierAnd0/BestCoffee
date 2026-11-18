@@ -1,3 +1,4 @@
+import type { BrewRecipe } from "../brew";
 import { env } from "../env";
 import {
   STORE_LOCATIONS,
@@ -99,6 +100,7 @@ interface ApiBrewStep {
   content?: string;
   durationSec?: number;
   duration?: number;
+  waterG?: number | null;
 }
 
 interface ApiBrewGuide {
@@ -113,8 +115,11 @@ interface ApiBrewGuide {
   estimatedTime?: string;
   difficulty?: string;
   steps?: ApiBrewStep[];
+  recipe?: Partial<BrewRecipe> | null;
   coverUrl?: string | null;
 }
+
+const num = (v: unknown) => (typeof v === "number" && Number.isFinite(v) && v > 0 ? v : null);
 
 function mapBrewGuide(g: ApiBrewGuide): BrewGuide {
   const difficulty = (g.difficulty ?? "Media") as BrewGuide["difficulty"];
@@ -132,7 +137,16 @@ function mapBrewGuide(g: ApiBrewGuide): BrewGuide {
       title: s.title ?? "",
       body: s.body ?? s.description ?? s.content ?? "",
       durationSec: s.durationSec ?? s.duration ?? 0,
+      waterG: num(s.waterG),
     })),
+    recipe: g.recipe
+      ? {
+          coffeeG: num(g.recipe.coffeeG),
+          waterMl: num(g.recipe.waterMl),
+          tempC: num(g.recipe.tempC),
+          grind: typeof g.recipe.grind === "string" ? g.recipe.grind : "",
+        }
+      : null,
     coverUrl: g.coverUrl ?? null,
   };
 }

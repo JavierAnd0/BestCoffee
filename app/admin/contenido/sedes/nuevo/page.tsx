@@ -1,14 +1,6 @@
-import type { Metadata } from "next";
-import { SectionHeader } from "../../_components/fields";
-import { LocationForm } from "../location-form";
+import { redirect } from "next/navigation";
 
-export const metadata: Metadata = { title: "Nueva sede · Admin" };
-
+/** Las sedes se crean en un panel sobre la lista; esta dirección queda para enlaces viejos. */
 export default function NewLocationPage() {
-  return (
-    <div>
-      <SectionHeader title="Nueva sede" />
-      <LocationForm />
-    </div>
-  );
+  redirect("/admin/contenido/sedes?nuevo=1");
 }

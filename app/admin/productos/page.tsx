@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import type { Metadata } from "next";
 import { Plus, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -10,12 +11,13 @@ import type { Product } from "@/lib/types";
 
 export const metadata: Metadata = { title: "Productos · Admin" };
 
-const TYPE_LABEL = {
-  BLEND: "Mezcla",
-  SINGLE_ORIGIN: "Origen único",
-  DECAF: "Descafeinado",
-  ACCESSORY: "Accesorio",
-} as const;
+// Orden de las secciones de la lista: primero los cafés, al final los accesorios.
+const TYPE_GROUPS: { type: Product["type"]; title: string }[] = [
+  { type: "SINGLE_ORIGIN", title: "Origen único" },
+  { type: "BLEND", title: "Mezclas" },
+  { type: "DECAF", title: "Descafeinados" },
+  { type: "ACCESSORY", title: "Accesorios" },
+];
 
 const BADGE_LABEL: Record<string, string> = {
   BESTSELLER: "Más vendido",
@@ -30,6 +32,20 @@ const STATUS_LABEL: Record<Product["status"], string> = {
   DRAFT: "Borrador",
   ARCHIVED: "Archivado",
 };
+
+const STATUS_TONE: Record<Product["status"], string> = {
+  ACTIVE: "bg-emerald-500/10 text-emerald-700 border-emerald-500/20",
+  DRAFT: "bg-amber-500/10 text-amber-700 border-amber-500/20",
+  ARCHIVED: "bg-muted text-muted-foreground border-border",
+};
+
+/** Etiqueta legible: las conocidas se traducen; las libres ("PRECISIÓN") pasan a "Precisión". */
+function badgeLabel(badge: string): string {
+  const known = BADGE_LABEL[badge];
+  if (known) return known;
+  const lower = badge.trim().toLocaleLowerCase("es");
+  return lower.charAt(0).toLocaleUpperCase("es") + lower.slice(1);
+}
 
 const FILTERS: { label: string; value?: Product["status"] }[] = [
   { label: "Todos" },
@@ -114,12 +130,11 @@ export default async function ProductsListPage({
         })}
       </div>
 
-      <div className="rounded-lg border border-border bg-background overflow-hidden">
-        <table className="w-full text-sm">
+      <div className="rounded-lg border border-border bg-background overflow-x-auto">
+        <table className="w-full min-w-[760px] text-sm">
           <thead>
             <tr className="text-left text-xs uppercase tracking-[0.08em] text-muted-foreground bg-muted/30 border-b border-border">
               <th className="px-4 py-3 font-medium">Producto</th>
-              <th className="px-4 py-3 font-medium">Tipo</th>
               <th className="px-4 py-3 font-medium">Tueste</th>
               <th className="px-4 py-3 font-medium">Stock</th>
               <th className="px-4 py-3 font-medium">Precio desde</th>
@@ -127,8 +142,20 @@ export default async function ProductsListPage({
               <th className="px-4 py-3 font-medium">Badges</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-border">
-            {filtered.map((p) => {
+          {TYPE_GROUPS.map((g) => {
+            const items = filtered.filter((p) => p.type === g.type);
+            if (items.length === 0) return null;
+            return (
+          <tbody key={g.type} className="divide-y divide-border border-b border-border last:border-b-0">
+            <tr className="bg-muted/40">
+              <th colSpan={6} scope="rowgroup" className="px-4 py-2.5 text-left">
+                <span className="font-display text-base font-semibold tracking-tight">{g.title}</span>
+                <span className="ml-2 text-xs font-normal text-muted-foreground tabular-nums">
+                  {items.length} {items.length === 1 ? "producto" : "productos"}
+                </span>
+              </th>
+            </tr>
+            {items.map((p) => {
               const cheapest =
                 p.variants.length > 0
                   ? p.variants.reduce(
@@ -144,18 +171,36 @@ export default async function ProductsListPage({
                       href={`/admin/productos/${p.id}`}
                       className="flex items-center gap-3 hover:underline underline-offset-2"
                     >
-                      <span className="size-10 rounded-md bg-muted" aria-hidden />
+                      {p.images[0] ? (
+                        <Image
+                          src={p.images[0].url}
+                          alt=""
+                          width={40}
+                          height={40}
+                          className="size-10 shrink-0 rounded-md bg-muted object-cover"
+                        />
+                      ) : (
+                        <span className="size-10 shrink-0 rounded-md bg-muted" aria-hidden />
+                      )}
                       <span className="font-medium">{p.name}</span>
                     </Link>
                   </td>
-                  <td className="px-4 py-3 text-muted-foreground">{TYPE_LABEL[p.type]}</td>
-                  <td className="px-4 py-3 tabular-nums">{p.roastLevel}/9</td>
+                  <td className="px-4 py-3 tabular-nums">
+                    {p.type === "ACCESSORY" ? (
+                      <span className="text-muted-foreground">—</span>
+                    ) : (
+                      `${p.roastLevel}/9`
+                    )}
+                  </td>
                   <td className="px-4 py-3 tabular-nums">{totalStock}</td>
                   <td className="px-4 py-3 tabular-nums font-medium">
                     {cheapest ? formatCop(cheapest.priceOneTimeCents) : "—"}
                   </td>
                   <td className="px-4 py-3">
-                    <Badge variant="outline" className="font-normal">
+                    <Badge
+                      variant="outline"
+                      className={"font-normal " + (STATUS_TONE[p.status] ?? STATUS_TONE.ARCHIVED)}
+                    >
                       {STATUS_LABEL[p.status] ?? p.status}
                     </Badge>
                   </td>
@@ -163,7 +208,7 @@ export default async function ProductsListPage({
                     <div className="flex flex-wrap gap-1">
                       {p.badges.map((b) => (
                         <Badge key={b} variant="secondary" className="font-normal text-[10px]">
-                          {BADGE_LABEL[b] ?? b}
+                          {badgeLabel(b)}
                         </Badge>
                       ))}
                     </div>
@@ -171,14 +216,18 @@ export default async function ProductsListPage({
                 </tr>
               );
             })}
-            {filtered.length === 0 && (
+          </tbody>
+            );
+          })}
+          {filtered.length === 0 && (
+            <tbody>
               <tr>
-                <td colSpan={7} className="px-4 py-10 text-center text-muted-foreground text-sm">
+                <td colSpan={6} className="px-4 py-10 text-center text-muted-foreground text-sm">
                   No se encontraron productos.
                 </td>
               </tr>
-            )}
-          </tbody>
+            </tbody>
+          )}
         </table>
       </div>
     </div>

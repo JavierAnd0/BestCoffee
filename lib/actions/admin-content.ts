@@ -66,7 +66,11 @@ function imageUrls(value: unknown, out: Set<string> = new Set()): Set<string> {
   } else if (value && typeof value === "object") {
     for (const [k, v] of Object.entries(value)) {
       if ((k === "coverUrl" || k === "imageUrl") && typeof v === "string" && v) out.add(v);
-      else imageUrls(v, out);
+      // El cuerpo del blog es Markdown: sus imágenes también son de la tienda
+      // y no deben borrarse de Blob mientras sigan en el texto.
+      else if (k === "body" && typeof v === "string") {
+        for (const m of v.matchAll(/!\[[^\]]*\]\(\s*<?([^\s)>]+)>?/g)) out.add(m[1]);
+      } else imageUrls(v, out);
     }
   }
   return out;
@@ -208,10 +212,15 @@ export async function deleteContentBlockAction(id: string): Promise<ContentActio
 
 const SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
+/** Resultado de guardar desde el editor: se queda en el editor con lo guardado. */
+export type BlogSaveResult =
+  | { ok: true; post: { id: string; slug: string; status: "DRAFT" | "SCHEDULED" | "PUBLISHED" }; at: number }
+  | { ok: false; error: string };
+
 export async function saveBlogPostAction(
-  _prev: ContentActionResult | null,
+  _prev: BlogSaveResult | null,
   fd: FormData,
-): Promise<ContentActionResult> {
+): Promise<BlogSaveResult> {
   const id = text(fd, "id");
   const title = text(fd, "title");
   const slug = text(fd, "slug");
@@ -241,10 +250,20 @@ export async function saveBlogPostAction(
   if (!r.ok) return r;
   await discardUnusedImages(before, payload);
 
-  const saved = r.data as { slug?: string } | undefined;
-  await refreshStorefront(["blog", ...(saved?.slug ? [`blog:${saved.slug}`] : [])]);
+  const saved = (r.data ?? {}) as { id?: string; slug?: string; publishedAt?: string | null };
+  await refreshStorefront(["blog", ...(saved.slug ? [`blog:${saved.slug}`] : [])]);
   revalidatePath(`${BASE}/blog`);
-  redirect(`${BASE}/blog`);
+  const when = saved.publishedAt ?? publishedAt;
+  const status = !published
+    ? "DRAFT"
+    : when && new Date(when).getTime() > Date.now()
+      ? "SCHEDULED"
+      : "PUBLISHED";
+  return {
+    ok: true,
+    post: { id: saved.id ?? id, slug: saved.slug ?? slug, status },
+    at: Date.now(),
+  };
 }
 
 export async function setBlogPostPublishedAction(id: string, published: boolean): Promise<ContentActionResult> {
@@ -279,6 +298,29 @@ interface StepInput {
   title: string;
   body: string;
   durationSec: number;
+  waterG: number | null;
+}
+
+/** Número positivo de un campo libre, o null (dato no indicado). */
+function positive(v: unknown, max: number): number | null {
+  const n = typeof v === "number" ? v : Number(v);
+  return Number.isFinite(n) && n > 0 ? Math.min(max, Math.round(n * 10) / 10) : null;
+}
+
+function parseRecipe(raw: string) {
+  let r: Record<string, unknown> = {};
+  try {
+    const parsed: unknown = JSON.parse(raw || "{}");
+    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) r = parsed as Record<string, unknown>;
+  } catch {
+    /* receta vacía */
+  }
+  return {
+    coffeeG: positive(r.coffeeG, 2000),
+    waterMl: positive(r.waterMl, 10000),
+    tempC: positive(r.tempC, 100),
+    grind: String(r.grind ?? "").trim().slice(0, 60),
+  };
 }
 
 function parseSteps(raw: string): StepInput[] | string {
@@ -296,7 +338,7 @@ function parseSteps(raw: string): StepInput[] | string {
     const durationSec = Math.max(0, Math.round(Number(s?.durationSec) || 0));
     if (!title && !body) continue; // fila vacía
     if (!title) return "Cada paso necesita un título.";
-    steps.push({ title, body, durationSec });
+    steps.push({ title, body, durationSec: Math.min(86400, durationSec), waterG: positive(s?.waterG, 5000) });
   }
   return steps;
 }
@@ -323,6 +365,7 @@ export async function saveBrewGuideAction(
     summary: text(fd, "summary"),
     totalTime: text(fd, "totalTime"),
     difficulty,
+    recipe: parseRecipe(String(fd.get("recipe") ?? "")),
     steps,
     coverUrl: text(fd, "coverUrl"),
     ...(slug && { slug }),

@@ -11,6 +11,7 @@ import { GRIND_OPTIONS, sortGrinds } from "@/lib/grind";
 import { formatCop } from "@/lib/format";
 import { saveProductAction } from "@/lib/actions/admin-mutations";
 import { ProductImages } from "./product-images";
+import { OriginPicker } from "./origin-picker";
 
 type VariantField = "priceOneTime" | "priceSubscription" | "stock";
 
@@ -139,7 +140,13 @@ export function ProductForm({ product }: { product?: Product }) {
   const addSize = () => setSizes((arr) => [...arr, { ...DEFAULT_SIZE }]);
   const removeSize = (i: number) => setSizes((arr) => arr.filter((_, idx) => idx !== i));
 
-  const variantCount = expandVariants(sizes, grinds).length;
+  // Un accesorio no lleva molienda ni tueste: se guarda con una sola molienda
+  // (la que ya tenga, o grano) para que cada tamaño sea una única variante.
+  const isAccessory = type === "ACCESSORY";
+  const effectiveGrinds: GrindFormat[] = isAccessory
+    ? [grinds.includes("WHOLE_BEAN") ? "WHOLE_BEAN" : (grinds[0] ?? "WHOLE_BEAN")]
+    : grinds;
+  const variantCount = expandVariants(sizes, effectiveGrinds).length;
 
   const submitForm = (overrideStatus?: ProductStatus) => {
     setFeedback(null);
@@ -154,7 +161,8 @@ export function ProductForm({ product }: { product?: Product }) {
         type,
         origin,
         producerStory: story,
-        roastLevel: roast,
+        // El backend exige 1–9 aunque un accesorio no lo use.
+        roastLevel: Math.min(9, Math.max(1, roast)),
         flavorNotes: flavors
           .split(",")
           .map((s) => s.trim())
@@ -162,7 +170,7 @@ export function ProductForm({ product }: { product?: Product }) {
         badges,
         status: finalStatus,
         subscriptionAvailability: subAvail,
-        variants: expandVariants(sizes, grinds),
+        variants: expandVariants(sizes, effectiveGrinds),
         pendingImages: product?.id ? undefined : images,
       });
 
@@ -210,10 +218,10 @@ export function ProductForm({ product }: { product?: Product }) {
         />
       </Section>
 
-      <Section title="Origen y tueste">
+      <Section title={isAccessory ? "Tipo de producto" : "Origen y tueste"}>
         <div className="grid sm:grid-cols-2 gap-4">
           <SelectField
-            label="Tipo de café"
+            label="Tipo de producto"
             value={type}
             onChange={(v) => setType(v as Product["type"])}
             options={[
@@ -223,37 +231,53 @@ export function ProductForm({ product }: { product?: Product }) {
               { value: "ACCESSORY", label: "Accesorio" },
             ]}
           />
-          <Field label="País / región" value={origin} onChange={setOrigin} placeholder="Huila, Colombia" />
-        </div>
-        <TextArea
-          label="Historia del productor"
-          value={story}
-          onChange={setStory}
-          rows={3}
-          placeholder="Nombre del productor, finca, altitud, variedad…"
-        />
-
-        <div>
-          <Label>Nivel de tostado</Label>
-          <div className="flex items-center gap-4">
-            <input
-              type="range"
-              min={1}
-              max={9}
-              value={roast}
-              onChange={(e) => setRoast(+e.target.value)}
-              className="flex-1 accent-foreground"
+          {isAccessory ? (
+            <Field
+              label="Categoría"
+              value={origin}
+              onChange={setOrigin}
+              placeholder="Herramienta de precisión"
             />
-            <Roast level={roast} showLabel={false} />
-            <span className="text-sm font-medium tabular-nums w-8 text-right">{roast}/9</span>
-          </div>
+          ) : (
+            <OriginPicker value={origin} onChange={setOrigin} />
+          )}
         </div>
+
+        {!isAccessory && (
+          <>
+            <TextArea
+              label="Historia del productor"
+              value={story}
+              onChange={setStory}
+              rows={3}
+              placeholder="Nombre del productor, finca, altitud, variedad…"
+            />
+
+            <div>
+              <Label>Nivel de tostado</Label>
+              <div className="flex items-center gap-4">
+                <input
+                  type="range"
+                  min={1}
+                  max={9}
+                  value={Math.max(1, roast)}
+                  onChange={(e) => setRoast(+e.target.value)}
+                  className="flex-1 accent-foreground"
+                />
+                <Roast level={Math.max(1, roast)} showLabel={false} />
+                <span className="text-sm font-medium tabular-nums w-8 text-right">
+                  {Math.max(1, roast)}/9
+                </span>
+              </div>
+            </div>
+          </>
+        )}
 
         <Field
-          label="Notas de sabor (separadas por coma)"
+          label={isAccessory ? "Características (separadas por coma)" : "Notas de sabor (separadas por coma)"}
           value={flavors}
           onChange={setFlavors}
-          placeholder="chocolate, nuez, caramelo"
+          placeholder={isAccessory ? "0.1 g de precisión, cronómetro, USB-C" : "chocolate, nuez, caramelo"}
         />
       </Section>
 
@@ -266,6 +290,7 @@ export function ProductForm({ product }: { product?: Product }) {
         />
       </Section>
 
+      {!isAccessory && (
       <Section title="Molienda">
         <p className="text-sm text-muted-foreground">
           Marca las moliendas que ofreces para este café. El cliente elegirá una al comprar.
@@ -303,13 +328,14 @@ export function ProductForm({ product }: { product?: Product }) {
           <p className="text-xs text-destructive">Selecciona al menos una molienda.</p>
         )}
       </Section>
+      )}
 
       <Section title="Tamaños y precios">
         <div className="space-y-3">
           {sizes.map((s, i) => (
             <div
               key={i}
-              className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_1fr_1fr_auto] gap-3 items-end rounded-md border border-border bg-muted/20 p-3"
+              className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_1fr_1fr_auto] gap-3 items-start rounded-md border border-border bg-muted/20 p-3"
             >
               <NumberField
                 label="Tamaño (g)"
@@ -333,7 +359,7 @@ export function ProductForm({ product }: { product?: Product }) {
                 }
               />
               <NumberField
-                label="Stock por molienda"
+                label={isAccessory ? "Stock" : "Stock por molienda"}
                 value={s.stock}
                 onChange={(n) => updateSize(i, { stock: n })}
                 hint={s.mixed?.stock && `Hoy: ${s.mixed.stock}. Si lo cambias, se aplica a todas.`}
@@ -345,6 +371,7 @@ export function ProductForm({ product }: { product?: Product }) {
                 onClick={() => removeSize(i)}
                 disabled={sizes.length === 1}
                 aria-label="Eliminar tamaño"
+                className="justify-self-end sm:mt-[25px]"
               >
                 <Trash2 className="size-4 text-destructive" />
               </Button>
@@ -354,13 +381,21 @@ export function ProductForm({ product }: { product?: Product }) {
             <Plus className="size-4" />
             Agregar tamaño
           </Button>
-          <p className="text-xs text-muted-foreground">
-            El precio y el stock aplican a cada molienda marcada; lo que no cambies se
-            conserva como está. Se generarán{" "}
-            <span className="font-medium text-foreground tabular-nums">{variantCount}</span>{" "}
-            variantes ({sizes.length} {sizes.length === 1 ? "tamaño" : "tamaños"} × {grinds.length}{" "}
-            {grinds.length === 1 ? "molienda" : "moliendas"}).
-          </p>
+          {isAccessory ? (
+            <p className="text-xs text-muted-foreground">
+              Cada tamaño es una variante del accesorio. Se generarán{" "}
+              <span className="font-medium text-foreground tabular-nums">{variantCount}</span>{" "}
+              {variantCount === 1 ? "variante" : "variantes"}.
+            </p>
+          ) : (
+            <p className="text-xs text-muted-foreground">
+              El precio y el stock aplican a cada molienda marcada; lo que no cambies se
+              conserva como está. Se generarán{" "}
+              <span className="font-medium text-foreground tabular-nums">{variantCount}</span>{" "}
+              variantes ({sizes.length} {sizes.length === 1 ? "tamaño" : "tamaños"} × {grinds.length}{" "}
+              {grinds.length === 1 ? "molienda" : "moliendas"}).
+            </p>
+          )}
         </div>
       </Section>
 

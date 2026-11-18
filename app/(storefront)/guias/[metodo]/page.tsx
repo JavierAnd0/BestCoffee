@@ -2,10 +2,11 @@ import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { Badge } from "@/components/ui/badge";
 import { Eyebrow } from "@/components/ui/eyebrow";
 import { getBrewGuide } from "@/lib/data/static";
 import { remoteImage } from "@/lib/remote-image";
+import { BrewGuide } from "@/components/storefront/brew-guide";
+import { Gauge, Timer } from "lucide-react";
 
 export async function generateMetadata({
   params,
@@ -44,13 +45,15 @@ export default async function GuiaPage({
         <p className="mt-4 text-base text-muted-foreground max-w-xl mx-auto">
           {guide.summary}
         </p>
-        <div className="mt-5 flex justify-center gap-2">
-          <Badge variant="outline" className="font-normal">
-            ⏱ {guide.totalTime}
-          </Badge>
-          <Badge variant="outline" className="font-normal">
-            {guide.difficulty}
-          </Badge>
+        <div className="mt-5 flex justify-center gap-5 text-sm text-muted-foreground">
+          {guide.totalTime && (
+            <span className="inline-flex items-center gap-1.5">
+              <Timer className="size-4" aria-hidden /> {guide.totalTime}
+            </span>
+          )}
+          <span className="inline-flex items-center gap-1.5">
+            <Gauge className="size-4" aria-hidden /> {guide.difficulty}
+          </span>
         </div>
       </header>
 
@@ -68,28 +71,7 @@ export default async function GuiaPage({
         </div>
       )}
 
-      <div className="mt-12 space-y-6">
-        {guide.steps.map((s, i) => (
-          <article key={i} className="grid grid-cols-[auto_1fr] gap-5">
-            <span className="size-10 rounded-full bg-foreground text-background grid place-items-center font-display font-semibold text-base">
-              {i + 1}
-            </span>
-            <div>
-              <h2 className="font-display text-2xl font-semibold tracking-tight">
-                {s.title}
-              </h2>
-              <p className="mt-2 text-base text-foreground/90 leading-relaxed">{s.body}</p>
-              <div className="mt-2 text-xs text-muted-foreground">
-                {s.durationSec >= 3600
-                  ? `${Math.round(s.durationSec / 3600)} h`
-                  : s.durationSec >= 60
-                    ? `${Math.round(s.durationSec / 60)} min`
-                    : `${s.durationSec} s`}
-              </div>
-            </div>
-          </article>
-        ))}
-      </div>
+      <BrewGuide recipe={guide.recipe ?? null} steps={guide.steps} />
     </div>
   );
 }

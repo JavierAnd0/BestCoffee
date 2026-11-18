@@ -12,8 +12,10 @@ export function ActionButton({
   action,
   confirmText,
   variant = "outline",
+  className,
 }: {
   label: string;
+  className?: string;
   action: () => Promise<ContentActionResult>;
   /** Si se indica, pide confirmación antes (borrados). */
   confirmText?: string;
@@ -29,6 +31,7 @@ export function ActionButton({
         type="button"
         size="sm"
         variant={variant}
+        className={className}
         disabled={pending}
         onClick={() => {
           if (confirmText && !window.confirm(confirmText)) return;
