@@ -237,29 +237,7 @@ export async function getCurrentOperator(): Promise<OperatorProfile | null> {
       return { name, email, role, impersonatingTenant };
     }
   } catch {
-    // Fallback a sesión local de operador si el backend no está disponible
-  }
-
-  // Solo en desarrollo: esta sesión no lleva firma, así que en producción
-  // cualquiera podría escribirla a mano en una cookie.
-  if (env.isDev && token.endsWith(".local_operator_session")) {
-    try {
-      const parts = token.split(".");
-      if (parts.length >= 2) {
-        const payload = JSON.parse(
-          Buffer.from(parts[1], "base64url").toString("utf-8"),
-        ) as { email?: string; isPlatformOwner?: boolean };
-        if (payload.email) {
-          const name = payload.email.split("@")[0] || "Operador";
-          const role = impersonatingTenant
-            ? `Impersonando · ${impersonatingTenant}`
-            : payload.isPlatformOwner
-              ? "Superadmin"
-              : "Tenant Admin";
-          return { name, email: payload.email, role, impersonatingTenant };
-        }
-      }
-    } catch {}
+    /* backend sin conexión: sin datos del operador */
   }
 
   return null;

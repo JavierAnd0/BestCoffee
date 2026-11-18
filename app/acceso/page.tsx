@@ -5,6 +5,19 @@ export const metadata = {
   robots: { index: false, follow: false },
 };
 
-export default function AccesoPage() {
-  return <AccesoForm />;
+export default async function AccesoPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ motivo?: string }>;
+}) {
+  const { motivo } = await searchParams;
+  return (
+    <AccesoForm
+      notice={
+        motivo === "2fa"
+          ? "Tu cuenta tiene la verificación en dos pasos activa. Vuelve a entrar con el enlace y el código de tu app."
+          : undefined
+      }
+    />
+  );
 }

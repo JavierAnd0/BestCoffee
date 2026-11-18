@@ -9,7 +9,7 @@ import {
   type MagicLinkState,
 } from "@/lib/actions/operator-auth";
 
-export function AccesoForm() {
+export function AccesoForm({ notice }: { notice?: string }) {
   const [state, dispatch, isPending] = useActionState<MagicLinkState, FormData>(
     requestOperatorMagicLink,
     null,
@@ -55,6 +55,15 @@ export function AccesoForm() {
                 Te enviaremos un enlace de acceso a tu correo. Sin contraseñas.
               </p>
             </header>
+
+            {notice && (
+              <p
+                role="status"
+                className="mb-6 rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900"
+              >
+                {notice}
+              </p>
+            )}
 
             {state && "error" in state && (
               <div className="mb-6 rounded-md border border-red-300/60 bg-red-50 px-4 py-3 text-sm text-red-800">

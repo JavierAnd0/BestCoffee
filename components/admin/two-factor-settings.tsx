@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { Check, Copy, KeyRound, Loader2, ShieldCheck, ShieldOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,7 +23,15 @@ type View =
  * autenticación (QR o clave), guardar los códigos de respaldo, regenerarlos o
  * desactivarla. Las acciones sensibles piden un código vigente.
  */
-export function TwoFactorSettings({ initial }: { initial: MfaStatus | null }) {
+export function TwoFactorSettings({
+  initial,
+  required = false,
+}: {
+  initial: MfaStatus | null;
+  /** Obligatoria para esta cuenta (superadmin): no se ofrece desactivarla. */
+  required?: boolean;
+}) {
+  const router = useRouter();
   const [status, setStatus] = useState<MfaStatus | null>(initial);
   const [view, setView] = useState<View>({ kind: "idle" });
   const [code, setCode] = useState("");
@@ -108,6 +117,8 @@ export function TwoFactorSettings({ initial }: { initial: MfaStatus | null }) {
             onClick={() => {
               setCopied(false);
               setView({ kind: "idle" });
+              // El panel se habilita con la sesión nueva (el menú sale del layout).
+              router.refresh();
             }}
           >
             Ya los guardé
@@ -284,9 +295,11 @@ export function TwoFactorSettings({ initial }: { initial: MfaStatus | null }) {
         <Button variant="outline" size="sm" onClick={() => setView({ kind: "confirm", action: "regenerate" })}>
           Generar códigos de respaldo nuevos
         </Button>
-        <Button variant="outline" size="sm" onClick={() => setView({ kind: "confirm", action: "disable" })}>
-          Desactivar
-        </Button>
+        {!required && (
+          <Button variant="outline" size="sm" onClick={() => setView({ kind: "confirm", action: "disable" })}>
+            Desactivar
+          </Button>
+        )}
       </div>
     </div>
   );

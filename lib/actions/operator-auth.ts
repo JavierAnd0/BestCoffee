@@ -1,55 +1,12 @@
 "use server";
 
-import crypto from "crypto";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { env } from "../env";
-import { sendMagicLinkEmail } from "../email/resend";
 import { clientIpHeaders } from "@/lib/api/client-ip";
 
 export type MagicLinkState = null | { error: string } | { sent: true };
 export type VerifyState = null | { error: string };
-
-function createSignedMagicToken(email: string, secret: string): string {
-  const header = Buffer.from(JSON.stringify({ alg: "HS256", typ: "JWT" })).toString("base64url");
-  const payload = Buffer.from(
-    JSON.stringify({
-      email,
-      type: "operator_magic_link",
-      iat: Math.floor(Date.now() / 1000),
-      exp: Math.floor(Date.now() / 1000) + 15 * 60, // 15 minutos
-    }),
-  ).toString("base64url");
-  const sig = crypto
-    .createHmac("sha256", secret)
-    .update(`${header}.${payload}`)
-    .digest("base64url");
-  return `${header}.${payload}.${sig}`;
-}
-
-function verifySignedMagicToken(
-  token: string,
-  secret: string,
-): { email: string } | null {
-  try {
-    const parts = token.split(".");
-    if (parts.length !== 3) return null;
-    const [header, payload, sig] = parts;
-    const expectedSig = crypto
-      .createHmac("sha256", secret)
-      .update(`${header}.${payload}`)
-      .digest("base64url");
-    if (sig !== expectedSig) return null;
-    const data = JSON.parse(
-      Buffer.from(payload, "base64url").toString("utf-8"),
-    ) as { email?: string; type?: string; exp?: number };
-    if (data.type !== "operator_magic_link" || !data.email) return null;
-    if (data.exp && data.exp < Math.floor(Date.now() / 1000)) return null;
-    return { email: data.email };
-  } catch {
-    return null;
-  }
-}
 
 // ── Paso 1: solicitar el enlace de acceso (magic link) ──────────────────────────
 export async function requestOperatorMagicLink(
@@ -59,43 +16,25 @@ export async function requestOperatorMagicLink(
   const email = String(formData.get("email") ?? "").trim();
   if (!email) return { error: "El correo es requerido." };
 
-  const { headers } = await import("next/headers");
-  const h = await headers();
-  const host = h.get("x-forwarded-host") || h.get("host") || "localhost:3000";
-  const proto = h.get("x-forwarded-proto") || (host.includes("localhost") ? "http" : "https");
-  const origin = `${proto}://${host}`;
-
-  // 1. Intentar enviar mediante el backend NestJS si está activo
-  let backendSent = false;
+  // El enlace lo genera y envía solo el backend (con su límite de intentos).
+  // Si no responde, se avisa: nunca se manda un correo desde aquí, porque se
+  // saltaría ese límite y permitiría enviar correos a cualquier dirección.
+  let res: Response;
   try {
-    const res = await fetch(`${env.apiUrlInternal}/v1/auth/login`, {
+    res = await fetch(`${env.apiUrlInternal}/v1/auth/login`, {
       method: "POST",
       headers: { ...(await clientIpHeaders()), "Content-Type": "application/json" },
       body: JSON.stringify({ email }),
       cache: "no-store",
     });
-    if (res.ok) {
-      backendSent = true;
-    }
   } catch {
-    // Backend offline: despacho directo con Resend
+    return { error: "No pudimos conectar con el servidor. Inténtalo de nuevo en un momento." };
   }
-
-  // 2. Si el backend no despachó el correo o está offline, generar magic link local y enviar por Resend
-  if (!backendSent) {
-    const localToken = createSignedMagicToken(email, env.authSecret);
-    const magicLink = `${origin}/acceso/verificar?email=${encodeURIComponent(email)}&token=${localToken}`;
-
-    const resendResult = await sendMagicLinkEmail({
-      to: email,
-      magicLink,
-    });
-
-    if (!resendResult.success) {
-      console.info(
-        `[BestCoffee Acceso]: Enlace mágico generado para ${email}: ${magicLink}`,
-      );
-    }
+  if (res.status === 429) {
+    return { error: "Pediste varios enlaces seguidos. Espera un minuto antes de volver a intentarlo." };
+  }
+  if (!res.ok && res.status >= 500) {
+    return { error: "No pudimos enviar el enlace. Inténtalo de nuevo en un momento." };
   }
 
   // Anti-enumeración: siempre responder que el enlace fue enviado
@@ -114,8 +53,7 @@ export async function verifyOperatorMagicLink(
   const token = String(formData.get("token") ?? "").trim();
   if (!email || !token) return { error: "Enlace de acceso incompleto." };
 
-  // 1. Validar con el backend.
-  let res: Response | null = null;
+  let res: Response;
   try {
     res = await fetch(`${env.apiUrlInternal}/v1/auth/verify`, {
       method: "POST",
@@ -124,58 +62,29 @@ export async function verifyOperatorMagicLink(
       cache: "no-store",
     });
   } catch {
-    res = null; // backend sin conexión
-  }
-
-  if (res) {
-    // El backend respondió: su respuesta manda. Nunca se cae al modo local,
-    // que se saltaría la verificación en dos pasos.
-    if (!res.ok) return { error: "El enlace de acceso es inválido o ha expirado." };
-    const body = (await res.json().catch(() => ({}))) as {
-      accessToken?: string;
-      mfaRequired?: boolean;
-      mfaToken?: string;
-      user?: { isPlatformOwner?: boolean };
-    };
-    if (body.mfaRequired && body.mfaToken) {
-      const store = await cookies();
-      store.set(MFA_PENDING_COOKIE, body.mfaToken, {
-        httpOnly: true,
-        secure: !env.isDev,
-        sameSite: "lax",
-        path: "/acceso",
-        maxAge: 5 * 60,
-      });
-      redirect("/acceso/2fa");
-    }
-    if (!body.accessToken) return { error: "No se pudo autenticar la sesión." };
-    return startOperatorSession(body.accessToken, body.user?.isPlatformOwner);
-  }
-
-  // 2. Solo en desarrollo y sin backend: token firmado localmente.
-  if (!env.isDev) {
     return { error: "No pudimos conectar con el servidor. Inténtalo de nuevo en un momento." };
   }
-  const verifiedData = verifySignedMagicToken(token, env.authSecret);
-  if (!verifiedData || verifiedData.email.toLowerCase() !== email.toLowerCase()) {
-    return { error: "El enlace de acceso es inválido o ha expirado." };
+
+  if (!res.ok) return { error: "El enlace de acceso es inválido o ha expirado." };
+  const body = (await res.json().catch(() => ({}))) as {
+    accessToken?: string;
+    mfaRequired?: boolean;
+    mfaToken?: string;
+    user?: { isPlatformOwner?: boolean };
+  };
+  if (body.mfaRequired && body.mfaToken) {
+    const store = await cookies();
+    store.set(MFA_PENDING_COOKIE, body.mfaToken, {
+      httpOnly: true,
+      secure: !env.isDev,
+      sameSite: "lax",
+      path: "/acceso",
+      maxAge: 5 * 60,
+    });
+    redirect("/acceso/2fa");
   }
-  // Sin PLATFORM_OWNER_EMAIL nadie es dueño de la plataforma (antes caía a un
-  // correo escrito en el código).
-  const isOwner =
-    !!env.platformOwnerEmail &&
-    email.toLowerCase() === env.platformOwnerEmail.toLowerCase();
-  const headerB64 = Buffer.from(JSON.stringify({ alg: "HS256", typ: "JWT" })).toString("base64url");
-  const payloadB64 = Buffer.from(
-    JSON.stringify({
-      sub: email,
-      email,
-      isPlatformOwner: isOwner,
-      iat: Math.floor(Date.now() / 1000),
-      exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 7,
-    }),
-  ).toString("base64url");
-  return startOperatorSession(`${headerB64}.${payloadB64}.local_operator_session`, isOwner);
+  if (!body.accessToken) return { error: "No se pudo autenticar la sesión." };
+  return startOperatorSession(body.accessToken, body.user?.isPlatformOwner);
 }
 
 // ── Paso 3 (solo con 2FA): código de la app o de respaldo ───────────────────────

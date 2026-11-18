@@ -76,8 +76,21 @@ export async function startMfaSetupAction(): Promise<
   return { ok: true, data: { secret: r.data.secret, qrDataUrl } };
 }
 
-export async function enableMfaAction(code: string) {
-  return mfaFetch<{ recoveryCodes: string[] }>("/enable", { code });
+export async function enableMfaAction(code: string): Promise<Result<{ recoveryCodes: string[] }>> {
+  const r = await mfaFetch<{ recoveryCodes: string[]; accessToken?: string }>("/enable", { code });
+  if (!r.ok) return r;
+  // La API entrega una sesión nueva marcada como abierta con 2FA: la cuenta de
+  // la plataforma la necesita para seguir usando el panel sin volver a entrar.
+  if (r.data.accessToken) {
+    (await cookies()).set("bestcoffee-operator-session", r.data.accessToken, {
+      httpOnly: true,
+      secure: !env.isDev,
+      sameSite: "lax",
+      path: "/",
+      maxAge: 60 * 60 * 24 * 7,
+    });
+  }
+  return { ok: true, data: { recoveryCodes: r.data.recoveryCodes } };
 }
 
 export async function disableMfaAction(code: string) {

@@ -16,7 +16,7 @@ export default async function SuperadminSecurityPage() {
       </div>
       <section className="rounded-lg border border-border bg-background p-6">
         <h2 className="font-display text-lg font-semibold mb-4">Verificación en dos pasos</h2>
-        <TwoFactorSettings initial={status} />
+        <TwoFactorSettings initial={status} required />
       </section>
     </div>
   );

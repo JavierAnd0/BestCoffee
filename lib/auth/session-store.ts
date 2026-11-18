@@ -222,8 +222,6 @@ export async function getOperatorSession(): Promise<{
   token: string | null;
   tenantSlug: string;
   impersonatingTenant: string | null;
-  isLocalOperator: boolean;
-  localClaims: JwtClaims | null;
 }> {
   const c = await cookies();
   const h = await headers();
@@ -238,18 +236,7 @@ export async function getOperatorSession(): Promise<{
     c.get("bestcoffee-operator-session")?.value ??
     null;
 
-  // La sesión local sin firma solo existe en desarrollo.
-  const isLocalOperator =
-    env.isDev && Boolean(token?.endsWith(".local_operator_session"));
-  const localClaims = isLocalOperator && token ? decodeJwtClaims(token) : null;
-
-  return {
-    token,
-    tenantSlug,
-    impersonatingTenant,
-    isLocalOperator,
-    localClaims,
-  };
+  return { token, tenantSlug, impersonatingTenant };
 }
 
 export function setOperatorSessionCookie(store: CookieStore, token: string) {
