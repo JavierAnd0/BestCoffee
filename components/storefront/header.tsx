@@ -121,7 +121,7 @@ export function Header({
                 key={l.href}
                 href={l.href}
                 data-active={isLinkActive(l.href)}
-                className="editorial-nav-link text-foreground/85 font-medium"
+                className="editorial-nav-link shrink-0 whitespace-nowrap text-foreground/85 font-medium"
               >
                 <span>{l.label}</span>
               </Link>
@@ -136,7 +136,7 @@ export function Header({
                 key={l.href}
                 href={l.href}
                 data-active={isLinkActive(l.href)}
-                className="editorial-nav-link text-foreground/85 font-medium"
+                className="editorial-nav-link shrink-0 whitespace-nowrap text-foreground/85 font-medium"
               >
                 <span>{l.label}</span>
               </Link>
