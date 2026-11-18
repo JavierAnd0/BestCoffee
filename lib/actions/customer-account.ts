@@ -70,10 +70,20 @@ export async function deleteCustomerAccountAction(): Promise<ProfileActionState>
   if (!env.useMocks) {
     const { token, isMockSession } = await getCustomerSession();
     if (token && !isMockSession) {
-      await customerFetch("/v1/customers/me", {
+      const res = await customerFetch("/v1/customers/me", {
         method: "DELETE",
         persistSyncedSession: true,
       });
+      // Antes se ignoraba el resultado y se decía que la cuenta se había
+      // eliminado aunque el backend fallara. Si falla, la sesión se queda y el
+      // cliente ve el error.
+      if (!res.ok) {
+        return {
+          error:
+            res.error ||
+            "No se pudo eliminar tu cuenta. Intenta de nuevo o escríbele a la tienda.",
+        };
+      }
     }
   }
 

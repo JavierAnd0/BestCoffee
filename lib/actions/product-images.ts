@@ -67,9 +67,15 @@ export async function removeProductImageAction(
   });
   if (!r.ok) return { ok: false, error: r.error || "No se pudo eliminar la imagen." };
   revalidateProduct(productId);
-  // Se borra el archivo que el backend dice que tenía la imagen (de esta
-  // tienda), nunca una URL enviada por el cliente.
-  if (r.data?.url) await deleteBlob(r.data.url);
+  // El archivo solo se borra de Blob si está en la carpeta de la tienda que el
+  // backend confirma para este operador. La URL guardada no prueba que el
+  // archivo sea de esta tienda: antes se podía adjuntar la imagen de otra tienda
+  // y, al quitarla, se borraba el archivo ajeno. Fuera de la carpeta se borra
+  // solo la referencia (lo de arriba).
+  if (r.data?.url) {
+    const tenantSlug = await operatorStorageTenant();
+    if (tenantSlug) await deleteBlob(r.data.url, tenantSlug);
+  }
   return { ok: true, data: undefined };
 }
 
@@ -94,14 +100,14 @@ export async function discardUploadedImageAction(url: string): Promise<void> {
     return;
   }
   if (!parsed.pathname.startsWith(`/${productImagePrefix(tenantSlug)}`)) return;
-  await deleteBlob(url);
+  await deleteBlob(url, tenantSlug);
 }
 
 /**
- * Borra un archivo de Vercel Blob. Interna (no exportada): no es una acción de
- * servidor invocable desde fuera; quien la llama ya comprobó la propiedad.
- * Ignora URLs que no son imágenes de producto en Blob (p. ej. /img/...).
+ * Borra un archivo de Vercel Blob solo dentro de `products/<tienda>/`, con la
+ * tienda ya confirmada por el backend. Interna (no exportada): no es una acción
+ * de servidor invocable desde fuera. Ignora URLs que no son de Blob (/img/...).
  */
-async function deleteBlob(url: string): Promise<void> {
-  await deleteBlobWithin(url, "products/");
+async function deleteBlob(url: string, tenantSlug: string): Promise<void> {
+  await deleteBlobWithin(url, productImagePrefix(tenantSlug));
 }

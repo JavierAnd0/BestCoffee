@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Check, Copy, X } from "lucide-react";
 import { subscribeNewsletterAction } from "@/lib/actions/newsletter";
 import type { TenantNewsletter } from "@/lib/types";
+import { Tooltip } from "@/components/ui/tooltip";
 
 /**
  * Invitación discreta a suscribirse al boletín.
@@ -166,14 +167,16 @@ export function NewsletterPrompt({ brand, tenantSlug, welcomeOffer }: Props) {
       aria-label={`Boletín de ${brand}`}
       className="fixed z-40 bottom-24 inset-x-4 sm:inset-x-auto sm:left-6 sm:bottom-6 sm:w-[22rem] rounded-xl border border-white/10 bg-[#14110f]/95 text-stone-100 shadow-xl backdrop-blur-sm animate-in fade-in slide-in-from-bottom-2 duration-300"
     >
-      <button
-        type="button"
-        onClick={dismiss}
-        aria-label="Cerrar"
-        className="absolute top-2.5 right-2.5 size-7 rounded-full grid place-items-center text-stone-400 hover:text-white hover:bg-white/10 transition-colors"
-      >
-        <X className="size-4" />
-      </button>
+      <Tooltip content="Cerrar">
+        <button
+          type="button"
+          onClick={dismiss}
+          aria-label="Cerrar"
+          className="absolute top-2.5 right-2.5 size-7 rounded-full grid place-items-center text-stone-400 hover:text-white hover:bg-white/10 transition-colors"
+        >
+          <X className="size-4" />
+        </button>
+      </Tooltip>
 
       <div className="p-5 pr-10">
         {done === null ? (

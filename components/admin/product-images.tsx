@@ -12,6 +12,7 @@ import {
   removeProductImageAction,
   reorderProductImagesAction,
 } from "@/lib/actions/product-images";
+import { Tooltip } from "@/components/ui/tooltip";
 
 const ACCEPT = "image/jpeg,image/png,image/webp,image/avif";
 const MAX_BYTES = 8 * 1024 * 1024;
@@ -263,15 +264,16 @@ function IconBtn({
   children: React.ReactNode;
 }) {
   return (
+    <Tooltip content={label}>
     <button
       type="button"
       aria-label={label}
-      title={label}
       onClick={onClick}
       disabled={disabled}
       className="grid size-7 place-items-center rounded-sm bg-background/90 text-foreground hover:bg-background disabled:opacity-30"
     >
       {children}
     </button>
+    </Tooltip>
   );
 }

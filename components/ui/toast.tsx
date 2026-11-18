@@ -8,6 +8,7 @@ import {
   useState,
 } from "react";
 import { Check, X } from "lucide-react";
+import { Tooltip } from "@/components/ui/tooltip";
 
 interface ToastItem {
   id: number;
@@ -79,13 +80,15 @@ export function Toaster() {
               </button>
             )}
           </div>
-          <button
-            onClick={() => setItems((c) => c.filter((x) => x.id !== t.id))}
-            aria-label="Cerrar"
-            className="text-muted-foreground hover:text-foreground"
-          >
-            <X className="size-3.5" />
-          </button>
+          <Tooltip content="Cerrar">
+            <button
+              onClick={() => setItems((c) => c.filter((x) => x.id !== t.id))}
+              aria-label="Cerrar"
+              className="text-muted-foreground hover:text-foreground"
+            >
+              <X className="size-3.5" />
+            </button>
+          </Tooltip>
         </div>
       ))}
     </div>

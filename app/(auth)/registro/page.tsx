@@ -8,6 +8,7 @@ import { useBrand } from "@/components/storefront/brand-context";
 import { registerAction, logoutAction, type RegisterState } from "@/lib/actions/auth";
 import { authClient } from "@/lib/auth/client";
 import { AuthAside } from "../auth-aside";
+import { Tooltip } from "@/components/ui/tooltip";
 
 const PASSWORD_RULES = [
   { label: "Mínimo 8 caracteres", test: (p: string) => p.length >= 8 },
@@ -213,14 +214,16 @@ export default function RegistroPage() {
                         placeholder="Mínimo 8 caracteres"
                         className="w-full rounded-md border border-input bg-card px-3.5 py-2.5 pr-10 text-sm outline-none placeholder:text-muted-foreground/50 focus-visible:border-foreground/40 focus-visible:ring-2 focus-visible:ring-ring/30 transition-shadow"
                       />
-                      <button
-                        type="button"
-                        onClick={() => setShowPwd((v) => !v)}
-                        aria-label={showPwd ? "Ocultar contraseña" : "Mostrar contraseña"}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                      >
-                        {showPwd ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-                      </button>
+                      <Tooltip content={showPwd ? "Ocultar contraseña" : "Mostrar contraseña"}>
+                        <button
+                          type="button"
+                          onClick={() => setShowPwd((v) => !v)}
+                          aria-label={showPwd ? "Ocultar contraseña" : "Mostrar contraseña"}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                          {showPwd ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                        </button>
+                      </Tooltip>
                     </div>
                   </label>
 

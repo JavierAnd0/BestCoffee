@@ -7,6 +7,11 @@ export interface MockOrderItem {
   variant: string;
   qty: number;
   priceCents: number;
+  /** Portada actual del producto (el pedido guarda una copia sin imagen). */
+  imageUrl?: string | null;
+  imageAlt?: string | null;
+  /** Para enlazar a la ficha si el producto sigue existiendo. */
+  productSlug?: string | null;
 }
 
 export interface MockOrder {

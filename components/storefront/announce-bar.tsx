@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { AnnounceMessage } from "@/lib/types";
+import { Tooltip } from "@/components/ui/tooltip";
 
 export function AnnounceBar({ messages }: { messages: AnnounceMessage[] }) {
   const [i, setI] = useState(0);
@@ -21,23 +22,27 @@ export function AnnounceBar({ messages }: { messages: AnnounceMessage[] }) {
     <div className="bg-foreground text-background text-xs">
       <div className="mx-auto max-w-7xl px-4 py-2 flex items-center justify-center gap-3">
         {messages.length > 1 && (
-          <button
-            onClick={() => setI((n) => (n - 1 + messages.length) % messages.length)}
-            aria-label="Anterior"
-            className="opacity-60 hover:opacity-100 transition-opacity"
-          >
-            <ChevronLeft className="size-3.5" />
-          </button>
+          <Tooltip content="Anterior">
+            <button
+              onClick={() => setI((n) => (n - 1 + messages.length) % messages.length)}
+              aria-label="Anterior"
+              className="opacity-60 hover:opacity-100 transition-opacity"
+            >
+              <ChevronLeft className="size-3.5" />
+            </button>
+          </Tooltip>
         )}
         <span className="uppercase tracking-[0.14em] text-center">{m.text}</span>
         {messages.length > 1 && (
-          <button
-            onClick={() => setI((n) => (n + 1) % messages.length)}
-            aria-label="Siguiente"
-            className="opacity-60 hover:opacity-100 transition-opacity"
-          >
-            <ChevronRight className="size-3.5" />
-          </button>
+          <Tooltip content="Siguiente">
+            <button
+              onClick={() => setI((n) => (n + 1) % messages.length)}
+              aria-label="Siguiente"
+              className="opacity-60 hover:opacity-100 transition-opacity"
+            >
+              <ChevronRight className="size-3.5" />
+            </button>
+          </Tooltip>
         )}
       </div>
     </div>

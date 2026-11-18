@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/admin/page-header";
 import { listAdminCustomers } from "@/lib/data/admin";
 import { formatCop } from "@/lib/format";
+import { Tooltip } from "@/components/ui/tooltip";
 
 export const metadata: Metadata = { title: "Clientes · Admin" };
 
@@ -70,12 +71,14 @@ export default async function AdminCustomersPage() {
                 </td>
                 <td className="px-4 py-3 text-xs text-muted-foreground">{c.joinedAt}</td>
                 <td className="px-4 py-3 text-right">
-                  <button
-                    className="text-muted-foreground hover:text-foreground"
-                    aria-label="Enviar email"
-                  >
-                    <Mail className="size-4" />
-                  </button>
+                  <Tooltip content="Enviar email">
+                    <button
+                      className="text-muted-foreground hover:text-foreground"
+                      aria-label="Enviar email"
+                    >
+                      <Mail className="size-4" />
+                    </button>
+                  </Tooltip>
                 </td>
               </tr>
             ))}

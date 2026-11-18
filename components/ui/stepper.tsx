@@ -2,6 +2,7 @@
 
 import { Minus, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Tooltip } from "@/components/ui/tooltip";
 
 export function Stepper({
   value,
@@ -25,25 +26,29 @@ export function Stepper({
         className,
       )}
     >
-      <button
-        type="button"
-        onClick={dec}
-        disabled={value <= min}
-        className="grid place-items-center h-full w-9 text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors"
-        aria-label="Disminuir"
-      >
-        <Minus className="size-3.5" />
-      </button>
+      <Tooltip content="Disminuir">
+        <button
+          type="button"
+          onClick={dec}
+          disabled={value <= min}
+          className="grid place-items-center h-full w-9 text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors"
+          aria-label="Disminuir"
+        >
+          <Minus className="size-3.5" />
+        </button>
+      </Tooltip>
       <span className="min-w-7 text-center text-sm font-medium tabular-nums">{value}</span>
-      <button
-        type="button"
-        onClick={inc}
-        disabled={value >= max}
-        className="grid place-items-center h-full w-9 text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors"
-        aria-label="Aumentar"
-      >
-        <Plus className="size-3.5" />
-      </button>
+      <Tooltip content="Aumentar">
+        <button
+          type="button"
+          onClick={inc}
+          disabled={value >= max}
+          className="grid place-items-center h-full w-9 text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors"
+          aria-label="Aumentar"
+        >
+          <Plus className="size-3.5" />
+        </button>
+      </Tooltip>
     </div>
   );
 }

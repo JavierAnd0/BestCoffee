@@ -14,11 +14,13 @@ import { formatCop } from "@/lib/format";
 
 export function AdminSettingsForm({
   mpConnected,
+  mpResult = null,
   settings,
   effectiveFreeShippingCents,
   effectiveShippingFlatCents,
 }: {
   mpConnected: boolean;
+  mpResult?: "connected" | "error" | null;
   /** `null` = la API no devolvió la configuración (sin permiso o caída). */
   settings: AdminStoreSettings | null;
   effectiveFreeShippingCents: number;
@@ -36,9 +38,9 @@ export function AdminSettingsForm({
       <SettingsCard
         icon={<CreditCard className="size-4" />}
         title="Pasarela de pago"
-        body="Conecta MercadoPago para recibir pagos con tarjeta directamente en el checkout."
+        body="Conecta MercadoPago y tus clientes pagan en MercadoPago con tarjeta, PSE, Nequi, Efecty o su saldo. El dinero llega a tu cuenta de MercadoPago."
       >
-        <MercadoPagoConnectButton connected={mpConnected} />
+        <MercadoPagoConnectButton connected={mpConnected} result={mpResult} />
       </SettingsCard>
 
       {!settings ? (

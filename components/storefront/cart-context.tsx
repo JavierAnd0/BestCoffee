@@ -22,6 +22,8 @@ export interface CartItem {
   qty: number;
   mode: "ONCE" | "SUBSCRIPTION";
   frequencyDays?: number;
+  /** Portada del producto (los carritos guardados antes no la tienen). */
+  imageUrl?: string;
 }
 
 interface CartContextValue {
@@ -38,21 +40,28 @@ interface CartContextValue {
   removeItem: (variantId: string, mode: CartItem["mode"]) => void;
   updateQty: (variantId: string, mode: CartItem["mode"], qty: number) => void;
   clear: () => void;
+  /** Tienda actual (para guardar por tienda otros datos del navegador). */
+  tenantSlug: string | null;
 }
 
 const Ctx = createContext<CartContextValue | null>(null);
 
 const STORAGE_PREFIX = "bestcoffee:cart:v1";
 
-function resolveStorageKey(tenantSlug?: string): string {
-  if (tenantSlug) return `${STORAGE_PREFIX}:${tenantSlug}`;
+function resolveTenant(tenantSlug?: string): string | null {
+  if (tenantSlug) return tenantSlug;
   if (typeof document !== "undefined") {
     const domTenant = document
       .querySelector("[data-tenant]")
       ?.getAttribute("data-tenant");
-    if (domTenant) return `${STORAGE_PREFIX}:${domTenant}`;
+    if (domTenant) return domTenant;
   }
-  return STORAGE_PREFIX;
+  return null;
+}
+
+function resolveStorageKey(tenantSlug?: string): string {
+  const tenant = resolveTenant(tenantSlug);
+  return tenant ? `${STORAGE_PREFIX}:${tenant}` : STORAGE_PREFIX;
 }
 
 export function CartProvider({
@@ -162,8 +171,9 @@ export function CartProvider({
       removeItem,
       updateQty,
       clear,
+      tenantSlug: resolveTenant(tenantSlug),
     }),
-    [items, isOpen, addItem, removeItem, updateQty, clear, freeShippingThresholdCents, shippingFlatCents],
+    [items, isOpen, addItem, removeItem, updateQty, clear, freeShippingThresholdCents, shippingFlatCents, tenantSlug],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
@@ -199,5 +209,6 @@ export function buildCartItem(
     unitPriceCents: unit,
     mode,
     frequencyDays,
+    imageUrl: product.images[0]?.url,
   };
 }

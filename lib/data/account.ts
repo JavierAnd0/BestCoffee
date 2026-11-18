@@ -168,6 +168,9 @@ interface ApiOrderItem {
   price?: number;
   lineCents?: number;
   unitCents?: number;
+  imageUrl?: string | null;
+  imageAlt?: string | null;
+  productSlug?: string | null;
 }
 
 interface ApiOrder {
@@ -222,6 +225,9 @@ function mapOrder(o: ApiOrder): MockOrder {
     variant: i.variantLabel ?? i.variantName ?? i.variant ?? "",
     qty: i.qty ?? i.quantity ?? 1,
     priceCents: i.priceCents ?? i.lineCents ?? i.unitCents ?? i.unitPrice ?? i.price ?? 0,
+    imageUrl: i.imageUrl ?? null,
+    imageAlt: i.imageAlt ?? null,
+    productSlug: i.productSlug ?? null,
   }));
   const itemsSum = items.reduce((acc, it) => acc + it.priceCents * it.qty, 0);
   const subtotalCents = o.subtotalCents ?? (itemsSum > 0 ? itemsSum : totalCents);

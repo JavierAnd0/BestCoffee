@@ -2,6 +2,8 @@ import { env } from "../env";
 import { customerFetch } from "../api/gateway";
 import { getCustomerSession } from "../auth/session-store";
 import { getCustomerSubscriptions, type CustomerSubscription } from "./account";
+import { resolveActiveTenantSlug } from "../tenant";
+import { clientIpHeaders } from "../api/client-ip";
 
 /**
  * Datos reales para la página de confirmación del checkout. Solo con sesión de
@@ -51,4 +53,46 @@ export async function getCheckoutConfirmation(
     // devuelve su propio listado).
     subscriptions: subs.filter((s) => wanted.has(s.id)),
   };
+}
+
+export interface MercadoPagoReturn {
+  /** Estado del pedido tras aplicar el pago (PAID, PENDING…), o null. */
+  paymentStatus: string | null;
+  /** Estado del pago en MercadoPago (approved, pending, rejected…), o null. */
+  mpStatus: string | null;
+}
+
+/**
+ * Regreso de Checkout Pro: pide al backend que consulte el pago en
+ * MercadoPago y lo aplique al pedido, sin esperar el webhook. Funciona también
+ * para invitados (el backend solo aplica pagos de esa tienda y ese pedido).
+ */
+export async function syncMercadoPagoReturn(
+  orderId: string,
+  paymentId: string,
+): Promise<MercadoPagoReturn> {
+  const none: MercadoPagoReturn = { paymentStatus: null, mpStatus: null };
+  if (env.useMocks || !/^\d{1,20}$/.test(paymentId)) return none;
+  try {
+    const tenantSlug = await resolveActiveTenantSlug();
+    const res = await fetch(`${env.apiUrlInternal}/v1/mercadopago/sync`, {
+      method: "POST",
+      headers: {
+        ...(await clientIpHeaders()),
+        "Content-Type": "application/json",
+        "X-Tenant-Slug": tenantSlug,
+        "x-internal-secret": env.revalidateSecret,
+      },
+      body: JSON.stringify({ orderId, paymentId }),
+      cache: "no-store",
+    });
+    if (!res.ok) return none;
+    const data = (await res.json()) as Partial<MercadoPagoReturn>;
+    return {
+      paymentStatus: data.paymentStatus ?? null,
+      mpStatus: data.mpStatus ?? null,
+    };
+  } catch {
+    return none;
+  }
 }

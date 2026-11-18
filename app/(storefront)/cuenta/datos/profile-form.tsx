@@ -17,10 +17,15 @@ export function ProfileForm({ customer }: { customer: MockCustomer }) {
   );
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const handleDelete = async () => {
     setDeleting(true);
-    await deleteCustomerAccountAction();
+    setDeleteError(null);
+    // Si sale bien, la acción redirige a /login; si devuelve, falló.
+    const result = await deleteCustomerAccountAction();
+    setDeleting(false);
+    if (result?.error) setDeleteError(result.error);
   };
 
   return (
@@ -115,9 +120,15 @@ export function ProfileForm({ customer }: { customer: MockCustomer }) {
           Zona delicada
         </h2>
         <p className="text-sm text-muted-foreground mb-3">
-          Eliminar tu cuenta cancela todas tus suscripciones activas. Esta acción no se
-          puede deshacer.
+          Eliminar tu cuenta cancela todas tus suscripciones activas y borra tus datos
+          personales. Tus pedidos anteriores quedan en el registro de la tienda. Esta
+          acción no se puede deshacer.
         </p>
+        {deleteError && (
+          <p role="alert" className="text-sm text-destructive mb-3">
+            {deleteError}
+          </p>
+        )}
         {!confirmDelete ? (
           <Button
             type="button"

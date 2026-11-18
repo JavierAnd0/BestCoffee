@@ -1,14 +1,17 @@
 "use client";
 
 import { useState } from "react";
-import { Loader2, ExternalLink, CheckCircle2 } from "lucide-react";
+import { Loader2, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { mpConnectAction } from "@/lib/actions/mercadopago";
 
 export function MercadoPagoConnectButton({
   connected,
+  result = null,
 }: {
   connected: boolean;
+  /** Resultado al volver de autorizar en MercadoPago. */
+  result?: "connected" | "error" | null;
 }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -22,7 +25,9 @@ export function MercadoPagoConnectButton({
       setError(result.error);
       return;
     }
-    window.open(result.url, "_blank", "noopener,noreferrer");
+    // Misma pestaña: MercadoPago devuelve al panel con ?mp=connected y la
+    // página ya muestra la cuenta conectada, sin recargar a mano.
+    window.location.assign(result.url);
   };
 
   return (
@@ -34,7 +39,18 @@ export function MercadoPagoConnectButton({
         </div>
       ) : (
         <p className="text-xs text-muted-foreground">
-          Conecta tu cuenta de MercadoPago para recibir pagos con tarjeta en el checkout.
+          Te llevaremos a MercadoPago para que autorices la conexión. Al terminar vuelves aquí.
+        </p>
+      )}
+
+      {result === "connected" && connected && (
+        <p role="status" className="text-xs text-emerald-700">
+          Listo: tu tienda ya cobra con MercadoPago.
+        </p>
+      )}
+      {result === "error" && (
+        <p role="alert" className="text-xs text-red-600">
+          No se pudo conectar MercadoPago. Vuelve a intentarlo; si sigue fallando, escríbenos.
         </p>
       )}
 
@@ -45,7 +61,7 @@ export function MercadoPagoConnectButton({
         onClick={handleConnect}
       >
         {loading && <Loader2 className="size-4 animate-spin mr-2" />}
-        <ExternalLink className="size-4 mr-2" />
+        
         {connected ? "Reconectar MercadoPago" : "Conectar MercadoPago"}
       </Button>
 
