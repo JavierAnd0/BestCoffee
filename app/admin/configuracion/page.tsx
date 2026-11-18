@@ -6,7 +6,12 @@ import { AdminSettingsForm } from "./settings-form";
 
 export const metadata: Metadata = { title: "Configuración · Admin" };
 
-export default async function AdminSettingsPage() {
+export default async function AdminSettingsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ mp?: string }>;
+}) {
+  const { mp } = await searchParams;
   const [tenant, settings] = await Promise.all([getCurrentTenant(), getAdminSettings()]);
   const mpConnected = tenant.paymentProvider === "mercadopago" && !!tenant.mpPublicKey;
 
@@ -15,6 +20,8 @@ export default async function AdminSettingsPage() {
       <PageHeader title="Configuración" description={`Ajustes globales de ${tenant.name}.`} />
       <AdminSettingsForm
         mpConnected={mpConnected}
+        // Regreso de la autorización de MercadoPago (?mp=connected | error).
+        mpResult={mp === "connected" || mp === "error" ? mp : null}
         settings={settings}
         // Lo que cobra hoy el carrito si la tienda no fijó sus propios montos.
         effectiveFreeShippingCents={tenant.freeShippingThresholdCents}

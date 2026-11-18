@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { formatCop } from "@/lib/format";
 import { PRODUCTS } from "@/lib/mocks/products";
 import type { Product, ProductType } from "@/lib/types";
+import { Tooltip } from "@/components/ui/tooltip";
 
 type Frequency = "DAILY" | "SOMETIMES" | "RARELY";
 type FlavorBucket = "FRUITY" | "CHOCOLATE" | "FLORAL" | "SPICY";
@@ -125,13 +126,15 @@ export function QuizWizard() {
     <div className="min-h-[calc(100vh-8rem)] grid place-items-center bg-background">
       <div className="w-full max-w-2xl px-4 sm:px-6 py-12">
         <header className="flex items-center gap-4 mb-8">
-          <Link
-            href="/"
-            aria-label="Salir del quiz"
-            className="grid place-items-center size-9 rounded-full border border-border text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors"
-          >
-            <X className="size-4" />
-          </Link>
+          <Tooltip content="Salir del quiz">
+            <Link
+              href="/"
+              aria-label="Salir del quiz"
+              className="grid place-items-center size-9 rounded-full border border-border text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors"
+            >
+              <X className="size-4" />
+            </Link>
+          </Tooltip>
           <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
             <div
               className="h-full bg-foreground transition-[width] duration-300"

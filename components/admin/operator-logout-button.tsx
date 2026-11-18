@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { LogOut, Loader2 } from "lucide-react";
 import { logoutOperatorAction } from "@/lib/actions/operator-auth";
+import { Tooltip } from "@/components/ui/tooltip";
 
 interface OperatorLogoutButtonProps {
   className?: string;
@@ -37,7 +38,7 @@ export function OperatorLogoutButton({
     }
   }
 
-  return (
+  const button = (
     <button
       type="button"
       onClick={handleLogout}
@@ -53,5 +54,9 @@ export function OperatorLogoutButton({
       {children}
     </button>
   );
+
+  // Solo icono (barra lateral de la tienda): explica qué hace al dejar el cursor.
+  if (children) return button;
+  return <Tooltip content="Cerrar sesión">{button}</Tooltip>;
 }
 

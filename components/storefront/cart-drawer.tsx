@@ -1,6 +1,8 @@
 "use client";
 
+import { useRef } from "react";
 import Link from "next/link";
+import { X } from "lucide-react";
 import { useCart } from "./cart-context";
 import {
   Sheet,
@@ -13,6 +15,8 @@ import { Button } from "@/components/ui/button";
 import { Stepper } from "@/components/ui/stepper";
 import { ShipBar } from "@/components/ui/ship-bar";
 import { formatCop } from "@/lib/format";
+import { Tooltip } from "@/components/ui/tooltip";
+import { ItemThumb } from "./item-thumb";
 
 export function CartDrawer() {
   const {
@@ -26,10 +30,17 @@ export function CartDrawer() {
   } = useCart();
   const pct = Math.min(100, (subtotalCents / threshold) * 100);
   const remainingCents = Math.max(0, threshold - subtotalCents);
+  // Al abrir, el foco va a la lista (no al primer «Quitar»): así no aparece
+  // un anillo de foco sobre la X de un producto sin que nadie la haya tocado.
+  const listRef = useRef<HTMLDivElement>(null);
 
   return (
     <Sheet open={isOpen} onOpenChange={(o) => (o ? null : close())}>
-      <SheetContent side="right" className="w-full sm:max-w-md flex flex-col gap-0 p-0">
+      <SheetContent
+        side="right"
+        className="w-full sm:max-w-md flex flex-col gap-0 p-0"
+        initialFocus={items.length > 0 ? listRef : true}
+      >
         <SheetHeader className="px-6 py-5 border-b border-border">
           <SheetTitle className="font-display text-xl font-semibold">
             Tu carrito {items.length > 0 && `(${items.length})`}
@@ -65,25 +76,40 @@ export function CartDrawer() {
               )}
             </div>
 
-            <div className="flex-1 overflow-y-auto px-6 py-4 space-y-5">
+            <div
+              ref={listRef}
+              tabIndex={-1}
+              aria-label="Productos del carrito"
+              className="flex-1 overflow-y-auto px-6 py-4 space-y-5 outline-none"
+            >
               {items.map((item) => (
                 <article
                   key={`${item.variantId}-${item.mode}`}
                   className="flex gap-4"
                 >
-                  <div className="size-20 rounded-md bg-muted flex-shrink-0" aria-hidden />
+                  <Link
+                    href={`/p/${item.productSlug}`}
+                    onClick={close}
+                    tabIndex={-1}
+                    aria-hidden
+                  >
+                    <ItemThumb src={item.imageUrl} alt="" className="size-20" />
+                  </Link>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-2">
                       <h3 className="font-display text-base font-semibold truncate">
                         {item.productName}
                       </h3>
-                      <button
-                        onClick={() => removeItem(item.variantId, item.mode)}
-                        className="text-xs text-muted-foreground hover:text-foreground"
-                        aria-label="Quitar"
-                      >
-                        ✕
-                      </button>
+                      <Tooltip content="Quitar">
+                        <button
+                          type="button"
+                          onClick={() => removeItem(item.variantId, item.mode)}
+                          className="-mr-1.5 -mt-1 grid size-8 shrink-0 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+                          aria-label={`Quitar ${item.productName}`}
+                        >
+                          <X className="size-4" strokeWidth={1.75} />
+                        </button>
+                      </Tooltip>
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">
                       {item.variantLabel}

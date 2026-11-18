@@ -5,6 +5,8 @@ import { Truck, Tag, X, Check } from "lucide-react";
 import { useCart } from "./cart-context";
 import { Button } from "@/components/ui/button";
 import { formatCop } from "@/lib/format";
+import { Tooltip } from "@/components/ui/tooltip";
+import { ItemThumb } from "./item-thumb";
 
 interface OrderSummaryProps {
   compact?: boolean;
@@ -83,8 +85,13 @@ export function OrderSummary({
         ) : (
           items.map((i) => (
             <div key={`${i.variantId}-${i.mode}`} className="flex gap-3 items-center">
-              <div className="relative size-14 rounded-lg bg-muted flex-shrink-0 grid place-items-center border border-border/40">
-                <span className="text-xs text-muted-foreground font-medium">☕</span>
+              <div className="relative shrink-0">
+                <ItemThumb
+                  src={i.imageUrl}
+                  alt={i.productName}
+                  className="size-14 rounded-lg border border-border/40"
+                  sizes="56px"
+                />
                 <span className="absolute -top-1.5 -right-1.5 size-5 rounded-full bg-foreground text-background text-[10px] font-semibold grid place-items-center shadow-xs">
                   {i.qty}
                 </span>
@@ -123,17 +130,19 @@ export function OrderSummary({
                   {appliedDiscount.percent > 0 && <> (-{appliedDiscount.percent}%)</>}
                 </span>
               </div>
-              <button
-                type="button"
-                onClick={() => {
-                  onRemoveDiscountCode?.();
-                  setCouponFeedback(null);
-                }}
-                className="text-muted-foreground hover:text-foreground p-1"
-                aria-label="Quitar cupón"
-              >
-                <X className="size-3.5" />
-              </button>
+              <Tooltip content="Quitar cupón">
+                <button
+                  type="button"
+                  onClick={() => {
+                    onRemoveDiscountCode?.();
+                    setCouponFeedback(null);
+                  }}
+                  className="text-muted-foreground hover:text-foreground p-1"
+                  aria-label="Quitar cupón"
+                >
+                  <X className="size-3.5" />
+                </button>
+              </Tooltip>
             </div>
           ) : (
             <div className="flex gap-2">

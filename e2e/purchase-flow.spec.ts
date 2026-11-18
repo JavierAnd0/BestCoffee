@@ -131,7 +131,7 @@ test.describe("Flujo de Compra Completo — Cliente y Usuario", () => {
     }
 
     // Confirmar y pagar
-    const payBtn = page.getByRole("button", { name: /Confirmar pedido y pagar/i });
+    const payBtn = page.getByRole("button", { name: /Confirmar pedido/i });
     await expect(payBtn).toBeVisible();
     await payBtn.click();
 

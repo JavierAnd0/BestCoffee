@@ -65,6 +65,7 @@ function DialogContent({
             render={
               <Button
                 variant="ghost"
+                tooltip="Cerrar"
                 className="absolute top-2 right-2"
                 size="icon-sm"
               />
@@ -72,7 +73,7 @@ function DialogContent({
           >
             <XIcon
             />
-            <span className="sr-only">Close</span>
+            <span className="sr-only">Cerrar</span>
           </DialogPrimitive.Close>
         )}
       </DialogPrimitive.Popup>

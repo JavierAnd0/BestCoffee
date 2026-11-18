@@ -8,6 +8,7 @@ import { Eyebrow } from "@/components/ui/eyebrow";
 import { getCustomerOrder } from "@/lib/data/account";
 import { ORDER_STATUS_LABEL, type OrderStatus } from "@/lib/mocks/account";
 import { formatCop, formatOrderCode } from "@/lib/format";
+import { ItemThumb } from "@/components/storefront/item-thumb";
 
 const STATUS_TONE: Record<OrderStatus, string> = {
   PROCESSING: "bg-amber-500/10 text-amber-700 border-amber-500/20",
@@ -140,9 +141,25 @@ export default async function OrderDetailPage({ params }: Props) {
         <ul className="divide-y divide-border">
           {items.map((item, i) => (
             <li key={i} className="flex items-center gap-4 p-5">
-              <span className="size-14 rounded-md bg-muted shrink-0" aria-hidden />
+              <ItemThumb
+                src={item.imageUrl}
+                alt={item.imageAlt ?? item.name}
+                className="size-14"
+                sizes="56px"
+              />
               <div className="flex-1 min-w-0">
-                <div className="font-medium">{item.name}</div>
+                <div className="font-medium">
+                  {item.productSlug ? (
+                    <Link
+                      href={`/p/${item.productSlug}`}
+                      className="underline-offset-2 hover:underline"
+                    >
+                      {item.name}
+                    </Link>
+                  ) : (
+                    item.name
+                  )}
+                </div>
                 <div className="text-sm text-muted-foreground">{item.variant}</div>
               </div>
               <div className="text-right shrink-0">

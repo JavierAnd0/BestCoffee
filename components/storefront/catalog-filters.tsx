@@ -11,6 +11,7 @@ import {
   SheetTitle,
   SheetDescription,
 } from "@/components/ui/sheet";
+import { Tooltip } from "@/components/ui/tooltip";
 
 export interface CatalogFacetCounts {
   total: number;
@@ -173,13 +174,15 @@ function MobileFilters(props: Props) {
             <SheetDescription className="sr-only">
               Filtra el catálogo por tipo, tueste, notas sensoriales y formato.
             </SheetDescription>
-            <button
-              onClick={() => setOpen(false)}
-              aria-label="Cerrar"
-              className="text-muted-foreground hover:text-foreground"
-            >
-              <X className="size-4" />
-            </button>
+            <Tooltip content="Cerrar">
+              <button
+                onClick={() => setOpen(false)}
+                aria-label="Cerrar"
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <X className="size-4" />
+              </button>
+            </Tooltip>
           </SheetHeader>
           <div className="flex-1 overflow-y-auto px-5 py-6 space-y-7">
             <FilterBody {...props} />

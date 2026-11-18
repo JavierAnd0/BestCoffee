@@ -6,7 +6,7 @@ import { env } from "../env";
 import { resolveActiveTenantSlug } from "../tenant";
 import { authHeaders } from "../data/account";
 import type { CartItem } from "@/components/storefront/cart-context";
-import type { MpPaymentData } from "@/components/storefront/mercadopago-fields";
+import { headers } from "next/headers";
 import { clientIpHeaders } from "@/lib/api/client-ip";
 
 export interface OrderContact {
@@ -28,9 +28,8 @@ export interface PlaceOrderInput {
   contact: OrderContact;
   shipping: OrderShipping;
   items: CartItem[];
-  payment?: MpPaymentData;
   discountCode?: string;
-  paymentMethod?: "card" | "pse" | "cash_on_delivery";
+  paymentMethod?: "mercadopago" | "manual";
 }
 
 export type PlaceOrderResult =
@@ -39,6 +38,11 @@ export type PlaceOrderResult =
       orderId: string;
       /** Suscripciones creadas con el pedido (esperan su pago para activarse). */
       subscriptionIds: string[];
+      /**
+       * Página de pago de MercadoPago (Checkout Pro) a la que se lleva al
+       * comprador. Ausente si el pedido es de pago por fuera (MANUAL).
+       */
+      checkoutUrl?: string;
     }
   | { error: string };
 
@@ -59,9 +63,8 @@ const placeOrderSchema = z.object({
     zip: z.string().optional(),
   }),
   items: z.array(z.record(z.string(), z.unknown())).min(1, "El carrito está vacío. Agrega productos antes de pagar."),
-  payment: z.record(z.string(), z.unknown()).optional(),
   discountCode: z.string().optional(),
-  paymentMethod: z.enum(["card", "pse", "cash_on_delivery"]).optional(),
+  paymentMethod: z.enum(["mercadopago", "manual"]).optional(),
 });
 
 export async function placeOrderAction(
@@ -147,15 +150,10 @@ export async function placeOrderAction(
       },
     };
 
-    if (input.payment) {
-      body.payment = {
-        cardToken: input.payment.cardToken,
-        paymentMethodId: input.payment.paymentMethodId,
-        installments: input.payment.installments ?? 1,
-        issuerId: input.payment.issuerId,
-        payerEmail: input.contact.email,
-      };
-    }
+    // Origen de la tienda (su dominio) para volver de MercadoPago; el backend
+    // solo lo acepta si es la web de la plataforma o un dominio verificado.
+    const returnOrigin = await requestOrigin();
+    if (returnOrigin) body.returnOrigin = returnOrigin;
 
     // Modo Mocks explícito
     if (env.useMocks) {
@@ -227,6 +225,8 @@ export async function placeOrderAction(
       orderId?: string;
       id?: string;
       summary?: { subscriptionIds?: string[] };
+      provider?: string;
+      checkoutUrl?: string;
     };
 
     if (!data.orderId && !data.id) {
@@ -242,9 +242,22 @@ export async function placeOrderAction(
       success: true,
       orderId: finalOrderId,
       subscriptionIds: data.summary?.subscriptionIds ?? [],
+      ...(data.provider === "MERCADOPAGO" &&
+        data.checkoutUrl && { checkoutUrl: data.checkoutUrl }),
     };
   } catch (err) {
     console.error("Error en placeOrderAction:", err);
     return { error: "Ocurrió un error inesperado al procesar la compra." };
   }
+}
+
+/** `https://host` de la petición en curso (detrás del proxy de Vercel). */
+async function requestOrigin(): Promise<string | null> {
+  const h = await headers();
+  const host = h.get("x-forwarded-host") ?? h.get("host");
+  if (!host || !/^[a-zA-Z0-9.:-]+$/.test(host)) return null;
+  const proto =
+    h.get("x-forwarded-proto")?.split(",")[0]?.trim() ||
+    (host.startsWith("localhost") || host.startsWith("127.") ? "http" : "https");
+  return `${proto}://${host}`;
 }

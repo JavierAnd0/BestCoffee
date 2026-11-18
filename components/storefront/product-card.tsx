@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { formatCop } from "@/lib/format";
 import type { Product } from "@/lib/types";
 import { useCart, buildCartItem } from "@/components/storefront/cart-context";
+import { Tooltip } from "@/components/ui/tooltip";
 
 // Known enum badges get nicer copy; free-form API badges render verbatim.
 const BADGE_LABEL: Record<string, string> = {
@@ -119,17 +120,19 @@ export function ProductCard({
         )}
 
         {/* Add button — emerges from bottom on hover */}
-        <button
-          aria-label={`Agregar ${product.name} al carrito`}
-          onClick={(e) => {
-            e.preventDefault();
-            addItem(buildCartItem(product, cheapest, "ONCE"));
-            open();
-          }}
-          className="absolute bottom-3 right-3 z-10 h-8 w-8 rounded-sm bg-background/95 grid place-items-center shadow-md opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 ease-out hover:bg-foreground hover:text-background"
-        >
-          <Plus className="size-3.5" strokeWidth={2} />
-        </button>
+        <Tooltip content={`Agregar ${product.name} al carrito`}>
+          <button
+            aria-label={`Agregar ${product.name} al carrito`}
+            onClick={(e) => {
+              e.preventDefault();
+              addItem(buildCartItem(product, cheapest, "ONCE"));
+              open();
+            }}
+            className="absolute bottom-3 right-3 z-10 h-8 w-8 rounded-sm bg-background/95 grid place-items-center shadow-md opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 ease-out hover:bg-foreground hover:text-background"
+          >
+            <Plus className="size-3.5" strokeWidth={2} />
+          </button>
+        </Tooltip>
 
         {/* Bottom fade */}
         <div

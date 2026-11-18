@@ -7,6 +7,7 @@ import { Search, User, ShoppingBag, Menu, X } from "lucide-react";
 import { Logo } from "./logo";
 import { useCart } from "./cart-context";
 import type { TenantFeatures, TenantBranding } from "@/lib/types";
+import { Tooltip } from "@/components/ui/tooltip";
 
 type NavLink = { href: string; label: string };
 
@@ -89,25 +90,29 @@ export function Header({
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-4 lg:py-5">
         {/* Mobile: hamburger | logo | cart  */}
         <div className="lg:hidden flex items-center justify-between gap-4">
-          <button
-            onClick={() => setMenuOpen(true)}
-            aria-label="Abrir menú"
-            className="text-foreground/80 hover:text-foreground"
-          >
-            <Menu className="size-5" />
-          </button>
+          <Tooltip content="Abrir menú">
+            <button
+              onClick={() => setMenuOpen(true)}
+              aria-label="Abrir menú"
+              className="text-foreground/80 hover:text-foreground"
+            >
+              <Menu className="size-5" />
+            </button>
+          </Tooltip>
           <Logo size={20} brand={brand} logoUrl={branding?.logoUrl} />
           {showCart ? (
-            <button
-              onClick={open}
-              aria-label={`Carrito (${count})`}
-              className="relative flex items-center gap-1.5 text-foreground/80 hover:text-foreground"
-            >
-              <ShoppingBag className="size-5" />
-              {count > 0 && (
-                <span className="text-xs font-semibold tabular-nums">{count}</span>
-              )}
-            </button>
+            <Tooltip content={`Carrito (${count})`}>
+              <button
+                onClick={open}
+                aria-label={`Carrito (${count})`}
+                className="relative flex items-center gap-1.5 text-foreground/80 hover:text-foreground"
+              >
+                <ShoppingBag className="size-5" />
+                {count > 0 && (
+                  <span className="text-xs font-semibold tabular-nums">{count}</span>
+                )}
+              </button>
+            </Tooltip>
           ) : (
             <span className="w-5" />
           )}
@@ -141,35 +146,41 @@ export function Header({
                 <span>{l.label}</span>
               </Link>
             ))}
-            <button
-              type="button"
-              onClick={() => setSearchOpen((v) => !v)}
-              aria-label="Buscar"
-              className="p-1.5 text-foreground/80 hover:text-foreground transition-colors cursor-pointer"
-            >
-              <Search className="size-[18px]" />
-            </button>
-            {showAccount && (
-              <Link
-                href="/cuenta"
-                aria-label="Cuenta"
-                data-active={isLinkActive("/cuenta")}
-                className="editorial-nav-link p-1.5 text-foreground/80"
+            <Tooltip content="Buscar">
+              <button
+                type="button"
+                onClick={() => setSearchOpen((v) => !v)}
+                aria-label="Buscar"
+                className="p-1.5 text-foreground/80 hover:text-foreground transition-colors cursor-pointer"
               >
-                <User className="size-[18px]" />
-              </Link>
+                <Search className="size-[18px]" />
+              </button>
+            </Tooltip>
+            {showAccount && (
+              <Tooltip content="Cuenta">
+                <Link
+                  href="/cuenta"
+                  aria-label="Cuenta"
+                  data-active={isLinkActive("/cuenta")}
+                  className="editorial-nav-link p-1.5 text-foreground/80"
+                >
+                  <User className="size-[18px]" />
+                </Link>
+              </Tooltip>
             )}
             {showCart && (
-              <button
-                onClick={open}
-                aria-label={`Carrito (${count})`}
-                className="editorial-nav-link relative flex items-center gap-1.5 text-foreground/80 cursor-pointer"
-              >
-                <ShoppingBag className="size-[18px]" />
-                {count > 0 && (
-                  <span className="text-xs font-semibold tabular-nums">{count}</span>
-                )}
-              </button>
+              <Tooltip content={`Carrito (${count})`}>
+                <button
+                  onClick={open}
+                  aria-label={`Carrito (${count})`}
+                  className="editorial-nav-link relative flex items-center gap-1.5 text-foreground/80 cursor-pointer"
+                >
+                  <ShoppingBag className="size-[18px]" />
+                  {count > 0 && (
+                    <span className="text-xs font-semibold tabular-nums">{count}</span>
+                  )}
+                </button>
+              </Tooltip>
             )}
           </div>
         </div>
@@ -217,13 +228,15 @@ export function Header({
         >
           <div className="flex items-center justify-between px-4 py-4 border-b border-border">
             <Logo size={20} brand={brand} logoUrl={branding?.logoUrl} />
-            <button
-              onClick={() => setMenuOpen(false)}
-              aria-label="Cerrar menú"
-              className="text-foreground/80 hover:text-foreground"
-            >
-              <X className="size-5" />
-            </button>
+            <Tooltip content="Cerrar menú">
+              <button
+                onClick={() => setMenuOpen(false)}
+                aria-label="Cerrar menú"
+                className="text-foreground/80 hover:text-foreground"
+              >
+                <X className="size-5" />
+              </button>
+            </Tooltip>
           </div>
           <nav className="px-4 py-6 divide-y divide-border">
             {MOBILE_LINKS.map((l, idx) => (

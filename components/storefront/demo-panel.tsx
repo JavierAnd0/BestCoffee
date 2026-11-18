@@ -19,6 +19,7 @@ import {
   type DemoState,
 } from "@/lib/demo-plan";
 import type { TenantFeatures } from "@/lib/types";
+import { Tooltip } from "@/components/ui/tooltip";
 
 interface Note {
   key: DemoKey;
@@ -170,14 +171,16 @@ export function DemoPanel({
               >
                 Arma tu tienda
               </h2>
-              <button
-                type="button"
-                aria-label="Cerrar Arma tu tienda"
-                onClick={() => setOpen(false)}
-                className="grid size-11 shrink-0 place-items-center text-muted-foreground hover:text-foreground"
-              >
-                <X className="size-4" aria-hidden />
-              </button>
+              <Tooltip content="Cerrar Arma tu tienda">
+                <button
+                  type="button"
+                  aria-label="Cerrar Arma tu tienda"
+                  onClick={() => setOpen(false)}
+                  className="grid size-11 shrink-0 place-items-center text-muted-foreground hover:text-foreground"
+                >
+                  <X className="size-4" aria-hidden />
+                </button>
+              </Tooltip>
             </header>
 
             <div className="min-h-0 flex-1 overflow-y-auto short:flex-none short:overflow-visible overscroll-contain px-4 pb-6 pt-4">
