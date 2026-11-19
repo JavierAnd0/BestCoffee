@@ -127,13 +127,20 @@ export function contactProblem(c: DraftContact): string | null {
 
 /** Mensaje de error del paso de dirección, o null si está completo. */
 export function shippingProblem(s: DraftShipping): string | null {
-  if (!s.firstName.trim()) return "Por favor ingresa tu nombre de receptor.";
+  if (!s.firstName.trim()) return "Por favor ingresa el nombre de quien recibe.";
+  if (!s.lastName.trim()) return "Por favor ingresa el apellido de quien recibe.";
   if (!s.address.trim() || s.address.trim().length < 3) {
     return "Por favor ingresa la dirección de entrega.";
+  }
+  if (!s.line2.trim()) {
+    return "Por favor indica apartamento, interior, edificio o casa.";
   }
   if (!s.region.trim()) return "Por favor selecciona el departamento de entrega.";
   if (!s.city.trim() || s.city.trim().length < 2) {
     return "Por favor selecciona o especifica la ciudad.";
+  }
+  if (!/^\d{6}$/.test(s.zip.trim())) {
+    return "Por favor ingresa el código postal (6 dígitos).";
   }
   return null;
 }

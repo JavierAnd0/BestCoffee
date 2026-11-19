@@ -4,18 +4,11 @@ import { Coffee } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Eyebrow } from "@/components/ui/eyebrow";
-import { ORDER_STATUS_LABEL, type OrderStatus } from "@/lib/mocks/account";
+import { orderBadge } from "@/lib/order-display";
 import { getCustomerOrders } from "@/lib/data/account";
 import { formatCop, formatOrderCode } from "@/lib/format";
 
 export const metadata: Metadata = { title: "Pedidos" };
-
-const STATUS_TONE: Record<OrderStatus, string> = {
-  PROCESSING: "bg-amber-500/10 text-amber-700 border-amber-500/20",
-  SHIPPED: "bg-sky-500/10 text-sky-700 border-sky-500/20",
-  DELIVERED: "bg-emerald-500/10 text-emerald-700 border-emerald-500/20",
-  CANCELLED: "bg-muted text-muted-foreground border-border",
-};
 
 export default async function OrdersPage() {
   const orders = await getCustomerOrders();
@@ -68,15 +61,26 @@ export default async function OrdersPage() {
               </div>
               <Badge
                 variant="outline"
-                className={"justify-self-start lg:justify-self-auto " + STATUS_TONE[o.status]}
+                className={"justify-self-start lg:justify-self-auto " + orderBadge(o).tone}
               >
-                {ORDER_STATUS_LABEL[o.status]}
+                {orderBadge(o).label}
               </Badge>
               <span className="font-semibold tabular-nums text-foreground">
                 {formatCop(o.totalCents)}
               </span>
               <div className="flex flex-wrap items-center gap-2 justify-self-start sm:justify-self-end lg:justify-self-auto">
                 <Button variant="outline" size="sm" render={<Link href={`/cuenta/pedidos/${o.id}`}>Ver detalles</Link>} />
+                {o.trackingUrl && (o.status === "SHIPPED" || o.status === "DELIVERED") && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    render={
+                      <a href={o.trackingUrl} target="_blank" rel="noopener noreferrer">
+                        Seguimiento
+                      </a>
+                    }
+                  />
+                )}
                 <Button variant="ghost" size="sm" render={<Link href={`/cuenta/pedidos/${o.id}/factura`}>Factura</Link>} />
                 <Button variant="outline" size="sm" render={<Link href="/catalogo">Reordenar</Link>} />
               </div>

@@ -23,6 +23,13 @@ import { useCart } from "./cart-context";
 import { ColombiaLocationSelector } from "./colombia-location-selector";
 import { findDepartmentForCity } from "@/lib/data/colombia";
 import { placeOrderAction } from "@/lib/actions/order";
+import { openEpaycoCheckout } from "@/lib/epayco-checkout";
+import {
+  PAYER_DOC_LABELS,
+  PAYER_DOC_NUMBER,
+  PAYER_DOC_TYPES,
+  type PayerDocType,
+} from "@/lib/payer-document";
 import { previewDiscountCodeAction } from "@/lib/actions/discount";
 import { formatCop } from "@/lib/format";
 import {
@@ -77,6 +84,20 @@ const EMPTY_SHIPPING: Shipping = {
 // la cuenta de la tienda; esto es solo la guía para el comprador).
 const MP_METHODS = ["Tarjeta crédito", "Tarjeta débito", "PSE", "Nequi", "Efecty", "Saldo MercadoPago"];
 
+// Medios habituales de ePayco en Colombia (los habilita ePayco según la cuenta).
+const EPAYCO_METHODS = ["Tarjeta crédito", "Tarjeta débito", "PSE", "Daviplata", "Efecty", "Baloto"];
+
+/**
+ * Nombre real de la cuenta para prellenar quién recibe. La cuenta sin nombre
+ * llega con el texto de relleno "Cliente" (ver getCurrentCustomer): ese no es
+ * un nombre, y prellenarlo terminaba en pedidos y pagos a nombre de "Cliente".
+ */
+function buyerNameParts(customer?: MockCustomer | null): string[] {
+  const name = customer?.name?.trim() ?? "";
+  if (!name || name === "Cliente") return [];
+  return name.split(/\s+/);
+}
+
 export function CheckoutWizard({
   paymentProvider,
   mpPublicKey,
@@ -121,7 +142,7 @@ export function CheckoutWizard({
 
   const [shipping, setShipping] = useState<Shipping>(() => {
     if (defaultAddress) {
-      const parts = (customer?.name || "Cliente").split(" ");
+      const parts = buyerNameParts(customer);
       return {
         firstName: parts[0] || "",
         lastName: parts.slice(1).join(" ") || "",
@@ -133,7 +154,7 @@ export function CheckoutWizard({
       };
     }
     if (useMocks) return SEED_SHIPPING;
-    const parts = (customer?.name || "").split(" ");
+    const parts = buyerNameParts(customer);
     return {
       ...EMPTY_SHIPPING,
       firstName: parts[0] || "",
@@ -156,6 +177,12 @@ export function CheckoutWizard({
   const [placing, setPlacing] = useState(false);
   // Camino a MercadoPago: el botón queda ocupado hasta que cambie la página.
   const [redirecting, setRedirecting] = useState(false);
+  // Documento de quien paga (ePayco lo pide para tarjeta y PSE). Solo vive en
+  // memoria: no va al borrador del checkout ni se guarda en el pedido.
+  const [payerDoc, setPayerDoc] = useState<{ type: PayerDocType; number: string }>({
+    type: "CC",
+    number: "",
+  });
 
   // ── Borrador: retomar el checkout donde quedó ──────────────────────────
   // Si el comprador sale (o vuelve de MercadoPago sin pagar), al regresar
@@ -217,7 +244,7 @@ export function CheckoutWizard({
   // Selección de dirección guardada
   function handleSelectSavedAddress(addr: MockAddress) {
     setSelectedAddressId(addr.id);
-    const parts = (customer?.name || "Cliente").split(" ");
+    const parts = buyerNameParts(customer);
     setShipping({
       firstName: shipping.firstName || parts[0] || "",
       lastName: shipping.lastName || parts.slice(1).join(" ") || "",
@@ -234,6 +261,9 @@ export function CheckoutWizard({
   function handleContinueFromShipping() {
     const problem = shippingProblem(shipping);
     setShippingError(problem);
+    // Una dirección guardada incompleta se abre en el formulario (ya
+    // precargada) para que el comprador complete lo que falta.
+    if (problem && selectedAddressId !== "custom") setSelectedAddressId("custom");
     if (!problem) setStep(3);
   }
 
@@ -282,6 +312,32 @@ export function CheckoutWizard({
     goToConfirmation(result);
   };
 
+  // ePayco (Checkout v2): igual que MercadoPago, se crea el pedido y se abre la
+  // pasarela; ePayco devuelve al comprador a la confirmación con `ref_payco`.
+  const handleEpayco = async () => {
+    const number = payerDoc.number.trim();
+    if (!PAYER_DOC_NUMBER.test(number)) {
+      setPayError("Ingresa el número de documento de quien paga (4 a 15 letras o números).");
+      return;
+    }
+    const result = await submitOrder("epayco", { type: payerDoc.type, number });
+    if (!result) return;
+    if (!result.epayco) {
+      // La tienda desconectó ePayco entre medias: el pedido quedó manual.
+      goToConfirmation(result);
+      return;
+    }
+    setRedirecting(true);
+    try {
+      await openEpaycoCheckout(result.epayco);
+    } catch {
+      setRedirecting(false);
+      setPayError(
+        "No se pudo abrir la pasarela de ePayco. Revisa tu conexión (o un bloqueador de anuncios) e intenta de nuevo.",
+      );
+    }
+  };
+
   // Pedido sin pago en línea: la tienda cobra por fuera.
   const handlePlainPay = async () => {
     const result = await submitOrder("manual");
@@ -294,7 +350,8 @@ export function CheckoutWizard({
   >;
 
   const submitOrder = async (
-    paymentMethod: "mercadopago" | "manual",
+    paymentMethod: "mercadopago" | "epayco" | "manual",
+    payerDocument?: { type: PayerDocType; number: string },
   ): Promise<PlacedOrder | null> => {
     setPlacing(true);
     setPayError(null);
@@ -305,6 +362,7 @@ export function CheckoutWizard({
       items: cart.items,
       discountCode: appliedDiscount?.code,
       paymentMethod,
+      payerDocument,
     });
 
     setPlacing(false);
@@ -326,6 +384,8 @@ export function CheckoutWizard({
   };
 
   const isMp = onlinePayments && paymentProvider === "mercadopago" && !!mpPublicKey;
+  const isEpayco = onlinePayments && !isMp && paymentProvider === "epayco";
+  const gatewayName = isMp ? "MercadoPago" : isEpayco ? "ePayco" : null;
 
   // Total a cobrar, igual que el resumen: subtotal + envío − cupón. El backend
   // vuelve a cotizarlo; aquí solo sirve para las cuotas y los mínimos del Brick.
@@ -549,12 +609,17 @@ export function CheckoutWizard({
                 }}
                 autoComplete="given-name"
                 placeholder="Nombre"
+                required
               />
               <Field
                 label="Apellido"
                 value={shipping.lastName}
-                onChange={(v) => setShipping({ ...shipping, lastName: v })}
+                onChange={(v) => {
+                  setShipping({ ...shipping, lastName: v });
+                  setShippingError(null);
+                }}
                 autoComplete="family-name"
+                required
                 placeholder="Apellido"
               />
               <Field
@@ -567,13 +632,19 @@ export function CheckoutWizard({
                 }}
                 autoComplete="street-address"
                 placeholder="Ej. Calle 10 # 43E - 12"
+                required
               />
               <Field
                 className="sm:col-span-2"
-                label="Apartamento, interior, edificio (opcional)"
+                label="Apartamento, interior, edificio"
                 value={shipping.line2}
-                onChange={(v) => setShipping({ ...shipping, line2: v })}
-                placeholder="Ej. Apto 502, Torre 1"
+                onChange={(v) => {
+                  setShipping({ ...shipping, line2: v });
+                  setShippingError(null);
+                }}
+                autoComplete="address-line2"
+                placeholder="Ej. Apto 502, Torre 1 · Casa"
+                required
               />
               <ColombiaLocationSelector
                 department={shipping.region}
@@ -591,11 +662,16 @@ export function CheckoutWizard({
                 cityId="shipping-city"
               />
               <Field
-                label="Código postal (opcional)"
+                label="Código postal"
                 value={shipping.zip}
-                onChange={(v) => setShipping({ ...shipping, zip: v })}
+                onChange={(v) => {
+                  setShipping({ ...shipping, zip: v.replace(/\D/g, "").slice(0, 6) });
+                  setShippingError(null);
+                }}
                 placeholder="110111"
                 autoComplete="postal-code"
+                inputMode="numeric"
+                required
               />
             </div>
           )}
@@ -654,6 +730,75 @@ export function CheckoutWizard({
               </div>
               <p className="text-[11px] leading-relaxed text-muted-foreground">
                 Te llevamos a MercadoPago para pagar de forma segura y vuelves aquí al terminar.
+                Tu carrito se guarda por si no completas el pago.
+              </p>
+            </div>
+          ) : isEpayco ? (
+            <div role="radiogroup" aria-label="Medio de pago" className="space-y-3">
+              <div
+                role="radio"
+                aria-checked="true"
+                className="rounded-xl border border-primary bg-primary/5 ring-1 ring-primary/20 p-4 flex items-start gap-3"
+              >
+                <span
+                  aria-hidden
+                  className="mt-0.5 size-4 shrink-0 rounded-full border-[5px] border-primary bg-background"
+                />
+                <div className="min-w-0 flex-1">
+                  <p className="font-semibold text-sm text-foreground">ePayco</p>
+                  <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                    Paga con tarjeta, PSE o el medio que prefieras en la pasarela segura de ePayco.
+                  </p>
+                  <ul className="mt-3 flex flex-wrap gap-1.5">
+                    {EPAYCO_METHODS.map((m) => (
+                      <li key={m}>
+                        <Badge variant="outline" className="font-normal">
+                          {m}
+                        </Badge>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+              <fieldset className="grid gap-3 sm:grid-cols-[minmax(0,14rem)_1fr]">
+                <legend className="mb-2 text-xs text-muted-foreground">
+                  Documento de quien paga: ePayco lo pide para tarjeta y PSE y así no lo
+                  escribes dos veces. No lo guardamos.
+                </legend>
+                <label className="block">
+                  <span className="block text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground mb-1.5">
+                    Tipo de documento <span className="text-destructive">*</span>
+                  </span>
+                  <select
+                    value={payerDoc.type}
+                    onChange={(e) => {
+                      setPayerDoc({ ...payerDoc, type: e.target.value as PayerDocType });
+                      setPayError(null);
+                    }}
+                    className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:border-ring"
+                  >
+                    {PAYER_DOC_TYPES.map((t) => (
+                      <option key={t} value={t}>
+                        {PAYER_DOC_LABELS[t]}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <Field
+                  label="Número de documento"
+                  value={payerDoc.number}
+                  onChange={(v) => {
+                    setPayerDoc({ ...payerDoc, number: v.replace(/[^0-9A-Za-z]/g, "").slice(0, 15) });
+                    setPayError(null);
+                  }}
+                  placeholder="1020304050"
+                  inputMode={payerDoc.type === "PPN" ? "text" : "numeric"}
+                  autoComplete="off"
+                  required
+                />
+              </fieldset>
+              <p className="text-[11px] leading-relaxed text-muted-foreground">
+                Te llevamos a ePayco para pagar de forma segura y vuelves aquí al terminar.
                 Tu carrito se guarda por si no completas el pago.
               </p>
             </div>
@@ -732,16 +877,16 @@ export function CheckoutWizard({
             size="lg"
             className="mt-6 w-full h-12 text-base justify-center gap-2"
             disabled={placing || redirecting || subscriptionNeedsLogin || subscriptionBlocked}
-            onClick={isMp ? handleMercadoPago : handlePlainPay}
+            onClick={isMp ? handleMercadoPago : isEpayco ? handleEpayco : handlePlainPay}
           >
             {placing || redirecting ? (
               <>
                 <Loader2 className="size-4 animate-spin" />
-                {isMp ? "Te llevamos a MercadoPago…" : "Procesando pedido..."}
+                {gatewayName ? `Te llevamos a ${gatewayName}…` : "Procesando pedido..."}
               </>
-            ) : isMp ? (
+            ) : gatewayName ? (
               <>
-                Pagar {formatCop(totalCents)} con MercadoPago
+                Pagar {formatCop(totalCents)} con {gatewayName}
                 <ArrowRight className="size-4" />
               </>
             ) : (
@@ -829,6 +974,7 @@ function Field({
   className,
   autoComplete,
   inputMode,
+  required = false,
 }: {
   label: string;
   value: string;
@@ -838,13 +984,16 @@ function Field({
   className?: string;
   autoComplete?: string;
   inputMode?: React.HTMLAttributes<HTMLInputElement>["inputMode"];
+  required?: boolean;
 }) {
   return (
     <label className={"block " + (className ?? "")}>
       <span className="block text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground mb-1.5">
-        {label}
+        {label} {required && <span className="text-destructive">*</span>}
       </span>
       <input
+        required={required}
+        aria-required={required}
         type={type}
         value={value}
         placeholder={placeholder}

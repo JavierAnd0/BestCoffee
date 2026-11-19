@@ -130,8 +130,10 @@ export interface Tenant {
   shippingFlatCents: number;
   subscriptionDiscountPct: number;
   currency: "COP";
-  paymentProvider?: "mercadopago" | null;
+  paymentProvider?: "mercadopago" | "epayco" | null;
   mpPublicKey?: string | null;
+  /** ePayco con llaves guardadas y probadas (puede cobrar). */
+  epaycoConnected?: boolean;
 }
 
 export interface AnnounceMessage {

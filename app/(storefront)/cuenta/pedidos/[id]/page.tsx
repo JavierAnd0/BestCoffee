@@ -1,49 +1,14 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import type { Metadata } from "next";
-import { ChevronLeft, Download, RefreshCw, MapPin } from "lucide-react";
+import { ChevronLeft, Download, RefreshCw, MapPin, ExternalLink } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Eyebrow } from "@/components/ui/eyebrow";
 import { getCustomerOrder } from "@/lib/data/account";
-import { ORDER_STATUS_LABEL, type OrderStatus } from "@/lib/mocks/account";
+import { orderBadge, orderTimeline } from "@/lib/order-display";
 import { formatCop, formatOrderCode } from "@/lib/format";
 import { ItemThumb } from "@/components/storefront/item-thumb";
-
-const STATUS_TONE: Record<OrderStatus, string> = {
-  PROCESSING: "bg-amber-500/10 text-amber-700 border-amber-500/20",
-  SHIPPED: "bg-sky-500/10 text-sky-700 border-sky-500/20",
-  DELIVERED: "bg-emerald-500/10 text-emerald-700 border-emerald-500/20",
-  CANCELLED: "bg-muted text-muted-foreground border-border",
-};
-
-const TIMELINE: Record<OrderStatus, { label: string; done: boolean }[]> = {
-  PROCESSING: [
-    { label: "Pedido recibido", done: true },
-    { label: "Pago confirmado", done: true },
-    { label: "En preparación", done: true },
-    { label: "Enviado", done: false },
-    { label: "Entregado", done: false },
-  ],
-  SHIPPED: [
-    { label: "Pedido recibido", done: true },
-    { label: "Pago confirmado", done: true },
-    { label: "En preparación", done: true },
-    { label: "Enviado", done: true },
-    { label: "Entregado", done: false },
-  ],
-  DELIVERED: [
-    { label: "Pedido recibido", done: true },
-    { label: "Pago confirmado", done: true },
-    { label: "En preparación", done: true },
-    { label: "Enviado", done: true },
-    { label: "Entregado", done: true },
-  ],
-  CANCELLED: [
-    { label: "Pedido recibido", done: true },
-    { label: "Cancelado", done: true },
-  ],
-};
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -65,7 +30,8 @@ export default async function OrderDetailPage({ params }: Props) {
   const total = order.totalCents;
   const shipping = order.shippingCents ?? Math.max(0, total - subtotal);
   const discount = order.discountCents ?? 0;
-  const timeline = TIMELINE[order.status];
+  const timeline = orderTimeline(order);
+  const badge = orderBadge(order);
 
   return (
     <div className="space-y-8">
@@ -82,8 +48,8 @@ export default async function OrderDetailPage({ params }: Props) {
           <h1 className="font-display text-4xl font-semibold tracking-tight">
             #{formatOrderCode(order.id)}
           </h1>
-          <Badge variant="outline" className={STATUS_TONE[order.status]}>
-            {ORDER_STATUS_LABEL[order.status]}
+          <Badge variant="outline" className={badge.tone}>
+            {badge.label}
           </Badge>
         </div>
         <p className="text-sm text-muted-foreground mt-1">
@@ -108,28 +74,68 @@ export default async function OrderDetailPage({ params }: Props) {
               <div className="flex items-center w-full">
                 <div className={
                   "size-6 rounded-full border-2 shrink-0 grid place-items-center " +
-                  (step.done ? "bg-foreground border-foreground" : "border-border bg-background")
+                  (step.state === "done"
+                    ? "bg-foreground border-foreground"
+                    : step.state === "error"
+                      ? "bg-destructive border-destructive"
+                      : "border-border bg-background")
                 }>
-                  {step.done && (
+                  {step.state === "done" && (
                     <svg className="size-3 text-background" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M1 6l3 3 7-6" />
                     </svg>
                   )}
+                  {step.state === "error" && (
+                    <svg className="size-3 text-background" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                      <path d="M3 3l6 6M9 3l-6 6" />
+                    </svg>
+                  )}
                 </div>
                 {i < timeline.length - 1 && (
-                  <div className={"flex-1 h-0.5 " + (timeline[i + 1]?.done ? "bg-foreground" : "bg-border")} />
+                  <div className={"flex-1 h-0.5 " + (timeline[i + 1]?.state !== "todo" ? "bg-foreground" : "bg-border")} />
                 )}
               </div>
-              <span className={"mt-2 text-[11px] leading-tight " + (step.done ? "font-medium" : "text-muted-foreground")}>
+              <span className={
+                "mt-2 text-[11px] leading-tight " +
+                (step.state === "error"
+                  ? "font-medium text-destructive"
+                  : step.state === "done"
+                    ? "font-medium"
+                    : "text-muted-foreground")
+              }>
                 {step.label}
               </span>
             </li>
           ))}
         </ol>
-        {order.status === "SHIPPED" && (
-          <p className="mt-4 text-xs text-sky-700 bg-sky-500/10 border border-sky-500/20 rounded-md px-3 py-2">
-            En camino · Entrega estimada: 1–2 días hábiles
+        {order.paymentStatus === "PENDING" && order.status !== "CANCELLED" && (
+          <p className="mt-4 text-xs text-amber-800 bg-amber-500/10 border border-amber-500/20 rounded-md px-3 py-2">
+            Estamos esperando la confirmación de tu pago. Si pagaste por PSE o en efectivo puede
+            tardar un poco; la preparación empieza cuando se confirme.
           </p>
+        )}
+        {order.paymentStatus === "FAILED" && order.status !== "CANCELLED" && (
+          <p className="mt-4 text-xs text-destructive bg-destructive/10 border border-destructive/20 rounded-md px-3 py-2">
+            El pago de este pedido no se completó y no se hizo ningún cobro. Si aún quieres
+            los productos, haz un pedido nuevo.
+          </p>
+        )}
+        {(order.status === "SHIPPED" || order.status === "DELIVERED") && order.trackingUrl ? (
+          <a
+            href={order.trackingUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-4 inline-flex items-center gap-1.5 text-xs font-medium text-sky-700 bg-sky-500/10 border border-sky-500/20 rounded-md px-3 py-2 hover:bg-sky-500/15"
+          >
+            Ver seguimiento del envío
+            <ExternalLink className="size-3.5" />
+          </a>
+        ) : (
+          order.status === "SHIPPED" && (
+            <p className="mt-4 text-xs text-sky-700 bg-sky-500/10 border border-sky-500/20 rounded-md px-3 py-2">
+              Tu pedido va en camino.
+            </p>
+          )
         )}
       </section>
 

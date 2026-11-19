@@ -23,14 +23,14 @@ export async function createAddressAction(
     const line1 = String(formData.get("line1") ?? "").trim();
     const city = String(formData.get("city") ?? "").trim();
     const label = String(formData.get("label") ?? "").trim() || "Casa";
-    const line2 = String(formData.get("line2") ?? "").trim() || undefined;
-    const state = String(formData.get("state") ?? "").trim() || undefined;
-    const postalCode = String(formData.get("postalCode") ?? "").trim() || undefined;
-    const phone = String(formData.get("phone") ?? "").trim() || undefined;
+    const line2 = String(formData.get("line2") ?? "").trim();
+    const state = String(formData.get("state") ?? "").trim();
+    const postalCode = String(formData.get("postalCode") ?? "").trim();
+    const phone = String(formData.get("phone") ?? "").trim();
     const isDefault = formData.get("isDefault") === "on" || formData.get("isDefault") === "true";
 
-    if (!line1) return { error: "La dirección principal es requerida." };
-    if (!city) return { error: "La ciudad es requerida." };
+    const problem = addressFieldsProblem({ line1, line2, state, city, postalCode, phone });
+    if (problem) return { error: problem };
 
     const res = await customerFetch("/v1/customers/me/addresses", {
       method: "POST",
@@ -74,14 +74,14 @@ export async function updateAddressAction(
     const line1 = String(formData.get("line1") ?? "").trim();
     const city = String(formData.get("city") ?? "").trim();
     const label = String(formData.get("label") ?? "").trim() || "Casa";
-    const line2 = String(formData.get("line2") ?? "").trim() || undefined;
-    const state = String(formData.get("state") ?? "").trim() || undefined;
-    const postalCode = String(formData.get("postalCode") ?? "").trim() || undefined;
-    const phone = String(formData.get("phone") ?? "").trim() || undefined;
+    const line2 = String(formData.get("line2") ?? "").trim();
+    const state = String(formData.get("state") ?? "").trim();
+    const postalCode = String(formData.get("postalCode") ?? "").trim();
+    const phone = String(formData.get("phone") ?? "").trim();
     const isDefault = formData.get("isDefault") === "on" || formData.get("isDefault") === "true";
 
-    if (!line1) return { error: "La dirección principal es requerida." };
-    if (!city) return { error: "La ciudad es requerida." };
+    const problem = addressFieldsProblem({ line1, line2, state, city, postalCode, phone });
+    if (problem) return { error: problem };
 
     const res = await customerFetch(`/v1/customers/me/addresses/${encodeURIComponent(id)}`, {
       method: "PATCH",
@@ -156,3 +156,20 @@ export async function setDefaultAddressAction(id: string): Promise<AddressAction
   }
 }
 
+/** Todos los datos de envío son obligatorios (mismas reglas que el backend). */
+function addressFieldsProblem(f: {
+  line1: string;
+  line2: string;
+  state: string;
+  city: string;
+  postalCode: string;
+  phone: string;
+}): string | null {
+  if (!f.line1) return "La dirección principal es requerida.";
+  if (!f.line2) return "Indica apartamento, interior, torre o casa.";
+  if (!f.state) return "El departamento es requerido.";
+  if (!f.city) return "La ciudad es requerida.";
+  if (!/^\d{6}$/.test(f.postalCode)) return "El código postal debe tener 6 dígitos.";
+  if (f.phone.length < 7) return "Ingresa un teléfono de contacto (mínimo 7 dígitos).";
+  return null;
+}
