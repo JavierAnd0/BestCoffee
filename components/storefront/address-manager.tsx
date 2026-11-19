@@ -106,16 +106,9 @@ export function AddressManager({ initialAddresses }: AddressManagerProps) {
     e.preventDefault();
     setFormError(null);
 
-    if (!formData.line1.trim()) {
-      setFormError("La dirección principal es obligatoria.");
-      return;
-    }
-    if (!formData.state.trim()) {
-      setFormError("El departamento es obligatorio.");
-      return;
-    }
-    if (!formData.city.trim()) {
-      setFormError("La ciudad es obligatoria.");
+    const problem = addressProblem(formData);
+    if (problem) {
+      setFormError(problem);
       return;
     }
 
@@ -123,11 +116,11 @@ export function AddressManager({ initialAddresses }: AddressManagerProps) {
       const fd = new FormData();
       fd.append("label", formData.label.trim() || "Casa");
       fd.append("line1", formData.line1.trim());
-      if (formData.line2.trim()) fd.append("line2", formData.line2.trim());
+      fd.append("line2", formData.line2.trim());
       fd.append("city", formData.city.trim());
-      if (formData.state.trim()) fd.append("state", formData.state.trim());
-      if (formData.postalCode.trim()) fd.append("postalCode", formData.postalCode.trim());
-      if (formData.phone.trim()) fd.append("phone", formData.phone.trim());
+      fd.append("state", formData.state.trim());
+      fd.append("postalCode", formData.postalCode.trim());
+      fd.append("phone", formData.phone.trim());
       if (formData.isDefault) fd.append("isDefault", "true");
 
       if (editingAddress) {
@@ -425,15 +418,17 @@ export function AddressManager({ initialAddresses }: AddressManagerProps) {
 
             <div>
               <Label htmlFor="addr-line2" className="text-xs">
-                Apartamento, interior, torre o referencia (opcional)
+                Apartamento, interior, torre o casa <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="addr-line2"
+                required
+                autoComplete="address-line2"
                 value={formData.line2}
                 onChange={(e) =>
                   setFormData((prev) => ({ ...prev, line2: e.target.value }))
                 }
-                placeholder="Ej. Apto 402, Torre B"
+                placeholder="Ej. Apto 402, Torre B · Casa"
                 className="mt-1"
               />
             </div>
@@ -458,13 +453,19 @@ export function AddressManager({ initialAddresses }: AddressManagerProps) {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <Label htmlFor="addr-postalCode" className="text-xs">
-                  Código postal
+                  Código postal <span className="text-destructive">*</span>
                 </Label>
                 <Input
                   id="addr-postalCode"
+                  required
+                  inputMode="numeric"
+                  autoComplete="postal-code"
                   value={formData.postalCode}
                   onChange={(e) =>
-                    setFormData((prev) => ({ ...prev, postalCode: e.target.value }))
+                    setFormData((prev) => ({
+                      ...prev,
+                      postalCode: e.target.value.replace(/\D/g, "").slice(0, 6),
+                    }))
                   }
                   placeholder="Ej. 050021"
                   className="mt-1"
@@ -473,11 +474,13 @@ export function AddressManager({ initialAddresses }: AddressManagerProps) {
 
               <div>
                 <Label htmlFor="addr-phone" className="text-xs">
-                  Teléfono de contacto
+                  Teléfono de contacto <span className="text-destructive">*</span>
                 </Label>
                 <Input
                   id="addr-phone"
                   type="tel"
+                  required
+                  autoComplete="tel"
                   value={formData.phone}
                   onChange={(e) =>
                     setFormData((prev) => ({ ...prev, phone: e.target.value }))
@@ -527,3 +530,24 @@ export function AddressManager({ initialAddresses }: AddressManagerProps) {
   );
 }
 
+/** Mensaje de error del formulario de dirección, o null si está completo. */
+function addressProblem(f: {
+  line1: string;
+  line2: string;
+  state: string;
+  city: string;
+  postalCode: string;
+  phone: string;
+}): string | null {
+  if (!f.line1.trim()) return "La dirección principal es obligatoria.";
+  if (!f.line2.trim()) return "Indica apartamento, interior, torre o casa.";
+  if (!f.state.trim()) return "El departamento es obligatorio.";
+  if (!f.city.trim()) return "La ciudad es obligatoria.";
+  if (!/^\d{6}$/.test(f.postalCode.trim())) {
+    return "El código postal debe tener 6 dígitos.";
+  }
+  if (f.phone.replace(/\D/g, "").length < 7) {
+    return "Ingresa un teléfono de contacto (mínimo 7 dígitos).";
+  }
+  return null;
+}

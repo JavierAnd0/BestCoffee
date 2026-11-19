@@ -951,3 +951,20 @@ export async function getAdminSettings(): Promise<AdminStoreSettings | null> {
     city: str(b.city),
   };
 }
+
+export interface EpaycoStatus {
+  connected: boolean;
+  /** P_CUST_ID_CLIENTE (no es secreto). */
+  customerId: string | null;
+  publicKey: string | null;
+  /** Entorno de pruebas de ePayco. */
+  test: boolean;
+  /** Conectada y elegida como pasarela de la tienda. */
+  active: boolean;
+}
+
+/** Estado de ePayco de la tienda (las llaves secretas nunca vuelven al front). */
+export async function getEpaycoStatus(): Promise<EpaycoStatus | null> {
+  if (env.useMocks) return null;
+  return adminFetch<EpaycoStatus>("/v1/admin/epayco/status").catch(() => null);
+}

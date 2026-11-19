@@ -1,5 +1,6 @@
 "use server";
 
+import { PAYER_DOC_NUMBER, PAYER_DOC_TYPES, type PayerDocType } from "../payer-document";
 import { demoHeaders } from "../demo";
 import { z } from "zod";
 import { env } from "../env";
@@ -29,7 +30,9 @@ export interface PlaceOrderInput {
   shipping: OrderShipping;
   items: CartItem[];
   discountCode?: string;
-  paymentMethod?: "mercadopago" | "manual";
+  paymentMethod?: "mercadopago" | "epayco" | "manual";
+  /** Documento de quien paga: se reenvía a ePayco y no se guarda. */
+  payerDocument?: { type: PayerDocType; number: string };
 }
 
 export type PlaceOrderResult =
@@ -43,6 +46,11 @@ export type PlaceOrderResult =
        * comprador. Ausente si el pedido es de pago por fuera (MANUAL).
        */
       checkoutUrl?: string;
+      /**
+       * Sesión de ePayco (Checkout v2) que el front abre con `checkout-v2.js`.
+       * `test` = entorno de pruebas de ePayco.
+       */
+      epayco?: { sessionId: string; test: boolean };
     }
   | { error: string };
 
@@ -64,7 +72,16 @@ const placeOrderSchema = z.object({
   }),
   items: z.array(z.record(z.string(), z.unknown())).min(1, "El carrito está vacío. Agrega productos antes de pagar."),
   discountCode: z.string().optional(),
-  paymentMethod: z.enum(["mercadopago", "manual"]).optional(),
+  paymentMethod: z.enum(["mercadopago", "epayco", "manual"]).optional(),
+  payerDocument: z
+    .object({
+      type: z.enum(PAYER_DOC_TYPES),
+      number: z
+        .string()
+        .trim()
+        .regex(PAYER_DOC_NUMBER, "El número de documento debe tener entre 4 y 15 letras o números."),
+    })
+    .optional(),
 });
 
 export async function placeOrderAction(
@@ -137,13 +154,14 @@ export async function placeOrderAction(
       items: resolvedItems,
       mode: hasSubscription ? "SUBSCRIPTION" : "ONE_TIME",
       discountCode: input.discountCode || undefined,
+      ...(parsed.data.payerDocument && { payerDocument: parsed.data.payerDocument }),
       shippingAddress: {
         recipientName: guestName,
         line1: input.shipping.address.trim(),
         line2: input.shipping.line2?.trim() || undefined,
         city: input.shipping.city.trim(),
         state: input.shipping.region?.trim() || undefined,
-        // Sin código postal se envía vacío: nunca uno inventado (110111 es de Bogotá).
+        // Obligatorio en el checkout; nunca uno inventado (110111 es de Bogotá).
         postalCode: input.shipping.zip?.trim() || undefined,
         country: "CO",
         phone: input.contact.phone.trim() || undefined,
@@ -227,6 +245,8 @@ export async function placeOrderAction(
       summary?: { subscriptionIds?: string[] };
       provider?: string;
       checkoutUrl?: string;
+      epaycoSessionId?: string;
+      epaycoTest?: boolean;
     };
 
     if (!data.orderId && !data.id) {
@@ -244,6 +264,10 @@ export async function placeOrderAction(
       subscriptionIds: data.summary?.subscriptionIds ?? [],
       ...(data.provider === "MERCADOPAGO" &&
         data.checkoutUrl && { checkoutUrl: data.checkoutUrl }),
+      ...(data.provider === "EPAYCO" &&
+        data.epaycoSessionId && {
+          epayco: { sessionId: data.epaycoSessionId, test: data.epaycoTest !== false },
+        }),
     };
   } catch (err) {
     console.error("Error en placeOrderAction:", err);

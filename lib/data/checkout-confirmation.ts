@@ -96,3 +96,44 @@ export async function syncMercadoPagoReturn(
     return none;
   }
 }
+
+export interface EpaycoReturn {
+  /** Estado del pedido tras aplicar la transacción (PAID, PENDING, FAILED…), o null. */
+  paymentStatus: string | null;
+  /** Estado en ePayco (Aceptada, Pendiente, Rechazada…), o null si no se aplicó. */
+  epaycoStatus: string | null;
+}
+
+/**
+ * Regreso de ePayco: el backend consulta la transacción por `ref_payco`, la
+ * valida (tienda, pedido, firma y monto) y la aplica sin esperar el aviso.
+ */
+export async function syncEpaycoReturn(
+  orderId: string,
+  refPayco: string,
+): Promise<EpaycoReturn> {
+  const none: EpaycoReturn = { paymentStatus: null, epaycoStatus: null };
+  if (env.useMocks || !/^[A-Za-z0-9]{1,64}$/.test(refPayco)) return none;
+  try {
+    const tenantSlug = await resolveActiveTenantSlug();
+    const res = await fetch(`${env.apiUrlInternal}/v1/epayco/sync`, {
+      method: "POST",
+      headers: {
+        ...(await clientIpHeaders()),
+        "Content-Type": "application/json",
+        "X-Tenant-Slug": tenantSlug,
+        "x-internal-secret": env.revalidateSecret,
+      },
+      body: JSON.stringify({ orderId, refPayco }),
+      cache: "no-store",
+    });
+    if (!res.ok) return none;
+    const data = (await res.json()) as Partial<EpaycoReturn>;
+    return {
+      paymentStatus: data.paymentStatus ?? null,
+      epaycoStatus: data.epaycoStatus ?? null,
+    };
+  } catch {
+    return none;
+  }
+}

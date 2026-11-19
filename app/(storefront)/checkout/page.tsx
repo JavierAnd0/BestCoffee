@@ -28,8 +28,8 @@ export default async function CheckoutPage() {
       // Sin ella no se piden datos de tarjeta: el pedido queda con pago por fuera.
       onlinePayments={
         tenant.features.onlinePayments &&
-        tenant.paymentProvider === "mercadopago" &&
-        Boolean(tenant.mpPublicKey)
+        ((tenant.paymentProvider === "mercadopago" && Boolean(tenant.mpPublicKey)) ||
+          (tenant.paymentProvider === "epayco" && tenant.epaycoConnected === true))
       }
       customer={customer}
       savedAddresses={addresses}

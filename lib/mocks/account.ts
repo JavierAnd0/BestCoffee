@@ -1,5 +1,6 @@
 // Mock account data. Replaced by API calls in phase 3.
 export type OrderStatus = "PROCESSING" | "SHIPPED" | "DELIVERED" | "CANCELLED";
+export type OrderPaymentStatus = "PAID" | "PENDING" | "FAILED" | "REFUNDED";
 export type SubStatus = "ACTIVE" | "PAUSED" | "PAYMENT_FAILED" | "CANCELLED";
 
 export interface MockOrderItem {
@@ -23,6 +24,12 @@ export interface MockOrder {
   shippingCents?: number;
   discountCents?: number;
   status: OrderStatus;
+  /** Estado del cobro. Ausente en los datos de ejemplo: se toma como pagado. */
+  paymentStatus?: OrderPaymentStatus;
+  /** La tienda ya empezó a prepararlo (PREPARING en la API). */
+  preparing?: boolean;
+  /** Enlace de seguimiento de la transportadora que guarda la tienda. */
+  trackingUrl?: string | null;
   fromSubscription: boolean;
   items?: MockOrderItem[];
   shippingAddress?: string;

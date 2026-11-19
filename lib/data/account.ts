@@ -16,6 +16,7 @@ import {
   type MockOrder,
   type MockSubscription,
   type OrderStatus,
+  type OrderPaymentStatus,
   type SubStatus,
 } from "../mocks/account";
 
@@ -177,6 +178,8 @@ interface ApiOrder {
   id: string;
   createdAt?: string;
   status?: string;
+  paymentStatus?: string;
+  trackingUrl?: string | null;
   total?: number;
   totalCents?: number;
   subtotalCents?: number;
@@ -205,6 +208,24 @@ const ORDER_STATUS_MAP: Record<string, OrderStatus> = {
   DELIVERED: "DELIVERED",
   CANCELLED: "CANCELLED",
 };
+
+const PAYMENT_STATUS_MAP: Record<string, OrderPaymentStatus> = {
+  PAID: "PAID",
+  PENDING: "PENDING",
+  FAILED: "FAILED",
+  REFUNDED: "REFUNDED",
+};
+
+/** Solo enlaces http(s): el seguimiento lo escribe la tienda a mano. */
+function safeHttpUrl(raw?: string | null): string | null {
+  if (!raw) return null;
+  try {
+    const u = new URL(raw);
+    return u.protocol === "https:" || u.protocol === "http:" ? u.toString() : null;
+  } catch {
+    return null;
+  }
+}
 
 function formatOrderDate(iso?: string): string {
   if (!iso) return "—";
@@ -243,6 +264,9 @@ function mapOrder(o: ApiOrder): MockOrder {
     shippingCents,
     discountCents,
     status: ORDER_STATUS_MAP[o.status ?? ""] ?? "PROCESSING",
+    paymentStatus: PAYMENT_STATUS_MAP[o.paymentStatus ?? ""],
+    preparing: o.status === "PREPARING",
+    trackingUrl: safeHttpUrl(o.trackingUrl),
     fromSubscription: o.fromSubscription ?? !!o.subscriptionId,
     items,
     shippingAddress: o.shippingAddress

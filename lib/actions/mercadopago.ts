@@ -7,9 +7,9 @@ export type MpConnectResult =
   | { error: string };
 
 export async function mpConnectAction(): Promise<MpConnectResult> {
-  const res = await operatorFetch<{ url?: string }>("/v1/mercadopago/connect", {
-    method: "POST",
-  });
+  // GET /v1/admin/mercadopago/connect (dueño de la tienda): devuelve la URL de
+  // autorización OAuth con un `state` firmado.
+  const res = await operatorFetch<{ url?: string }>("/v1/admin/mercadopago/connect");
 
   if (!res.ok) {
     return { error: res.error || "Error al iniciar la conexión con MercadoPago." };

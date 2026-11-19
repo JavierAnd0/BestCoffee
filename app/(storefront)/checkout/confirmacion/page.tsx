@@ -7,6 +7,7 @@ import { Eyebrow } from "@/components/ui/eyebrow";
 import { requireFeature } from "@/lib/data/feature-guard";
 import {
   getCheckoutConfirmation,
+  syncEpaycoReturn,
   syncMercadoPagoReturn,
 } from "@/lib/data/checkout-confirmation";
 import { formatCop, formatOrderCode } from "@/lib/format";
@@ -20,14 +21,20 @@ export default async function ConfirmationPage({
   searchParams: Promise<{
     orderId?: string;
     suscripciones?: string;
-    /** Lo pone la URL de regreso de MercadoPago: aprobado | pendiente | fallido. */
+    /**
+     * Lo pone la URL de regreso: aprobado | pendiente | fallido (MercadoPago)
+     * o epayco.
+     */
     pago?: string;
     /** Lo agrega MercadoPago al volver (Checkout Pro). */
     payment_id?: string;
+    /** Lo agrega ePayco al volver (Checkout v2). */
+    ref_payco?: string;
   }>;
 }) {
   await requireFeature("checkout");
-  const { orderId: rawOrderId, suscripciones, pago, payment_id } = await searchParams;
+  const { orderId: rawOrderId, suscripciones, pago, payment_id, ref_payco } =
+    await searchParams;
   const orderId = rawOrderId?.trim();
   // Sin número de pedido real no hay nada que confirmar.
   if (!orderId) redirect("/");
@@ -40,16 +47,21 @@ export default async function ConfirmationPage({
   // De vuelta de MercadoPago: primero se aplica el pago real (sin esperar el
   // webhook) y luego se lee el pedido ya actualizado.
   const mp = payment_id ? await syncMercadoPagoReturn(orderId, payment_id) : null;
+  const epayco = ref_payco ? await syncEpaycoReturn(orderId, ref_payco) : null;
+  const isEpayco = pago === "epayco" || Boolean(ref_payco);
+  const gateway = isEpayco ? "ePayco" : "MercadoPago";
   const { order, subscriptions } = await getCheckoutConfirmation(orderId, subscriptionIds);
   // Estado del pago: el del pedido manda; un invitado no puede leerlo, pero sí
   // el que devolvió la consulta a MercadoPago.
-  const status = order?.paymentStatus ?? mp?.paymentStatus ?? null;
+  const status =
+    order?.paymentStatus ?? mp?.paymentStatus ?? epayco?.paymentStatus ?? null;
   const paid = status === "PAID";
   // El comprador salió de MercadoPago sin pagar (o el pedido no pudo cobrarse).
   const failed = !paid && (status === "FAILED" || pago === "fallido");
   // Pagó o está pagando en MercadoPago, pero el pago aún no está aprobado
   // (PSE en curso, efectivo por pagar en Efecty, tarjeta en revisión…).
-  const confirming = !paid && !failed && (pago === "aprobado" || pago === "pendiente");
+  const confirming =
+    !paid && !failed && (pago === "aprobado" || pago === "pendiente" || isEpayco);
   const hasSubs = subscriptions.length > 0;
 
   if (failed) {
@@ -64,7 +76,7 @@ export default async function ConfirmationPage({
         </h1>
         <p className="mt-4 text-sm text-muted-foreground max-w-md mx-auto leading-relaxed">
           No se hizo ningún cobro. Tu carrito sigue guardado: vuelve al checkout para
-          intentarlo de nuevo o elegir otro medio de pago en MercadoPago.
+          intentarlo de nuevo o elegir otro medio de pago en {gateway}.
         </p>
         <div className="mt-10 flex justify-center">
           <Button render={<Link href="/checkout">Volver al checkout</Link>} />
@@ -95,9 +107,9 @@ export default async function ConfirmationPage({
         {paid
           ? "Tu pago está confirmado. Te enviaremos la confirmación por correo."
           : confirming
-            ? mp?.mpStatus === "pending"
-              ? "Tu pago quedó pendiente en MercadoPago (por ejemplo, un pago en efectivo o PSE en curso). En cuanto se acredite te llegará la confirmación por correo."
-              : "MercadoPago nos avisará en cuanto se acredite el pago; suele tardar unos minutos. Te llegará la confirmación por correo."
+            ? mp?.mpStatus === "pending" || epayco?.epaycoStatus === "Pendiente"
+              ? `Tu pago quedó pendiente en ${gateway} (por ejemplo, un pago en efectivo o PSE en curso). En cuanto se acredite te llegará la confirmación por correo.`
+              : `${gateway} nos avisará en cuanto se acredite el pago; suele tardar unos minutos. Te llegará la confirmación por correo.`
             : "Tu pedido quedó registrado y pendiente de pago. La tienda te contactará para coordinar el pago y la entrega; al confirmarse el pago te llega la confirmación por correo."}
       </p>
 

@@ -5,22 +5,25 @@ import Link from "next/link";
 import { Building2, Truck, Store, FileText, CreditCard, Check, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MercadoPagoConnectButton } from "@/components/admin/mercadopago-connect-button";
+import { EpaycoKeysForm } from "@/components/admin/epayco-keys-form";
 import {
   saveAdminSettingsAction,
   type AdminMutationResult,
 } from "@/lib/actions/admin-mutations";
-import type { AdminStoreSettings } from "@/lib/data/admin";
+import type { AdminStoreSettings, EpaycoStatus } from "@/lib/data/admin";
 import { formatCop } from "@/lib/format";
 
 export function AdminSettingsForm({
   mpConnected,
   mpResult = null,
+  epayco = null,
   settings,
   effectiveFreeShippingCents,
   effectiveShippingFlatCents,
 }: {
   mpConnected: boolean;
   mpResult?: "connected" | "error" | null;
+  epayco?: EpaycoStatus | null;
   /** `null` = la API no devolvió la configuración (sin permiso o caída). */
   settings: AdminStoreSettings | null;
   effectiveFreeShippingCents: number;
@@ -41,6 +44,14 @@ export function AdminSettingsForm({
         body="Conecta MercadoPago y tus clientes pagan en MercadoPago con tarjeta, PSE, Nequi, Efecty o su saldo. El dinero llega a tu cuenta de MercadoPago."
       >
         <MercadoPagoConnectButton connected={mpConnected} result={mpResult} />
+      </SettingsCard>
+
+      <SettingsCard
+        icon={<CreditCard className="size-4" />}
+        title="ePayco"
+        body="Cobra con ePayco (DaviPay): tarjetas, PSE, Daviplata y efectivo. El dinero llega a tu cuenta de ePayco. La última pasarela que conectes es la que usa el checkout."
+      >
+        <EpaycoKeysForm status={epayco} />
       </SettingsCard>
 
       {!settings ? (

@@ -57,6 +57,7 @@ export interface ApiTenant {
   demo?: boolean;
   paymentProvider?: string | null;
   mpPublicKey?: string | null;
+  epaycoConnected?: boolean;
   newsletter?: {
     popupEnabled?: boolean;
     welcomeOffer?: { code?: string; label?: string } | null;
@@ -229,9 +230,15 @@ export function mapTenant(t: ApiTenant): Tenant {
     currency: "COP",
     // El backend manda el enum en mayúsculas ("MERCADOPAGO"); aquí se compara en
     // minúsculas. Sin normalizar, los campos de MercadoPago nunca aparecían.
-    paymentProvider: t.paymentProvider?.toLowerCase() === "mercadopago" ? "mercadopago" : null,
+    paymentProvider: normalizeProvider(t.paymentProvider),
     mpPublicKey: t.mpPublicKey ?? null,
+    epaycoConnected: t.epaycoConnected === true,
   };
+}
+
+function normalizeProvider(raw?: string | null): "mercadopago" | "epayco" | null {
+  const p = raw?.toLowerCase();
+  return p === "mercadopago" || p === "epayco" ? p : null;
 }
 
 export function mapAnnouncements(arr: ApiAnnouncement[]): AnnounceMessage[] {
