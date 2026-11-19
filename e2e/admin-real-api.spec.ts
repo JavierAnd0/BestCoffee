@@ -320,8 +320,10 @@ test.describe("Panel admin contra la API real", () => {
         shippingAddress: {
           recipientName: "Cliente E2E",
           line1: "Cra 12 #34-56",
+          line2: "Apto 301",
           city: "Bogotá",
           state: "Bogotá D.C.",
+          postalCode: "110111",
           country: "CO",
           phone: "3001234567",
         },
