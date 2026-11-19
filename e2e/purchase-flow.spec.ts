@@ -77,6 +77,11 @@ test.describe("Flujo de Compra Completo — Cliente y Usuario", () => {
     // Paso 2: Dirección de entrega
     await expect(page.getByRole("heading", { name: /Dirección de entrega/i })).toBeVisible();
 
+    // Con direcciones guardadas (cliente con sesión) el formulario está oculto:
+    // se abre para escribir una dirección completa.
+    const otherAddress = page.getByRole("button", { name: /Ingresar una dirección diferente/i });
+    if (await otherAddress.isVisible()) await otherAddress.click();
+
     const addressInput = page.locator('input[placeholder*="Calle"]').first();
     if (await addressInput.isVisible()) {
       await addressInput.fill("Calle 85 # 11-53");
@@ -85,6 +90,10 @@ test.describe("Flujo de Compra Completo — Cliente y Usuario", () => {
       if (await nameInput.isVisible()) {
         await nameInput.fill("Carlos");
       }
+      await page.locator('input[placeholder="Apellido"]').first().fill("Pérez");
+      // Apartamento y código postal son obligatorios (la API los exige para el envío).
+      await page.getByLabel(/Apartamento, interior, edificio/i).fill("Apto 502");
+      await page.getByLabel(/Código postal/i).fill("110111");
 
       const deptSelect = page.locator('select#shipping-region, select[name="department"]').first();
       if (await deptSelect.isVisible()) {
