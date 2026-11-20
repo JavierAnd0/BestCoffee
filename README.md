@@ -1,4 +1,4 @@
-# BestCoffee · Front
+# Bestkofi · Front
 
 Next.js 16 + TypeScript + Tailwind 4 + shadcn/ui. Multi-tenant via subdomain.
 

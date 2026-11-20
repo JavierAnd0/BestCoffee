@@ -1,4 +1,4 @@
-# BestCoffee · Front a medida por cliente (opcional)
+# Bestkofi · Front a medida por cliente (opcional)
 
 > **El modelo por defecto NO es este.** La plataforma sirve todas las tiendas
 > desde **un solo front compartido**, que resuelve la tienda por dominio

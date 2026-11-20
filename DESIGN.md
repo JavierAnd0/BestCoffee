@@ -1,5 +1,5 @@
 ---
-name: BestCoffee
+name: Bestkofi
 description: Tienda editorial de café de especialidad: crema de papel, tinta espresso y un acento terracota que cada cafetería firma como suyo.
 colors:
   paper-cream: "#faf7f1"
@@ -89,7 +89,7 @@ components:
     padding: "2px 8px"
 ---
 
-# Design System: BestCoffee
+# Design System: Bestkofi
 
 ## Overview
 
@@ -97,7 +97,7 @@ components:
 
 Una revista de café impresa que se vende sola. Papel crema, tinta espresso, una serifa elegante a gran tamaño y un único acento terracota. Es un sistema sereno y premium: mucho aire, pocas cosas a la vez, jerarquía por escala y peso de la tipografía y no por cajas, colores ni efectos. El café es el protagonista; la interfaz se aparta.
 
-La plataforma es multi-tienda, así que el sistema tiene dos capas. **La estructura es de BestCoffee** (crema, espresso, tipografía, hairlines, ritmo) y **el acento es de cada cafetería**: `--accent` lo sobrescribe el color de marca de la tienda y todo lo que sea énfasis (foco, indicadores, detalles) lo hereda. La escena 3D del hero y su paleta oscura son propias de la tienda demo ORÍGEN, no del sistema.
+La plataforma es multi-tienda, así que el sistema tiene dos capas. **La estructura es de Bestkofi** (crema, espresso, tipografía, hairlines, ritmo) y **el acento es de cada cafetería**: `--accent` lo sobrescribe el color de marca de la tienda y todo lo que sea énfasis (foco, indicadores, detalles) lo hereda. La escena 3D del hero y su paleta oscura son propias de la tienda demo ORÍGEN, no del sistema.
 
 **Key Characteristics:**
 - Crema cálido como superficie dominante; espresso como tinta y como escenario oscuro (hero y pie de página).
@@ -217,7 +217,7 @@ Lenguaje contenido: esquinas casi rectas (2–3 px) en el contenido editorial, 6
 La tarjeta no es un contenedor: es una imagen con un degradado de tueste (más oscuro cuanto más tostado, gris acero para accesorios), un halo cálido en el centro y una etiqueta pequeña en mayúsculas. Entra con un fundido y un ascenso de 28 px una sola vez. El **indicador de tueste** (nueve cajitas de 10 × 8 px llenas hasta el nivel) es la firma gráfica del producto.
 
 ### Panel de la demo (componente distintivo)
-Barra inferior que dice qué es ("Arma tu tienda · por BestCoffee"), muestra el plan que cubre lo armado en serifa ("Plan Tienda · 8 de 8 encendidas") y ofrece dos pasos: "Ajustar" (borde hairline, 6 px) y "Quiero esta tienda" (la píldora espresso, único CTA de peso). Plegada deja la home completa; en móvil se apoya sobre la barra de navegación inferior y desde `lg` se ancla abajo a la derecha. "Ajustar" la despliega hacia arriba con presets en una fila, interruptores agrupados por Presencia y Tienda, y un aviso tonal bajo la fila tocada con "Deshacer" y "Ver el sitio". El resumen y el CTA no desaparecen al desplegar. Es lo que ve el dueño de cafetería al evaluar la plataforma, así que debe sentirse tan cuidado como la tienda a la que se superpone.
+Barra inferior que dice qué es ("Arma tu tienda · por Bestkofi"), muestra el plan que cubre lo armado en serifa ("Plan Tienda · 8 de 8 encendidas") y ofrece dos pasos: "Ajustar" (borde hairline, 6 px) y "Quiero esta tienda" (la píldora espresso, único CTA de peso). Plegada deja la home completa; en móvil se apoya sobre la barra de navegación inferior y desde `lg` se ancla abajo a la derecha. "Ajustar" la despliega hacia arriba con presets en una fila, interruptores agrupados por Presencia y Tienda, y un aviso tonal bajo la fila tocada con "Deshacer" y "Ver el sitio". El resumen y el CTA no desaparecen al desplegar. Es lo que ve el dueño de cafetería al evaluar la plataforma, así que debe sentirse tan cuidado como la tienda a la que se superpone.
 
 ## Do's and Don'ts
 

@@ -27,7 +27,7 @@ export const metadata: Metadata = {
   // Cada tienda pone su propia marca en el layout del storefront; aquí no va
   // el nombre de ninguna.
   title: {
-    default: "BestCoffee",
+    default: "Bestkofi",
     template: "%s",
   },
   description: "Tiendas en línea de café de especialidad.",

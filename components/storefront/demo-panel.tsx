@@ -335,7 +335,7 @@ export function DemoPanel({
               {error}
             </p>
           )}
-          {!open && <p className="eyebrow text-foreground/70">Arma tu tienda · por BestCoffee</p>}
+          {!open && <p className="eyebrow text-foreground/70">Arma tu tienda · por Bestkofi</p>}
           <div className={"flex items-baseline justify-between gap-3 " + (open ? "" : "mt-1")}>
             <p
               key={summary.level}

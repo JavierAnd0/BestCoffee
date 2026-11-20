@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
   "generatedAt": "2026-11-15T21:27:03Z",
-  "title": "Design System: BestCoffee",
+  "title": "Design System: Bestkofi",
   "extensions": {
     "colorMeta": {
       "paper-cream": {
@@ -364,7 +364,7 @@
   ],
   "narrative": {
     "northStar": "La Tostaduría Editorial",
-    "overview": "Una revista de café impresa que se vende sola. Papel crema, tinta espresso, una serifa elegante a gran tamaño y un único acento terracota. Es un sistema sereno y premium: mucho aire, pocas cosas a la vez, jerarquía por escala y peso de la tipografía y no por cajas, colores ni efectos. El café es el protagonista; la interfaz se aparta.\n\nLa plataforma es multi-tienda, así que el sistema tiene dos capas. **La estructura es de BestCoffee** (crema, espresso, tipografía, hairlines, ritmo) y **el acento es de cada cafetería**: `--accent` lo sobrescribe el color de marca de la tienda y todo lo que sea énfasis (foco, indicadores, detalles) lo hereda. La escena 3D del hero y su paleta oscura son propias de la tienda demo ORÍGEN, no del sistema.",
+    "overview": "Una revista de café impresa que se vende sola. Papel crema, tinta espresso, una serifa elegante a gran tamaño y un único acento terracota. Es un sistema sereno y premium: mucho aire, pocas cosas a la vez, jerarquía por escala y peso de la tipografía y no por cajas, colores ni efectos. El café es el protagonista; la interfaz se aparta.\n\nLa plataforma es multi-tienda, así que el sistema tiene dos capas. **La estructura es de Bestkofi** (crema, espresso, tipografía, hairlines, ritmo) y **el acento es de cada cafetería**: `--accent` lo sobrescribe el color de marca de la tienda y todo lo que sea énfasis (foco, indicadores, detalles) lo hereda. La escena 3D del hero y su paleta oscura son propias de la tienda demo ORÍGEN, no del sistema.",
     "keyCharacteristics": [
       "Crema cálido como superficie dominante; espresso como tinta y como escenario oscuro (hero y pie de página).",
       "Un solo acento, terracota por defecto, intercambiable por tienda.",

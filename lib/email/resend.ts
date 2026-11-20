@@ -53,7 +53,7 @@ function escapeHtml(value: string): string {
 
 /** Pie con el nombre y la ciudad de la tienda si se conocen; sin dato, solo la marca. */
 function footerLine(store?: EmailStore): string {
-  if (!store?.name?.trim()) return "BestCoffee";
+  if (!store?.name?.trim()) return "Bestkofi";
   return [store.name.trim(), store.city?.trim()].filter(Boolean).map((v) => escapeHtml(v as string)).join(" · ");
 }
 
@@ -64,7 +64,7 @@ function baseTemplate(contentHtml: string, store?: EmailStore): string {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BestCoffee</title>
+  <title>Bestkofi</title>
   <style>
     body { margin: 0; padding: 0; background-color: ${brandColors.bg}; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: ${brandColors.text}; }
     .container { max-width: 560px; margin: 40px auto; background: ${brandColors.card}; border: 1px solid ${brandColors.border}; border-radius: 12px; overflow: hidden; }
@@ -80,7 +80,7 @@ function baseTemplate(contentHtml: string, store?: EmailStore): string {
 <body>
   <div class="container">
     <div class="header">
-      <div class="logo">BestCoffee</div>
+      <div class="logo">Bestkofi</div>
     </div>
     <div class="content">
       ${contentHtml}
@@ -116,7 +116,7 @@ export async function sendMagicLinkEmail({
     </h2>
     <p>Hola${name},</p>
     <p>
-      Recibimos una solicitud para acceder a tu panel de administración en <strong>BestCoffee</strong>.
+      Recibimos una solicitud para acceder a tu panel de administración en <strong>Bestkofi</strong>.
       Haz clic en el botón a continuación para ingresar a tu cuenta de forma segura y sin contraseña:
     </p>
     <div style="text-align: center;">
@@ -137,7 +137,7 @@ export async function sendMagicLinkEmail({
     const { error } = await resend.emails.send({
       from: env.resendFromEmail,
       to,
-      subject: "Tu enlace de acceso a BestCoffee",
+      subject: "Tu enlace de acceso a Bestkofi",
       html,
     });
 
@@ -293,7 +293,7 @@ export async function sendOrderConfirmationEmail({
     const { error } = await resend.emails.send({
       from: env.resendFromEmail,
       to,
-      subject: `Confirmación de pedido #${orderId} - BestCoffee`,
+      subject: `Confirmación de pedido #${orderId} - Bestkofi`,
       html,
     });
 
@@ -326,7 +326,7 @@ export async function sendPasswordResetEmail({
     </h2>
     <p>Hola,</p>
     <p>
-      Recibimos una solicitud para restablecer la contraseña de tu cuenta en <strong>BestCoffee</strong>.
+      Recibimos una solicitud para restablecer la contraseña de tu cuenta en <strong>Bestkofi</strong>.
       Haz clic en el siguiente botón para continuar:
     </p>
     <div style="text-align: center;">
@@ -341,7 +341,7 @@ export async function sendPasswordResetEmail({
     const { error } = await resend.emails.send({
       from: env.resendFromEmail,
       to,
-      subject: "Recuperación de contraseña - BestCoffee",
+      subject: "Recuperación de contraseña - Bestkofi",
       html,
     });
     if (error) return { success: false, error: error.message };

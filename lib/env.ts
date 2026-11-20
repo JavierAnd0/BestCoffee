@@ -71,7 +71,7 @@ export const env = {
   resendApiKey: optional("RESEND_API_KEY", ""),
   resendFromEmail: optional(
     "RESEND_FROM_EMAIL",
-    "BestCoffee <onboarding@resend.dev>",
+    "Bestkofi <onboarding@resend.dev>",
   ),
   // No hardcoded real email default — REQUIRED in production so a stray
   // deploy never grants platform-owner rights to whoever owns the fallback

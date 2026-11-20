@@ -47,7 +47,7 @@ export default async function SuperadminLayout({
     <div className="flex min-h-screen">
       <aside className="w-56 flex-shrink-0 border-r border-border bg-background flex flex-col h-screen sticky top-0">
         <div className="p-5 border-b border-border">
-          <p className="font-semibold text-sm">BestCoffee</p>
+          <p className="font-semibold text-sm">Bestkofi</p>
           <p className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground mt-0.5">
             Superadmin
           </p>
