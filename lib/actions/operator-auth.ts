@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { env } from "../env";
 import { clientIpHeaders } from "@/lib/api/client-ip";
+import { getTenantSlug } from "@/lib/tenant";
 
 export type MagicLinkState = null | { error: string } | { sent: true };
 export type VerifyState = null | { error: string };
@@ -19,11 +20,18 @@ export async function requestOperatorMagicLink(
   // El enlace lo genera y envía solo el backend (con su límite de intentos).
   // Si no responde, se avisa: nunca se manda un correo desde aquí, porque se
   // saltaría ese límite y permitiría enviar correos a cualquier dirección.
+  // La tienda desde la que se pide: el enlace del correo vuelve a ella (en el
+  // dominio de la plataforma no hay tienda y vuelve a la plataforma).
+  const tenantSlug = await getTenantSlug();
   let res: Response;
   try {
     res = await fetch(`${env.apiUrlInternal}/v1/auth/login`, {
       method: "POST",
-      headers: { ...(await clientIpHeaders()), "Content-Type": "application/json" },
+      headers: {
+        ...(await clientIpHeaders()),
+        "Content-Type": "application/json",
+        ...(tenantSlug && { "X-Tenant-Slug": tenantSlug }),
+      },
       body: JSON.stringify({ email }),
       cache: "no-store",
     });
