@@ -21,6 +21,7 @@ import {
   type BillingStatus,
 } from "@/components/platform/billing-badge";
 import { billingScheduleText } from "@/components/platform/billing-summary";
+import { EmailQuotaCard, type EmailUsage } from "@/components/platform/email-quota-card";
 
 export const metadata: Metadata = { title: "Dashboard · Superadmin" };
 
@@ -66,9 +67,11 @@ const BILLING_ATTENTION_LABEL: Record<BillingStatus, string> = {
 export default async function SuperadminDashboard() {
   // El MRR sale del monto y la frecuencia de cobro de cada tienda
   // (/v1/platform/analytics/revenue), no de una tarifa fija por plan.
-  const [tenants, revenue] = await Promise.all([
+  const [tenants, revenue, emailUsage] = await Promise.all([
     platformFetch<TenantRow[]>("/v1/platform/tenants"),
     getPlatformRevenue({ preset: "30d" }),
+    // Opcional: si falla, la tarjeta lo dice y el resto del panel carga igual.
+    platformFetch<EmailUsage>("/v1/platform/email-usage").catch(() => null),
   ]);
   const rev = revenue.ok ? revenue.data : null;
 
@@ -181,6 +184,8 @@ export default async function SuperadminDashboard() {
           value={stats.orders.toLocaleString("es-CO")}
         />
       </div>
+
+      <EmailQuotaCard usage={emailUsage} />
 
       <div className="grid lg:grid-cols-3 gap-6">
         {/* Distribución por plan + aporte de MRR */}

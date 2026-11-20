@@ -313,7 +313,15 @@ export default async function middleware(req: NextRequest) {
 
   // Las rutas /api/* son las mismas en cualquier host (p. ej. /api/revalidate,
   // a la que avisa el backend): no se reescriben a /platform/api/…, que no existe.
-  if (!tenantSlug && !url.pathname.startsWith("/platform") && !url.pathname.startsWith("/api/")) {
+  // /acceso tampoco: es el login de operadores también en el dominio de la
+  // plataforma (el dueño entra ahí y sigue a /platform/superadmin).
+  if (
+    !tenantSlug &&
+    !url.pathname.startsWith("/platform") &&
+    !url.pathname.startsWith("/api/") &&
+    url.pathname !== "/acceso" &&
+    !url.pathname.startsWith("/acceso/")
+  ) {
     const rewriteUrl = url.clone();
     rewriteUrl.pathname = `/platform${url.pathname === "/" ? "" : url.pathname}`;
     return NextResponse.rewrite(rewriteUrl, { request: { headers: requestHeaders } });
