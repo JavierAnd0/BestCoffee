@@ -8,7 +8,7 @@ web
 
 ## Users
 
-**Primario: dueños de cafeterías y tostadores de café de especialidad en Colombia.** Son quienes evalúan y contratan BestCoffee. Su trabajo: tener su negocio en línea sin construir un sitio aparte, mostrar y vender su café, y administrar catálogo, pedidos y suscripciones desde un panel (`/admin`). Los evalúan primero mirando el demo y su panel; deciden qué servicios activar y cuánto pagar.
+**Primario: dueños de cafeterías y tostadores de café de especialidad en Colombia.** Son quienes evalúan y contratan Bestkofi. Su trabajo: tener su negocio en línea sin construir un sitio aparte, mostrar y vender su café, y administrar catálogo, pedidos y suscripciones desde un panel (`/admin`). Los evalúan primero mirando el demo y su panel; deciden qué servicios activar y cuánto pagar.
 
 **Secundario: compradores de cada tienda.** Quien compra café en el sitio de una cafetería concreta (storefront). Llegan sobre todo desde el celular (confirmado: el diseño es móvil primero).
 
@@ -41,7 +41,7 @@ Lo que otra plataforma no podría copiar con verdad (palabras del usuario, confi
 
 ## Brand Commitments
 
-- **BestCoffee** es el nombre de la plataforma. Cada cafetería pone su propia identidad en su tienda.
+- **Bestkofi** es el nombre de la plataforma. Cada cafetería pone su propia identidad en su tienda.
 - **ORÍGEN** es solo la tienda demo (datos ficticios, hero 3D propio); no es la identidad de la plataforma ni de ninguna cafetería real.
 - Texto de interfaz en español colombiano.
 

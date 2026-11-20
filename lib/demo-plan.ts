@@ -270,7 +270,7 @@ export function contactHref(email: string, state: DemoState): string {
   const summary = summarize(state);
   const on = DEMO_FEATURES.filter((f) => state[f.key]).map((f) => f.label);
   const body = [
-    "Hola, armé mi tienda en la demo de BestCoffee y quiero hablar de ella.",
+    "Hola, armé mi tienda en la demo de Bestkofi y quiero hablar de ella.",
     "",
     `Lo que armé: ${summary.title}.`,
     `Encendido: ${on.length ? list.format(on) : "ninguna función extra"}.`,
@@ -278,5 +278,5 @@ export function contactHref(email: string, state: DemoState): string {
     "Mi café:",
     "Mi ciudad:",
   ].join("\r\n");
-  return `mailto:${email}?subject=${encodeURIComponent("Quiero mi tienda en BestCoffee")}&body=${encodeURIComponent(body)}`;
+  return `mailto:${email}?subject=${encodeURIComponent("Quiero mi tienda en Bestkofi")}&body=${encodeURIComponent(body)}`;
 }

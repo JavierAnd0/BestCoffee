@@ -44,7 +44,7 @@ export async function GET() {
   if (!(await getTenantSlug())) {
     return text(
       [
-        "# BestCoffee",
+        "# Bestkofi",
         "",
         "> Plataforma para que cafeterías y tostadores de café de especialidad tengan su tienda en línea: catálogo, pedidos, suscripciones y contenido, cada una en su propio dominio.",
         "",

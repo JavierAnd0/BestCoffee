@@ -9,7 +9,7 @@ import { getTenantSlug } from "@/lib/tenant";
 export default async function AccesoLayout({ children }: { children: React.ReactNode }) {
   const tenant = (await getTenantSlug()) ? await getCurrentTenant().catch(() => null) : null;
   return (
-    <BrandProvider brand={tenant?.brand ?? "BestCoffee"} logoUrl={tenant?.branding.logoUrl ?? null}>
+    <BrandProvider brand={tenant?.brand ?? "Bestkofi"} logoUrl={tenant?.branding.logoUrl ?? null}>
       {children}
     </BrandProvider>
   );
