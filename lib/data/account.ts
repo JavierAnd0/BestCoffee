@@ -19,6 +19,7 @@ import {
   type OrderPaymentStatus,
   type SubStatus,
 } from "../mocks/account";
+import { mapCustomerShipment } from "../shipping";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -180,6 +181,9 @@ interface ApiOrder {
   status?: string;
   paymentStatus?: string;
   trackingUrl?: string | null;
+  shippingCarrier?: string | null;
+  trackingNumber?: string | null;
+  shipment?: unknown;
   total?: number;
   totalCents?: number;
   subtotalCents?: number;
@@ -267,6 +271,9 @@ function mapOrder(o: ApiOrder): MockOrder {
     paymentStatus: PAYMENT_STATUS_MAP[o.paymentStatus ?? ""],
     preparing: o.status === "PREPARING",
     trackingUrl: safeHttpUrl(o.trackingUrl),
+    carrier: o.shippingCarrier ?? null,
+    trackingNumber: o.trackingNumber ?? null,
+    shipment: mapCustomerShipment(o.shipment),
     fromSubscription: o.fromSubscription ?? !!o.subscriptionId,
     items,
     shippingAddress: o.shippingAddress

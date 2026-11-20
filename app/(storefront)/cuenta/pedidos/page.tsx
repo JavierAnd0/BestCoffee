@@ -7,6 +7,7 @@ import { Eyebrow } from "@/components/ui/eyebrow";
 import { orderBadge } from "@/lib/order-display";
 import { getCustomerOrders } from "@/lib/data/account";
 import { formatCop, formatOrderCode } from "@/lib/format";
+import { carrierName } from "@/lib/shipping";
 
 export const metadata: Metadata = { title: "Pedidos" };
 
@@ -47,6 +48,12 @@ export default async function OrdersPage() {
                 <div className="text-xs text-muted-foreground mt-1">
                   {o.createdAt} · {o.itemsCount} {o.itemsCount === 1 ? "artículo" : "artículos"}
                 </div>
+                {o.trackingNumber && o.status !== "CANCELLED" && (
+                  <div className="text-xs text-muted-foreground mt-0.5">
+                    {carrierName(o.carrier)} · guía{" "}
+                    <span className="font-mono tabular-nums">{o.trackingNumber}</span>
+                  </div>
+                )}
               </div>
               <div className="flex gap-1.5">
                 {Array.from({ length: Math.min(3, o.itemsCount) }).map((_, i) => (

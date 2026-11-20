@@ -22,6 +22,7 @@ import type {
   AdminShippingAddress,
 } from "@/lib/data/admin";
 import { ColombiaLocationSelector } from "@/components/storefront/colombia-location-selector";
+import { ShippingLabelPanel } from "@/components/admin/shipping-label-panel";
 
 const STATUSES = ["RECEIVED", "PREPARING", "SHIPPED", "DELIVERED"] as const;
 const STATUS_LABEL: Record<(typeof STATUSES)[number], string> = {
@@ -236,6 +237,15 @@ export function AdminOrderDetailClient({ order }: { order: AdminOrderDetailData 
           ))}
         </div>
       </section>
+
+      <ShippingLabelPanel
+        orderId={order.id}
+        orderStatus={status}
+        paid={paymentStatus === "PAID"}
+        shipments={order.shipments}
+        // Generar la guía pasa el pedido de Recibido a En preparación.
+        onLabelCreated={() => setStatus((s) => (s === "RECEIVED" ? "PREPARING" : s))}
+      />
 
       <div className="grid lg:grid-cols-3 gap-6">
         <section className="lg:col-span-2 rounded-lg border border-border bg-background">

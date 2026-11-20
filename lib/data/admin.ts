@@ -21,6 +21,7 @@ import {
   type AdminAuditEntry,
 } from "../mocks/admin";
 import { clientIpHeaders } from "@/lib/api/client-ip";
+import { mapAdminShipment, type AdminShipment } from "@/lib/shipping";
 
 // ── Minimal shapes the backend returns (best-effort; cast at call sites) ─────
 
@@ -715,6 +716,8 @@ export interface AdminOrderDetailData {
   /** Dirección completa tal como la guardó el pedido (para corregirla). */
   shippingAddress: AdminShippingAddress;
   trackingNumber: string;
+  /** Guías de Envia del pedido, la más reciente primero. */
+  shipments: AdminShipment[];
   internalNotes: string;
   subtotalCents: number;
   shippingCents: number;
@@ -809,6 +812,9 @@ export async function getAdminOrderDetail(id: string): Promise<AdminOrderDetailD
           },
           // El backend guarda la guía en `trackingUrl` (número o enlace).
           trackingNumber: String(raw.trackingUrl ?? raw.trackingNumber ?? ""),
+          shipments: Array.isArray(raw.shipments)
+            ? (raw.shipments as Record<string, unknown>[]).map(mapAdminShipment)
+            : [],
           internalNotes: String(raw.internalNotes ?? ""),
           subtotalCents,
           shippingCents,
@@ -843,6 +849,7 @@ export async function getAdminOrderDetail(id: string): Promise<AdminOrderDetailD
       phone: "",
     },
     trackingNumber: "",
+    shipments: [],
     internalNotes: "",
     subtotalCents: 116_000_00,
     shippingCents: 0,

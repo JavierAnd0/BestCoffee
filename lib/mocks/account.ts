@@ -1,3 +1,4 @@
+import type { CustomerShipment } from "../shipping";
 // Mock account data. Replaced by API calls in phase 3.
 export type OrderStatus = "PROCESSING" | "SHIPPED" | "DELIVERED" | "CANCELLED";
 export type OrderPaymentStatus = "PAID" | "PENDING" | "FAILED" | "REFUNDED";
@@ -30,6 +31,11 @@ export interface MockOrder {
   preparing?: boolean;
   /** Enlace de seguimiento de la transportadora que guarda la tienda. */
   trackingUrl?: string | null;
+  /** Transportadora y número de guía (Envia), si la tienda ya la generó. */
+  carrier?: string | null;
+  trackingNumber?: string | null;
+  /** Detalle de la guía activa (solo en el detalle del pedido). */
+  shipment?: CustomerShipment | null;
   fromSubscription: boolean;
   items?: MockOrderItem[];
   shippingAddress?: string;

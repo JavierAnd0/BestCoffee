@@ -9,6 +9,7 @@ import { getCustomerOrder } from "@/lib/data/account";
 import { orderBadge, orderTimeline } from "@/lib/order-display";
 import { formatCop, formatOrderCode } from "@/lib/format";
 import { ItemThumb } from "@/components/storefront/item-thumb";
+import { carrierName, SHIPMENT_STATUS_LABEL, type CustomerShipment } from "@/lib/shipping";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -120,6 +121,8 @@ export default async function OrderDetailPage({ params }: Props) {
             los productos, haz un pedido nuevo.
           </p>
         )}
+        {/* Envia: transportadora, guía y novedades. El enlace de seguimiento es el de abajo. */}
+        {order.shipment && <ShipmentTracking shipment={order.shipment} />}
         {(order.status === "SHIPPED" || order.status === "DELIVERED") && order.trackingUrl ? (
           <a
             href={order.trackingUrl}
@@ -231,6 +234,59 @@ export default async function OrderDetailPage({ params }: Props) {
           </Button>
         )}
       </div>
+    </div>
+  );
+}
+
+/** Mensaje para el cliente según el estado de la guía. */
+const SHIPMENT_MESSAGE: Record<CustomerShipment["status"], string> = {
+  LABEL_CREATED: "La tienda ya generó tu guía. La transportadora pasará a recoger el paquete.",
+  IN_TRANSIT: "Tu pedido va en camino.",
+  DELIVERED: "La transportadora reporta tu pedido como entregado.",
+  EXCEPTION:
+    "La transportadora reportó una novedad con tu envío. Si no se resuelve pronto, escríbele a la tienda.",
+  CANCELLED: "",
+};
+
+function formatEventDate(iso: string | null): string | null {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toLocaleString("es-CO", {
+    day: "2-digit",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "America/Bogota",
+  });
+}
+
+function ShipmentTracking({ shipment }: { shipment: CustomerShipment }) {
+  const when = formatEventDate(shipment.deliveredAt ?? shipment.lastEventAt);
+  const exception = shipment.status === "EXCEPTION";
+  return (
+    <div
+      className={
+        "mt-4 rounded-md border px-4 py-3 text-sm " +
+        (exception ? "border-amber-500/30 bg-amber-500/10" : "border-sky-500/20 bg-sky-500/5")
+      }
+    >
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <span className="font-medium">
+          {carrierName(shipment.carrier)} · {SHIPMENT_STATUS_LABEL[shipment.status]}
+        </span>
+        <span className="text-xs text-muted-foreground">
+          Guía <span className="font-mono tabular-nums">{shipment.trackingNumber}</span>
+        </span>
+      </div>
+      <p className="mt-1 text-xs text-muted-foreground">{SHIPMENT_MESSAGE[shipment.status]}</p>
+      {(shipment.statusDetail || when) && (
+        <p className="mt-1 text-xs">
+          {shipment.statusDetail}
+          {shipment.statusDetail && when && " · "}
+          {when}
+        </p>
+      )}
     </div>
   );
 }
