@@ -12,9 +12,7 @@ import { TenantBillingForm } from "@/components/platform/tenant-billing-form";
 import { TenantDomainsForm } from "@/components/platform/tenant-domains-form";
 import { TenantBrandingForm } from "@/components/platform/tenant-branding-form";
 import { BillingSummary } from "@/components/platform/billing-summary";
-import {
-  type BillingStatus,
-} from "@/components/platform/billing-badge";
+import type { BillingStatus } from "@/components/platform/billing-badge";
 
 type Tier = "STARTER" | "PRO" | "BUSINESS";
 
@@ -108,7 +106,6 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
         ))}
       </div>
 
-      {/* Plan y capacidades — editable */}
       <Section title="Plan y capacidades">
         <p className="text-xs text-muted-foreground -mt-2">
           Creado el{" "}
@@ -124,7 +121,6 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
         />
       </Section>
 
-      {/* Identidad de la tienda: logo, color, contacto, datos legales y páginas */}
       <Section title="Marca y contenido">
         <TenantBrandingForm
           tenantId={tenant.id}
@@ -134,7 +130,6 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
         />
       </Section>
 
-      {/* Facturación hacia la plataforma — vista de control + edición */}
       <Section title="Control de cobros">
         <BillingSummary
           data={{
@@ -166,20 +161,17 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
         />
       </Section>
 
-      <div className="grid md:grid-cols-1 gap-6">
-        {/* Dominios */}
-        <Section title="Dominios">
-          <TenantDomainsForm
-            tenantId={tenant.id}
-            domains={tenant.domains}
-            enabled={
-              typeof tenant.features?.customDomain === "boolean"
-                ? tenant.features.customDomain
-                : tenant.tier === "BUSINESS"
-            }
-          />
-        </Section>
-      </div>
+      <Section title="Dominios">
+        <TenantDomainsForm
+          tenantId={tenant.id}
+          domains={tenant.domains}
+          enabled={
+            typeof tenant.features?.customDomain === "boolean"
+              ? tenant.features.customDomain
+              : tierCatalog[tenant.tier as Tier]?.customDomain === true
+          }
+        />
+      </Section>
 
       {/* Miembros */}
       <Section title="Miembros del equipo">

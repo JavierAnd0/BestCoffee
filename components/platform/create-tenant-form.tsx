@@ -25,7 +25,6 @@ export function CreateTenantForm() {
   const [tier, setTier] = useState("STARTER");
   const [ownerEmail, setOwnerEmail] = useState("");
   const [ownerName, setOwnerName] = useState("");
-  const [domain, setDomain] = useState("");
   const [commissionEnabled, setCommissionEnabled] = useState(false);
   const [commissionPct, setCommissionPct] = useState("");
 
@@ -48,7 +47,6 @@ export function CreateTenantForm() {
         tier,
         ownerEmail,
         ownerName: ownerName || undefined,
-        domain: domain || undefined,
         commissionEnabled: commissionAllowed && commissionEnabled,
         ...(commissionAllowed && commissionEnabled && pct != null
           ? { commissionPct: pct }
@@ -91,7 +89,7 @@ export function CreateTenantForm() {
           />
           {slug && (
             <p className="text-xs text-muted-foreground mt-1">
-              tienda en: <span className="font-mono">{slug}.{process.env.NEXT_PUBLIC_PLATFORM_DOMAIN ?? "bestcoffee.io"}</span>
+              tienda en: <span className="font-mono">{slug}.{process.env.NEXT_PUBLIC_PLATFORM_DOMAIN ?? "bestkofi.com"}</span>
             </p>
           )}
         </Field>
@@ -102,15 +100,6 @@ export function CreateTenantForm() {
             <option value="PRO">PRO</option>
             <option value="BUSINESS">BUSINESS</option>
           </select>
-        </Field>
-
-        <Field label="Dominio personalizado" hint="Opcional, sin https://">
-          <input
-            value={domain}
-            onChange={(e) => setDomain(e.target.value)}
-            placeholder="tienda.caferoma.com"
-            className={inputClass}
-          />
         </Field>
 
         {/* Comisión por ventas — SOLO puede habilitarse aquí, al crear. */}

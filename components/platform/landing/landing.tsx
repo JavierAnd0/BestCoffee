@@ -8,13 +8,13 @@ import {
   DEMO_GROUPS,
   DEMO_PRESETS,
   changeNote,
-  contactHref,
   matchPreset,
   summarize,
   toggleFeature,
   type DemoKey,
   type DemoState,
 } from "@/lib/demo-plan";
+import { RequestDialog } from "./request-dialog";
 import { SampleStore } from "./sample-store";
 import styles from "./landing.module.css";
 
@@ -52,26 +52,26 @@ const FEATURES = [
   {
     title: "Cobra como prefieras",
     body: "Conecta Mercado Pago o ePayco para cobrar en línea, o recibe transferencias directo a tu cuenta bancaria. Tú eliges cómo te pagan.",
-    img: "/img/products/taza-1.jpg",
-    alt: "Taza de cerámica con café sobre una mesa de madera",
+    img: "/img/pago-en-cafeteria-clay-banks.webp",
+    alt: "Pago con tarjeta en una cafetería, junto a una taza de café",
   },
   {
     title: "Blog y newsletter",
     body: "Publica guías, orígenes y novedades, y envíalas por correo a quienes se suscriban. Una comunidad activa que vuelve a tu tienda.",
-    img: "/img/products/v60-1.jpg",
-    alt: "Café filtrándose en un V60",
+    img: "/img/blog-preparacion-aeropress.webp",
+    alt: "Agua vertiéndose desde una tetera sobre café en una AeroPress",
   },
   {
     title: "Tu panel",
     body: "Productos, colecciones, pedidos, suscripciones, clientes, contenido, cupones y reseñas, en un solo lugar.",
-    img: "/img/products/bascula-1.jpg",
-    alt: "Báscula de café sobre una barra",
+    img: "/img/panel-bolsas-cafe.webp",
+    alt: "Bolsas de café en un exhibidor",
   },
   {
     title: "Tu marca en todo",
     body: "Logo, color, lema y contacto salen de tu configuración, también en los correos que reciben tus clientes.",
-    img: "/img/products/tetera-1.jpg",
-    alt: "Tetera y taza en la barra de una cafetería",
+    img: "/img/tu-marca-barranquero.webp",
+    alt: "Bolsa de café de papel kraft con un barranquero y el texto «Aquí va tu marca»",
   },
 ];
 
@@ -94,6 +94,7 @@ export function PlatformLanding({
   const [state, setState] = useState<DemoState>(PRESET.orders);
   const [note, setNote] = useState("");
   const [nearEnd, setNearEnd] = useState(false);
+  const [requesting, setRequesting] = useState(false);
 
   const photoRef = useRef<HTMLDivElement>(null);
   const wordRef = useRef<HTMLHeadingElement>(null);
@@ -188,7 +189,7 @@ export function PlatformLanding({
           cambiar de plataforma.
         </p>
         <div className={styles.heroWin} ref={heroWinRef}>
-          <SampleStore state={ALL_ON} />
+          <SampleStore state={ALL_ON} photoSrc="/img/tostado-battlecreek.webp" />
         </div>
       </header>
 
@@ -282,9 +283,9 @@ export function PlatformLanding({
                     Verla en la demo
                   </a>
                   {contactEmail && (
-                    <a className={styles.btnLineDark} href={contactHref(contactEmail, state)}>
+                    <button type="button" className={styles.btnLineDark} onClick={() => setRequesting(true)}>
                       Quiero esta tienda
-                    </a>
+                    </button>
                   )}
                 </div>
                 <SampleStore state={state} photo={false} />
@@ -313,10 +314,10 @@ export function PlatformLanding({
         </section>
 
         <section className={styles.close} ref={closeRef} aria-labelledby="close-title">
-          <Image src="/img/bulto-colombia.jpg" alt="" fill sizes="100vw" className={styles.closePhoto} />
+          <Image src="/img/cierre-cerezas-cafe.webp" alt="" fill sizes="100vw" className={styles.closePhoto} />
           <div className={styles.closeInner}>
             <h2 id="close-title" className={styles.closeTitle}>
-              Ábrela y pruébala.
+              Ábrela y explórala.
             </h2>
             <p className={styles.closeText}>
               La demo es una tienda completa de ejemplo. Enciende y apaga funciones y mira cómo cambia. No
@@ -327,9 +328,9 @@ export function PlatformLanding({
                 Abrir la demo
               </a>
               {contactEmail && (
-                <a className={styles.btnLine} href={contactHref(contactEmail, state)}>
+                <button type="button" className={styles.btnLine} onClick={() => setRequesting(true)}>
                   Solicitar mi tienda
-                </a>
+                </button>
               )}
             </div>
           </div>
@@ -356,7 +357,11 @@ export function PlatformLanding({
               <div>
                 <p className={styles.footHead}>Tu tienda</p>
                 <Link href="/acceso">Ingresar al panel</Link>
-                {contactEmail && <a href={contactHref(contactEmail, state)}>Solicitar mi tienda</a>}
+                {contactEmail && (
+                  <button type="button" className={styles.footButton} onClick={() => setRequesting(true)}>
+                    Solicitar mi tienda
+                  </button>
+                )}
               </div>
               <div>
                 <p className={styles.footHead}>Contacto</p>
@@ -374,6 +379,8 @@ export function PlatformLanding({
           </div>
         </div>
       </footer>
+
+      {requesting && <RequestDialog open onClose={() => setRequesting(false)} state={state} />}
 
       <div className={styles.dock} data-hidden={nearEnd || undefined}>
         <a href={demoHref}>Arma tu tienda en la demo</a>

@@ -18,7 +18,7 @@ export default function NewTenantPage() {
         </Link>
         <h1 className="text-2xl font-semibold tracking-tight">Nuevo tenant</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Crea la cafetería, su primer admin y el dominio en un solo paso.
+          Crea la cafetería y su primer admin. El dominio propio se conecta después, desde la ficha de la tienda.
         </p>
       </div>
 
