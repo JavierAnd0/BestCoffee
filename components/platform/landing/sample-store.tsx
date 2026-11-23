@@ -12,7 +12,7 @@ import styles from "./landing.module.css";
 const PRODUCTS = [
   { name: "La Esperanza", price: "$48.000 · 340 g", img: "/img/products/esperanza-1.jpg", coffee: true },
   { name: "Guji", price: "$52.000 · 340 g", img: "/img/products/guji-1.jpg", coffee: true },
-  { name: "Molino manual", price: "$210.000", img: "/img/products/molino-1.jpg", coffee: false },
+  { name: "Molino manual", price: "$210.000", img: "/img/products/molino-manual-ed-vazquez.webp", coffee: false },
 ];
 
 function Show({ when, children }: { when: boolean; children: React.ReactNode }) {
@@ -24,11 +24,13 @@ export function SampleStore({
   state,
   label = "Tienda de ejemplo",
   photo = true,
+  photoSrc = "/img/molienda-barista.jpg",
 }: {
   state: DemoState;
   label?: string;
   /** Foto en la portada de la tienda (se oculta en ventanas estrechas). */
   photo?: boolean;
+  photoSrc?: string;
 }) {
   const on = (k: DemoKey) => state[k];
   const plan = summarize(state).title;
@@ -77,7 +79,7 @@ export function SampleStore({
           </div>
           {photo && (
             <div className={styles.shopPhoto}>
-              <Image src="/img/molienda-barista.jpg" alt="" fill sizes="(min-width: 1000px) 420px, 0px" />
+              <Image src={photoSrc} alt="" fill sizes="(min-width: 1000px) 420px, 0px" />
             </div>
           )}
         </div>

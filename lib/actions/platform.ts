@@ -2,14 +2,30 @@
 
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
-import { env } from "../env";
 import { operatorFetch } from "../api/gateway";
+import { tenantOrigin } from "../platform-urls";
 
 // Server actions para el panel de superadmin. Corren en el servidor y usan el
 // gateway `operatorFetch` (lee la cookie httpOnly `bestcoffee-operator-session`
-// / `bestcoffee-impersonation` y la reenvía como `Authorization: Bearer`,
+// y la reenvía como `Authorization: Bearer`,
 // que es lo único que lee el PlatformGuard del backend). El token nunca se
 // expone al JavaScript del navegador.
+
+/**
+ * Siempre con la sesión propia del dueño de la plataforma: /v1/platform/* no
+ * acepta la de impersonación, y una cookie de impersonación que quede en este
+ * dominio (versiones anteriores la ponían aquí) haría fallar cada acción.
+ */
+async function platformAction<T = unknown>(
+  path: string,
+  init: Parameters<typeof operatorFetch>[1] = {},
+) {
+  const token = (await cookies()).get("bestcoffee-operator-session")?.value;
+  return operatorFetch<T>(path, {
+    ...init,
+    headers: { ...init.headers, ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+  });
+}
 
 export interface CreateTenantInput {
   slug: string;
@@ -17,7 +33,6 @@ export interface CreateTenantInput {
   tier: string;
   ownerEmail: string;
   ownerName?: string;
-  domain?: string;
   commissionEnabled?: boolean;
   commissionPct?: number;
 }
@@ -29,7 +44,7 @@ export type CreateTenantState =
 export async function createTenantAction(
   input: CreateTenantInput,
 ): Promise<CreateTenantState> {
-  const res = await operatorFetch<{ id: string; slug: string }>(
+  const res = await platformAction<{ id: string; slug: string }>(
     "/v1/platform/tenants",
     { method: "POST", body: input },
   );
@@ -65,7 +80,7 @@ export async function updateTenantAction(
   tenantId: string,
   input: UpdateTenantInput,
 ): Promise<UpdateTenantState> {
-  const res = await operatorFetch(`/v1/platform/tenants/${tenantId}`, {
+  const res = await platformAction(`/v1/platform/tenants/${tenantId}`, {
     method: "PATCH",
     body: input,
   });
@@ -79,40 +94,35 @@ export async function updateTenantAction(
 }
 
 export type ImpersonateState =
-  | { ok: true }
+  | { ok: true; url: string }
   | { ok: false; error: string };
 
+/**
+ * "Entrar como admin" de una tienda. La tienda vive en otro dominio
+ * (`<slug>.<dominio>`), donde una cookie puesta aquí no llega: el backend da un
+ * pase de un minuto y la tienda lo canjea en `/acceso/impersonar`.
+ */
 export async function impersonateTenantAction(
   tenantId: string,
-  tenantName?: string,
 ): Promise<ImpersonateState> {
-  const res = await operatorFetch<{ accessToken?: string }>(
+  const res = await platformAction<{ handoffToken?: string; slug?: string }>(
     `/v1/platform/tenants/${tenantId}/impersonate`,
     { method: "POST" },
   );
 
   if (!res.ok) {
-    return { ok: false, error: res.error || "No se pudo impersonar el tenant." };
+    return { ok: false, error: res.error || "No se pudo entrar a la tienda." };
   }
-
-  if (!res.data?.accessToken) {
+  const { handoffToken, slug } = res.data ?? {};
+  if (!handoffToken || !slug || !/^[a-z0-9-]+$/.test(slug)) {
     return { ok: false, error: "Respuesta inválida del servidor." };
   }
 
-  const store = await cookies();
-  const cookieOpts = {
-    httpOnly: true,
-    secure: !env.isDev,
-    sameSite: "lax" as const,
-    path: "/",
-    maxAge: 60 * 60 * 2, // 2 horas para sesión de impersonación
+  const origin = await tenantOrigin(slug);
+  return {
+    ok: true,
+    url: `${origin}/acceso/impersonar?token=${encodeURIComponent(handoffToken)}`,
   };
-  store.set("bestcoffee-impersonation", res.data.accessToken, cookieOpts);
-  if (tenantName) {
-    store.set("bestcoffee-impersonation-tenant", tenantName, cookieOpts);
-  }
-
-  return { ok: true };
 }
 
 // ── Dominios propios de una tienda ───────────────────────────────────────────
@@ -131,7 +141,7 @@ export async function addTenantDomainAction(
   tenantId: string,
   domain: string,
 ): Promise<DomainActionState> {
-  const res = await operatorFetch<{ domain: string; verification: DomainVerification }>(
+  const res = await platformAction<{ domain: string; verification: DomainVerification }>(
     `/v1/platform/tenants/${tenantId}/domains`,
     { method: "POST", body: { domain } },
   );
@@ -147,7 +157,7 @@ export async function verifyTenantDomainAction(
   tenantId: string,
   domainId: string,
 ): Promise<DomainActionState> {
-  const res = await operatorFetch<{
+  const res = await platformAction<{
     domain: string;
     verified: boolean;
     reason?: string;
@@ -171,7 +181,7 @@ export async function removeTenantDomainAction(
   tenantId: string,
   domainId: string,
 ): Promise<DomainActionState> {
-  const res = await operatorFetch(`/v1/platform/tenants/${tenantId}/domains/${domainId}`, {
+  const res = await platformAction(`/v1/platform/tenants/${tenantId}/domains/${domainId}`, {
     method: "DELETE",
   });
   if (!res.ok) return { ok: false, error: res.error || "No se pudo quitar el dominio." };

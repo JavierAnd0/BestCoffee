@@ -1,10 +1,11 @@
 "use server";
 
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { env } from "../env";
 import { clientIpHeaders } from "@/lib/api/client-ip";
 import { getTenantSlug } from "@/lib/tenant";
+import { platformOrigin } from "@/lib/platform-urls";
 
 export type MagicLinkState = null | { error: string } | { sent: true };
 export type VerifyState = null | { error: string };
@@ -175,6 +176,11 @@ async function resolveOperatorHome(
   token: string,
   isPlatformOwnerHint?: boolean,
 ): Promise<string> {
+  // En el dominio de una tienda el panel de la plataforma no existe (el proxy lo
+  // rebota a la portada): el dueño de la plataforma entra al admin de esa tienda.
+  const h = await headers();
+  if (h.get("x-tenant-slug") && h.get("x-host") !== "localhost") return "/admin";
+
   if (isPlatformOwnerHint === true) return "/platform/superadmin";
 
   // Fallback: preguntar al backend si este operador es dueño de la plataforma.
@@ -207,5 +213,6 @@ export async function stopImpersonationAction() {
   const store = await cookies();
   store.set("bestcoffee-impersonation", "", { maxAge: 0, path: "/" });
   store.set("bestcoffee-impersonation-tenant", "", { maxAge: 0, path: "/" });
-  redirect("/platform/superadmin/tenants");
+  // El panel de la plataforma está en otro dominio que la tienda.
+  redirect(`${await platformOrigin()}/platform/superadmin/tenants`);
 }

@@ -102,17 +102,17 @@ export function TenantSettingsForm({
     setSaved(false);
   }
 
-  // Overrides = solo lo que difiere de la base del tier seleccionado, para que
-  // el JSON guardado quede mínimo y coherente con resolveFeatures del backend.
+  // Overrides = solo lo que difiere de la base del tier seleccionado. El backend
+  // fusiona el JSON guardado, así que lo que coincide con el plan va como `null`
+  // (borra la excepción anterior); si no, una excepción nunca se podría quitar.
   function computeOverrides(): Record<string, unknown> {
     const base = tierCatalog[tier];
     const overrides: Record<string, unknown> = {};
     for (const k of BOOLEAN_KEYS) {
-      if (features[k] !== base[k]) overrides[k] = features[k];
+      overrides[k] = features[k] !== base[k] ? features[k] : null;
     }
-    if (features.maxProducts !== base.maxProducts) {
-      overrides.maxProducts = features.maxProducts;
-    }
+    overrides.maxProducts =
+      features.maxProducts !== base.maxProducts ? features.maxProducts : null;
     return overrides;
   }
 

@@ -16,7 +16,9 @@ export default async function AccesoPage({
       notice={
         motivo === "2fa"
           ? "Tu cuenta tiene la verificación en dos pasos activa. Vuelve a entrar con el enlace y el código de tu app."
-          : undefined
+          : motivo === "impersonacion"
+            ? "El acceso a la tienda expiró o ya se usó. Vuelve a pulsar «Entrar como admin» en el panel de la plataforma."
+            : undefined
       }
     />
   );

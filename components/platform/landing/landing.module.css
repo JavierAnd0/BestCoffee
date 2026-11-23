@@ -1045,3 +1045,373 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ── botones que abren la solicitud ───────── */
+button.btnDark,
+button.btnLineDark,
+button.btnLine {
+  border: 0;
+  cursor: pointer;
+}
+
+button.btnLineDark,
+button.btnLine {
+  background: transparent;
+}
+
+button.btnDark:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+.footButton {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: var(--on-night);
+  cursor: pointer;
+  text-align: left;
+  transition: color 0.2s;
+}
+
+.footButton:hover {
+  color: var(--honey);
+}
+
+/* ── tarjetas sobre las fotos de funciones ── */
+.fcard {
+  position: absolute;
+  z-index: 1;
+  left: 18px;
+  bottom: 18px;
+  width: min(290px, calc(100% - 36px));
+  padding: 16px 16px 14px;
+  border-radius: 14px;
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 1.4;
+  box-shadow: 0 22px 44px -18px rgba(0, 0, 0, 0.7);
+  transition: transform 0.9s var(--ease);
+}
+
+.fcard[data-kind="brand"],
+.fcard[data-kind="panel"] {
+  left: auto;
+  right: 18px;
+}
+
+.featItem:hover .fcard {
+  transform: translateY(-6px);
+}
+
+.fcard p {
+  margin: 0;
+}
+
+.fcardHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding-bottom: 10px;
+  margin-bottom: 8px !important;
+  border-bottom: 1px solid var(--line);
+  color: var(--ink-soft);
+}
+
+.fcardHead strong {
+  font-family: var(--display);
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.fcardList {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.fcardOption {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+
+.fcardOption[data-on] {
+  box-shadow: inset 0 0 0 1.5px var(--copper);
+  background: rgba(200, 118, 61, 0.07);
+}
+
+.fcardOption span {
+  display: grid;
+}
+
+.fcardOption small {
+  font-size: 11.5px;
+  color: var(--ink-soft);
+}
+
+.fcardRadio {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1.5px rgba(31, 21, 13, 0.35);
+}
+
+.fcardOption[data-on] .fcardRadio {
+  box-shadow: inset 0 0 0 4px var(--copper);
+}
+
+.fcardRow {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 10px;
+  align-items: center;
+  padding: 6px 0;
+}
+
+.fcardRow + .fcardRow {
+  border-top: 1px solid var(--line);
+}
+
+.fcardRow em {
+  font-style: normal;
+  font-size: 11.5px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(200, 118, 61, 0.12);
+  color: #8a4a1f;
+}
+
+.fcardMeta {
+  font-size: 11.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.fcardTitle {
+  margin-top: 6px !important;
+  font-family: var(--display);
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+}
+
+.fcardText {
+  margin-top: 6px !important;
+  color: var(--ink-soft);
+}
+
+.fcardBtn {
+  display: inline-block;
+  margin-top: 12px;
+  padding: 7px 14px;
+  border-radius: 999px;
+  background: var(--ink);
+  color: var(--paper);
+  font-size: 12.5px;
+}
+
+.fcardLogo {
+  font-family: var(--display);
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: #2f7fd6;
+}
+
+.fcardSwatches {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+  font-size: 11.5px;
+  color: var(--ink-soft);
+}
+
+.fcardSwatches i {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.12);
+}
+
+.fcardSwatches span {
+  margin-left: 4px;
+}
+
+@media (max-width: 480px) {
+  .fcard {
+    left: 12px;
+    bottom: 12px;
+    padding: 12px;
+    font-size: 12px;
+  }
+  .fcard[data-kind="brand"],
+  .fcard[data-kind="panel"] {
+    right: 12px;
+  }
+  .fcardOption small,
+  .fcardText {
+    display: none;
+  }
+}
+
+/* ── solicitud de tienda ──────────────────── */
+.dialog {
+  /* El reset global pone margin: 0; el modal nativo se centra con auto. */
+  margin: auto;
+  width: min(560px, calc(100% - 24px));
+  max-height: calc(100dvh - 24px);
+  padding: 0;
+  border: 0;
+  border-radius: 22px;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--sans);
+  box-shadow: 0 40px 80px -30px rgba(0, 0, 0, 0.6);
+}
+
+.dialog::backdrop {
+  background: rgba(18, 12, 8, 0.6);
+  backdrop-filter: blur(4px);
+}
+
+.dialog[open] {
+  animation: dialogIn 0.5s var(--ease);
+}
+
+@keyframes dialogIn {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.98);
+  }
+}
+
+.dialogCard {
+  position: relative;
+  padding: 30px 26px 26px;
+}
+
+.dialogClose {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ink-soft);
+  font-size: 26px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.dialogClose:hover {
+  background: rgba(31, 21, 13, 0.06);
+}
+
+.dialogTitle {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 30px;
+  line-height: 1;
+  letter-spacing: -0.035em;
+  padding-right: 40px;
+}
+
+.dialogText {
+  margin-top: 10px;
+  color: var(--ink-soft);
+}
+
+.dialogPlan {
+  margin-top: 16px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: var(--cream);
+  font-size: 14px;
+  color: var(--ink-soft);
+}
+
+.dialogPlan strong {
+  color: var(--ink);
+}
+
+.dialogDone .btnDark {
+  margin-top: 22px;
+}
+
+.form .btnDark {
+  margin-top: 18px;
+}
+
+.formGrid {
+  display: grid;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+@media (min-width: 520px) {
+  .formGrid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .fieldWide {
+    grid-column: 1 / -1;
+  }
+}
+
+.field {
+  display: grid;
+  gap: 5px;
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+
+.field input,
+.field textarea {
+  width: 100%;
+  font: inherit;
+  font-size: 16px;
+  color: var(--ink);
+  background: #fff;
+  border: 1px solid rgba(31, 21, 13, 0.18);
+  border-radius: 10px;
+  padding: 10px 12px;
+  resize: vertical;
+}
+
+.field input:focus,
+.field textarea:focus {
+  outline: 2px solid var(--copper);
+  outline-offset: 0;
+  border-color: transparent;
+}
+
+.trap {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+.formError {
+  margin-top: 14px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: #fbe9e1;
+  color: #8a2c12;
+  font-size: 14px;
+}
