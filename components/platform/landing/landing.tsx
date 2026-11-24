@@ -211,6 +211,10 @@ export function PlatformLanding({
                   <h3 className={styles.stepTitle}>{s.title}</h3>
                   <p className={styles.stepBody}>{s.body}</p>
                   <p className={styles.stepOn}>{s.on}</p>
+                  {/* En celular cada paso trae su tienda: nada queda fijo tapando el texto. */}
+                  <div className={styles.stepStore}>
+                    <SampleStore state={PRESET[s.preset]} photo={false} />
+                  </div>
                 </li>
               ))}
             </ol>
@@ -268,8 +272,21 @@ export function PlatformLanding({
                     ))}
                   </div>
                 ))}
+                {/* Solo en celular: el resultado queda debajo de los interruptores, así
+                    que esta barra acompaña mientras se enciende y apaga. */}
+                <div className={styles.liveBar}>
+                  <span className={styles.liveText}>
+                    <b>{summary.title}</b>
+                    <span>
+                      {summary.on} de {summary.total} encendidas
+                    </span>
+                  </span>
+                  <a href="#arma-resultado" className={styles.liveLink}>
+                    Ver cómo queda ↓
+                  </a>
+                </div>
               </div>
-              <div className={styles.result}>
+              <div className={styles.result} id="arma-resultado">
                 <div aria-live="polite">
                   <p className={styles.plan}>{summary.title}</p>
                   <p className={styles.count}>
