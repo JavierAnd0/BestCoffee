@@ -31,10 +31,10 @@ const IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/avif"];
 /** Mismo ritmo tipográfico que el artículo publicado (components/storefront/article-body). */
 const PROSE =
   "min-h-[50vh] outline-none text-[17px] leading-[1.75] text-foreground/90 " +
-  "[&_p]:my-5 [&_h2]:font-display [&_h2]:text-3xl [&_h2]:font-semibold [&_h2]:tracking-tight [&_h2]:leading-tight [&_h2]:mt-12 [&_h2]:mb-3 [&_h2]:text-foreground " +
-  "[&_h3]:font-display [&_h3]:text-2xl [&_h3]:font-semibold [&_h3]:tracking-tight [&_h3]:mt-9 [&_h3]:mb-2 [&_h3]:text-foreground " +
+  "[&_p]:my-5 [&_h2]:font-editorial [&_h2]:text-3xl [&_h2]:font-semibold [&_h2]:tracking-tight [&_h2]:leading-tight [&_h2]:mt-12 [&_h2]:mb-3 [&_h2]:text-foreground " +
+  "[&_h3]:font-editorial [&_h3]:text-2xl [&_h3]:font-semibold [&_h3]:tracking-tight [&_h3]:mt-9 [&_h3]:mb-2 [&_h3]:text-foreground " +
   "[&_ul]:list-disc [&_ol]:list-decimal [&_ul]:pl-6 [&_ol]:pl-6 [&_li]:my-1.5 [&_li_p]:my-0 [&_li]:marker:text-muted-foreground " +
-  "[&_blockquote]:my-8 [&_blockquote]:border-l-2 [&_blockquote]:border-foreground [&_blockquote]:pl-6 [&_blockquote]:font-display [&_blockquote]:text-2xl [&_blockquote]:leading-snug [&_blockquote]:text-foreground " +
+  "[&_blockquote]:my-8 [&_blockquote]:border-l-2 [&_blockquote]:border-foreground [&_blockquote]:pl-6 [&_blockquote]:font-editorial [&_blockquote]:text-2xl [&_blockquote]:leading-snug [&_blockquote]:text-foreground " +
   "[&_a]:underline [&_a]:underline-offset-4 [&_a]:decoration-[var(--accent)] " +
   "[&_hr]:my-10 [&_hr]:border-border [&_img]:my-8 [&_img]:w-full [&_img]:rounded-sm [&_img]:cursor-pointer [&_img.ProseMirror-selectednode]:outline-2 [&_img.ProseMirror-selectednode]:outline-offset-4 [&_img.ProseMirror-selectednode]:outline-[var(--accent)] " +
   "[&_.is-empty]:before:content-[attr(data-placeholder)] [&_.is-empty]:before:text-muted-foreground/60 [&_.is-empty]:before:float-left [&_.is-empty]:before:h-0 [&_.is-empty]:before:pointer-events-none " +

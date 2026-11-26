@@ -489,7 +489,7 @@ function Card({
     <div className="rounded-lg border border-border bg-background p-5">
       <div className="flex items-center gap-2 mb-3">
         <span className="text-muted-foreground">{icon}</span>
-        <span className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground font-semibold">
+        <span className="admin-label">
           {title}
         </span>
       </div>

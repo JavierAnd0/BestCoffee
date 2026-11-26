@@ -51,7 +51,7 @@ function OrderLink({ id }: { id: string }) {
   );
 }
 
-const TH = "px-4 py-2.5 text-[11px] font-medium text-muted-foreground uppercase tracking-wide whitespace-nowrap";
+const TH = "px-4 py-2.5 admin-th whitespace-nowrap";
 
 export default async function LogisticsPage() {
   const data = await getLogisticsData();

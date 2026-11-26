@@ -165,7 +165,7 @@ export function ProductImages({
               className="object-cover pointer-events-none"
             />
             {i === 0 && (
-              <span className="absolute top-2 left-2 rounded-sm bg-foreground px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-background">
+              <span className="absolute top-2 left-2 rounded-sm bg-foreground px-1.5 py-0.5 text-xs font-medium text-background">
                 Principal
               </span>
             )}
@@ -226,7 +226,7 @@ export function ProductImages({
           <div className="flex flex-col items-center gap-2 px-3 text-center">
             <Upload className="size-5" />
             <span>Subir fotos</span>
-            <span className="text-[10px] opacity-70">o arrástralas aquí</span>
+            <span className="text-xs opacity-70">o arrástralas aquí</span>
           </div>
         </button>
       </div>

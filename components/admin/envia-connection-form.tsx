@@ -147,7 +147,7 @@ export function EnviaConnectionForm({ status }: { status: EnviaStatus | null }) 
           </fieldset>
 
           <fieldset className="space-y-3">
-            <legend className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+            <legend className="admin-label">
               Desde dónde despachas
             </legend>
             <div className="grid sm:grid-cols-2 gap-4">
@@ -175,7 +175,7 @@ export function EnviaConnectionForm({ status }: { status: EnviaStatus | null }) 
           </fieldset>
 
           <fieldset className="space-y-3">
-            <legend className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+            <legend className="admin-label">
               Caja por defecto
             </legend>
             <p className="text-xs text-muted-foreground">
@@ -242,7 +242,7 @@ function Field({
 }) {
   return (
     <label className="block">
-      <span className="block text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground mb-1.5">
+      <span className="block admin-label mb-1.5">
         {label}
       </span>
       <input

@@ -116,7 +116,7 @@ export default async function AdminOrdersPage({
       <div className="rounded-lg border border-border bg-background overflow-x-auto">
         <table className="w-full min-w-[720px] text-sm">
           <thead>
-            <tr className="text-left text-[11px] uppercase tracking-[0.16em] text-muted-foreground bg-muted/30 border-b border-border">
+            <tr className="admin-th bg-muted/30 border-b border-border">
               <th className="px-4 py-3 font-medium">Pedido</th>
               <th className="px-4 py-3 font-medium">Cliente</th>
               <th className="px-4 py-3 font-medium text-right">Total</th>

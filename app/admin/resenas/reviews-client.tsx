@@ -111,7 +111,7 @@ export function AdminReviewsClient({ initialReviews }: { initialReviews: AdminRe
                       </div>
                     </div>
                     {r.verifiedSubscriber && (
-                      <Badge variant="outline" className="font-normal text-[10px]">
+                      <Badge variant="outline" className="font-normal text-xs">
                         <ShieldCheck className="size-3" />
                         Suscriptor verificado
                       </Badge>

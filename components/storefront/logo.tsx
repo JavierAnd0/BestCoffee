@@ -26,7 +26,7 @@ export function Logo({
     <Link
       href={href}
       className={cn(
-        "inline-flex items-center gap-1.5 font-display font-semibold tracking-[-0.02em]",
+        "inline-flex items-center gap-1.5 font-editorial font-semibold tracking-[-0.02em]",
         className,
       )}
       style={{ fontSize: size }}

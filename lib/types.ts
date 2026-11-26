@@ -29,6 +29,8 @@ export interface ProductVariant {
   sizeGrams: number;
   grind: GrindFormat;
   priceOneTimeCents: number;
+  /** Precio "antes" de una rebaja: se muestra tachado. Se cobra priceOneTimeCents. */
+  compareAtCents?: number | null;
   priceSubscriptionCents: number | null;
   stock: number;
 }

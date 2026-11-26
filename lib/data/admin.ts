@@ -573,10 +573,22 @@ export async function getSalesLast14d(): Promise<number[]> {
   }
 }
 
-export async function listAdminCustomers(): Promise<AdminCustomer[]> {
-  if (env.useMocks) return ADMIN_CUSTOMERS;
+export async function listAdminCustomers(q?: string): Promise<AdminCustomer[]> {
+  const term = q?.trim() ?? "";
+  if (env.useMocks) {
+    const needle = term.toLocaleLowerCase("es");
+    return needle
+      ? ADMIN_CUSTOMERS.filter(
+          (c) =>
+            c.name.toLocaleLowerCase("es").includes(needle) ||
+            c.email.toLocaleLowerCase("es").includes(needle),
+        )
+      : ADMIN_CUSTOMERS;
+  }
   try {
-    const raw = await adminFetch<unknown>("/v1/admin/customers");
+    const raw = await adminFetch<unknown>(
+      term ? `/v1/admin/customers?q=${encodeURIComponent(term)}` : "/v1/admin/customers",
+    );
     if (!raw) return [];
     const arr: ApiAdminCustomer[] = Array.isArray(raw)
       ? (raw as ApiAdminCustomer[])

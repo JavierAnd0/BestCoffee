@@ -219,6 +219,17 @@ La tarjeta no es un contenedor: es una imagen con un degradado de tueste (más o
 ### Panel de la demo (componente distintivo)
 Barra inferior que dice qué es ("Arma tu tienda · por Bestkofi"), muestra el plan que cubre lo armado en serifa ("Plan Tienda · 8 de 8 encendidas") y ofrece dos pasos: "Ajustar" (borde hairline, 6 px) y "Quiero esta tienda" (la píldora espresso, único CTA de peso). Plegada deja la home completa; en móvil se apoya sobre la barra de navegación inferior y desde `lg` se ancla abajo a la derecha. "Ajustar" la despliega hacia arriba con presets en una fila, interruptores agrupados por Presencia y Tienda, y un aviso tonal bajo la fila tocada con "Deshacer" y "Ver el sitio". El resumen y el CTA no desaparecen al desplegar. Es lo que ve el dueño de cafetería al evaluar la plataforma, así que debe sentirse tan cuidado como la tienda a la que se superpone.
 
+## Panel de administración (herramienta neutra)
+
+El admin (`/admin`) es una herramienta de trabajo, no una revista: decisión del dueño del producto (2026-11-26) tras una critique que midió el texto atenuado en 3,8:1. Conserva la paleta crema y espresso, pero cambia la tipografía. Las reglas viven en `app/globals.css` bajo `body:has(.admin-ui)`, para que también las hereden diálogos y menús.
+
+- **Una sola familia:** DM Sans con rango de peso 300–700 (`--font-ui`), así las seminegritas son reales. `font-display` dentro del admin resuelve a DM Sans; la serifa no titula en el panel.
+- **Texto atenuado:** espresso al 68 % (≈6,5:1 sobre crema). Nunca por debajo de 4,5:1.
+- **Piso de tamaño:** 13 px (`text-xs` vale 13 px en el admin); datos y cuerpo a 14 px. Sin 10–11 px.
+- **Etiquetas:** `.admin-label` (13 px, 500, tinta, minúsculas) para campos de formulario y `.admin-th` (13 px, 500, atenuado) para encabezados de tabla. Las etiquetas en mayúsculas espaciadas son de la tienda, no del panel.
+- **Títulos de página:** 24 px, 600, vía `PageHeader`.
+- **Excepción:** lo que previsualiza contenido de la tienda (editor del blog) y el logotipo de la tienda usan `font-editorial`, que conserva la serifa original.
+
 ## Do's and Don'ts
 
 ### Do:

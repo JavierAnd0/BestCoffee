@@ -8,11 +8,13 @@ export const metadata = {
 export default async function AccesoPage({
   searchParams,
 }: {
-  searchParams: Promise<{ motivo?: string }>;
+  searchParams: Promise<{ motivo?: string; email?: string }>;
 }) {
-  const { motivo } = await searchParams;
+  const { motivo, email } = await searchParams;
   return (
     <AccesoForm
+      // El enlace que comparte un dueño desde Equipo trae el correo de la persona.
+      defaultEmail={typeof email === "string" ? email.slice(0, 254) : undefined}
       notice={
         motivo === "2fa"
           ? "Tu cuenta tiene la verificación en dos pasos activa. Vuelve a entrar con el enlace y el código de tu app."

@@ -15,7 +15,7 @@ export function FieldLabel({
 }) {
   return (
     <label className="block">
-      <span className="block text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground mb-1.5">
+      <span className="block admin-label mb-1.5">
         {label}
       </span>
       {children}
@@ -75,15 +75,6 @@ export function FormSection({
       {children}
     </section>
   );
-}
-
-/** Fecha ISO → valor de <input type="datetime-local"> en hora local. */
-export function toLocalInput(iso: string | null | undefined): string {
-  if (!iso) return "";
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "";
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
 export function fmtDate(iso: string | null | undefined): string {

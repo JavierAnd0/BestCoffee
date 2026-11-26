@@ -3,7 +3,7 @@ import { PageHeader } from "@/components/admin/page-header";
 import { getCurrentOperator } from "@/lib/data/admin";
 import { listTeamMembers } from "@/lib/data/members";
 import { getOperatorTenantRole, isOwnerRole } from "@/lib/data/operator-role";
-import { AddMemberDialog, RoleGuide, TeamTable } from "./team-client";
+import { AccessSteps, AddMemberDialog, RoleGuide, TeamList } from "./team-client";
 
 export const metadata: Metadata = { title: "Equipo · Admin" };
 
@@ -39,19 +39,18 @@ export default async function AdminTeamPage() {
 
   const count = team.members.length;
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <PageHeader
         title="Equipo"
-        description={`${count} ${count === 1 ? "persona" : "personas"} con acceso al panel`}
+        description={`${count} ${count === 1 ? "persona entra" : "personas entran"} al panel de la tienda. Cada rol define qué puede ver y cambiar.`}
         actions={<AddMemberDialog />}
       />
-      <TeamTable members={team.members} currentEmail={operator?.email ?? null} />
-      <RoleGuide />
-      <p className="text-xs text-muted-foreground max-w-prose">
-        No se envía invitación automática. Al agregar a alguien te damos el enlace
-        de acceso para que se lo compartas: entra con su correo y recibe ahí un
-        enlace de un solo uso para iniciar sesión, sin contraseña.
-      </p>
+      <div className="space-y-4">
+        <TeamList members={team.members} currentEmail={operator?.email ?? null} />
+        {count <= 1 && <AccessSteps />}
+      </div>
+      <RoleGuide members={team.members} />
+      {count > 1 && <AccessSteps />}
     </div>
   );
 }

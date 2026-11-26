@@ -165,7 +165,7 @@ export function AdminSettingsForm({
             </ul>
           </SettingsCard>
 
-          <div className="sticky bottom-0 bg-muted/30 -mx-8 px-8 py-4 border-t border-border flex justify-end">
+          <div className="sticky bottom-0 bg-muted/30 -mx-4 px-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 py-4 border-t border-border flex justify-end">
             <Button type="submit" disabled={isPending}>
               {isPending && <Loader2 className="size-4 animate-spin mr-1.5" />}
               {isPending ? "Guardando…" : "Guardar cambios"}
@@ -221,7 +221,7 @@ function Field({
 }) {
   return (
     <label className="block">
-      <span className="block text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground mb-1.5">
+      <span className="block admin-label mb-1.5">
         {label}
       </span>
       <input
@@ -233,7 +233,7 @@ function Field({
         placeholder={placeholder}
         className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:border-foreground/40"
       />
-      {hint && <span className="mt-1 block text-[11px] text-muted-foreground">{hint}</span>}
+      {hint && <span className="mt-1 block text-xs text-muted-foreground">{hint}</span>}
     </label>
   );
 }

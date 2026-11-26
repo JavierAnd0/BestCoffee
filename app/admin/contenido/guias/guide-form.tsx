@@ -45,7 +45,7 @@ const DIFFICULTIES: { value: BrewDifficulty; hint: string }[] = [
 const roughDuration = (sec: number) =>
   sec >= 3600 ? `${Math.round(sec / 3600)} h` : `${Math.max(1, Math.round(sec / 60))} min`;
 
-const label = "block text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground mb-1.5";
+const label = "block admin-label mb-1.5";
 
 /**
  * Editor de guías: se empieza desde una plantilla del método, la receta calcula
@@ -310,7 +310,7 @@ export function GuideForm({ guide }: { guide?: AdminBrewGuide }) {
                 return (
                   <li key={s.key} className="rounded-md border border-border bg-background">
                     <div className="flex items-center gap-3 border-b border-border px-3 py-2">
-                      <span className="grid size-6 place-items-center rounded-full bg-foreground text-[11px] font-semibold text-background tabular-nums">
+                      <span className="grid size-6 place-items-center rounded-full bg-foreground text-xs font-semibold text-background tabular-nums">
                         {i + 1}
                       </span>
                       <input
@@ -368,7 +368,7 @@ export function GuideForm({ guide }: { guide?: AdminBrewGuide }) {
                           onBlur={() => update(s.key, { clockText: s.durationSec ? clock(s.durationSec) : "" })}
                           className={inputClass + " tabular-nums"}
                         />
-                        <p className="mt-1 text-[11px] text-muted-foreground">{humanDuration(s.durationSec) || "min:seg"}</p>
+                        <p className="mt-1 text-xs text-muted-foreground">{humanDuration(s.durationSec) || "min:seg"}</p>
                       </div>
                       <div>
                         <label className="mb-1 flex items-center gap-1 text-xs text-muted-foreground" htmlFor={`w-${s.key}`}>
@@ -385,7 +385,7 @@ export function GuideForm({ guide }: { guide?: AdminBrewGuide }) {
                           />
                           <span className="flex items-center px-2 text-xs text-muted-foreground">g</span>
                         </div>
-                        <p className={"mt-1 text-[11px] " + (waterBack ? "text-amber-800" : "text-muted-foreground")}>
+                        <p className={"mt-1 text-xs " + (waterBack ? "text-amber-800" : "text-muted-foreground")}>
                           {waterBack ? `Menos que el paso anterior (${prevWater} g)` : "Total en la báscula"}
                         </p>
                       </div>

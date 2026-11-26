@@ -146,7 +146,7 @@ export function SubscriptionRowActions({
           <X className="size-3.5" />
         </Button>
       </div>
-      {error && <p className="text-[11px] text-destructive max-w-56 text-right">{error}</p>}
+      {error && <p className="text-xs text-destructive max-w-56 text-right">{error}</p>}
     </div>
   );
 }

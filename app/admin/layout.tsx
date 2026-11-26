@@ -35,7 +35,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   return (
     <BrandProvider brand={tenant?.brand ?? "Panel"} logoUrl={tenant?.branding.logoUrl ?? null}>
-    <div className="flex min-h-screen">
+    <div className="admin-ui flex min-h-screen flex-col lg:flex-row">
       <AdminSidebar operator={roleLabel ? { ...operator, role: roleLabel } : operator} features={tenant?.features ?? null}
         isOwner={isOwner}
         staffRole={
@@ -48,12 +48,12 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         {billingNotice && (
           <div
             role="alert"
-            className="border-b border-amber-500/30 bg-amber-500/10 px-8 py-3 text-sm text-amber-900"
+            className="border-b border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-900 sm:px-6 lg:px-8"
           >
             {billingNotice}
           </div>
         )}
-        <main className="max-w-7xl mx-auto p-8">{children}</main>
+        <main className="max-w-7xl mx-auto px-4 py-5 sm:p-6 lg:p-8">{children}</main>
       </div>
       <Toaster />
     </div>

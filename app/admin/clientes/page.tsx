@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Search, Mail } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/admin/page-header";
@@ -8,28 +9,43 @@ import { Tooltip } from "@/components/ui/tooltip";
 
 export const metadata: Metadata = { title: "Clientes · Admin" };
 
-export default async function AdminCustomersPage() {
-  const customers = await listAdminCustomers();
+export default async function AdminCustomersPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string | string[] }>;
+}) {
+  const { q: rawQ } = await searchParams;
+  const q = (Array.isArray(rawQ) ? rawQ[0] : rawQ)?.trim() ?? "";
+  const customers = await listAdminCustomers(q);
   return (
     <div className="space-y-6">
       <PageHeader
         title="Clientes"
-        description={`${customers.length} clientes registrados`}
+        description={
+          q
+            ? `${customers.length} ${customers.length === 1 ? "resultado" : "resultados"} para “${q}”`
+            : `${customers.length} clientes registrados`
+        }
         actions={
-          <div className="relative">
+          // GET simple: la búsqueda queda en la URL (?q=) y funciona sin JavaScript.
+          <form action="/admin/clientes" role="search" className="relative">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
             <input
+              type="search"
+              name="q"
+              defaultValue={q}
               placeholder="Buscar por nombre o email"
+              aria-label="Buscar clientes por nombre o email"
               className="rounded-md border border-input bg-background pl-8 pr-3 h-9 text-sm w-72 outline-none focus-visible:border-foreground/40"
             />
-          </div>
+          </form>
         }
       />
 
-      <div className="rounded-lg border border-border bg-background overflow-hidden">
+      <div className="rounded-lg border border-border bg-background overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="text-left text-xs uppercase tracking-[0.08em] text-muted-foreground bg-muted/30 border-b border-border">
+            <tr className="admin-th bg-muted/30 border-b border-border">
               <th className="px-4 py-3 font-medium">Cliente</th>
               <th className="px-4 py-3 font-medium">Pedidos</th>
               <th className="px-4 py-3 font-medium">Suscripciones</th>
@@ -71,17 +87,35 @@ export default async function AdminCustomersPage() {
                 </td>
                 <td className="px-4 py-3 text-xs text-muted-foreground">{c.joinedAt}</td>
                 <td className="px-4 py-3 text-right">
-                  <Tooltip content="Enviar email">
-                    <button
-                      className="text-muted-foreground hover:text-foreground"
-                      aria-label="Enviar email"
+                  <Tooltip content={`Escribir a ${c.email}`}>
+                    {/* Abre el programa de correo del operador con el destinatario ya puesto. */}
+                    <a
+                      href={`mailto:${c.email}`}
+                      className="inline-grid size-8 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                      aria-label={`Escribir a ${c.name}`}
                     >
                       <Mail className="size-4" />
-                    </button>
+                    </a>
                   </Tooltip>
                 </td>
               </tr>
             ))}
+            {customers.length === 0 && (
+              <tr>
+                <td colSpan={6} className="px-4 py-12 text-center text-sm text-muted-foreground">
+                  {q ? (
+                    <>
+                      Ningún cliente coincide con “{q}”.{" "}
+                      <Link href="/admin/clientes" className="font-medium text-foreground underline underline-offset-4">
+                        Ver todos
+                      </Link>
+                    </>
+                  ) : (
+                    "Todavía no hay clientes registrados."
+                  )}
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>

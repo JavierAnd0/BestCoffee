@@ -72,6 +72,64 @@
   --radius-lg: 6px;
 }
 
+/* ─────────────────────────────────────────────────────────────
+   Panel de administración: herramienta neutra.
+   El admin es para trabajar, no para leer una revista: un solo
+   sans (DM Sans con seminegrita real), texto secundario al 68 %
+   (≈6,5:1 sobre crema, antes 52 % ≈3,8:1), 13 px como piso de
+   texto pequeño y etiquetas en minúscula sin espaciado. Se aplica
+   sobre <body> para que también lo hereden diálogos, menús y
+   avisos que se pintan fuera del layout. La tienda no cambia.
+   ───────────────────────────────────────────────────────────── */
+body:has(.admin-ui) {
+  --font-sans: var(--font-ui), system-ui, sans-serif;
+  --font-display: var(--font-ui), system-ui, sans-serif;
+  --muted-foreground: rgba(23, 13, 4, 0.68);
+  --text-xs: 0.8125rem;
+  --text-xs--line-height: 1.45;
+  letter-spacing: 0;
+}
+
+/* La serifa original, para las vistas previas de contenido de la tienda
+   dentro del admin (editor del blog): ahí se edita lo que verá el cliente. */
+:root {
+  --font-editorial: var(--font-display);
+}
+@utility font-editorial {
+  font-family: var(--font-editorial);
+  font-optical-sizing: auto;
+  letter-spacing: -0.025em;
+  font-feature-settings: "liga" on, "calt" on, "kern" on;
+}
+
+body:has(.admin-ui) .font-display {
+  letter-spacing: -0.012em;
+  font-feature-settings: normal;
+}
+
+/* Tablas del panel: en pantallas chicas no se aplastan; se desplazan de
+   lado dentro de su caja (que lleva overflow-x-auto). */
+.admin-ui .overflow-x-auto > table {
+  min-width: 42rem;
+}
+
+/* Etiqueta de campo de formulario: legible, sin mayúsculas. */
+.admin-label {
+  display: block;
+  font-size: 0.8125rem;
+  line-height: 1.3;
+  font-weight: 500;
+  color: var(--foreground);
+}
+
+/* Fila de encabezados de tabla. */
+.admin-th {
+  text-align: left;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--muted-foreground);
+}
+
 [data-tenant="origen"] {
   --accent: #b85c32;
 }

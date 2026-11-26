@@ -6,9 +6,9 @@ import { del } from "@vercel/blob";
 // (operatorStorageTenant, validado contra el backend).
 //
 //   products/<tienda>/<producto|draft>/<archivo>   → galería de productos
-//   content/<tienda>/<blog|guides|pages>/<archivo> → portadas e imágenes de contenido
+//   content/<tienda>/<blog|guides|pages|home>/<archivo> → portadas e imágenes de contenido
 
-export const CONTENT_FOLDERS = ["blog", "guides", "pages"] as const;
+export const CONTENT_FOLDERS = ["blog", "guides", "pages", "home"] as const;
 export type ContentFolder = (typeof CONTENT_FOLDERS)[number];
 
 export const IMAGE_CONTENT_TYPES = ["image/jpeg", "image/png", "image/webp", "image/avif"];
@@ -24,7 +24,7 @@ const FILE = /^[A-Za-z0-9][A-Za-z0-9._-]{0,150}$/;
  * ¿Puede el operador de `tenantSlug` subir a `pathname`? Solo dentro de las
  * carpetas de su tienda y sin `..`. Productos conserva la regla de siempre (el
  * nombre del archivo lo pone el navegador tal cual); contenido es estricto:
- * content/<tienda>/<blog|guides|pages>/<archivo saneado>.
+ * content/<tienda>/<blog|guides|pages|home>/<archivo saneado>.
  */
 export function isAllowedUploadPath(pathname: string, tenantSlug: string): boolean {
   if (pathname.includes("..") || pathname.includes("\\")) return false;

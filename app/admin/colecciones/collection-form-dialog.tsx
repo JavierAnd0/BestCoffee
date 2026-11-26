@@ -34,7 +34,7 @@ export interface CollectionFormValues {
 }
 
 const LABEL =
-  "block text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground mb-1.5";
+  "block admin-label mb-1.5";
 const FIELD =
   "w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:border-foreground/40";
 

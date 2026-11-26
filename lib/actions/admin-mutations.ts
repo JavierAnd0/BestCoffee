@@ -20,7 +20,7 @@ import type {
  */
 const toCents = (pesos: number) => Math.round(pesos * 100);
 
-type VariantField = "priceOneTime" | "priceSubscription" | "stock";
+type VariantField = "priceOneTime" | "priceSubscription" | "compareAt" | "stock";
 
 export interface SaveProductInput {
   id?: string;
@@ -41,6 +41,8 @@ export interface SaveProductInput {
     priceOneTime: number;
     /** 0 = sin precio de suscripción. */
     priceSubscription: number;
+    /** Precio "antes" (tachado en la tienda). 0 = sin rebaja. */
+    compareAt: number;
     stock: number;
     /**
      * Campos que el operador no tocó en esa presentación: en una variante que
@@ -74,8 +76,12 @@ const saveProductSchema = z.object({
         grind: z.enum(["WHOLE_BEAN", "ESPRESSO", "FILTER", "FRENCH_PRESS"]),
         priceOneTime: z.number().positive("Cada tamaño necesita un precio mayor que 0."),
         priceSubscription: z.number().nonnegative("El precio de suscripción no puede ser negativo."),
+        compareAt: z.number().nonnegative("El precio anterior no puede ser negativo."),
         stock: z.number().int("El stock debe ser un número entero.").nonnegative("El stock no puede ser negativo."),
-        preserve: z.array(z.enum(["priceOneTime", "priceSubscription", "stock"])).optional(),
+        preserve: z.array(z.enum(["priceOneTime", "priceSubscription", "compareAt", "stock"])).optional(),
+      })
+      .refine((v) => v.compareAt === 0 || v.compareAt > v.priceOneTime, {
+        message: "El precio anterior debe ser mayor que el precio actual.",
       }),
     )
     .min(1, "El producto necesita al menos un tamaño y una molienda."),
@@ -92,6 +98,7 @@ interface ApiVariantRow {
   grind: string;
   priceOneTime: number;
   priceSubscription: number | null;
+  compareAtPrice?: number | null;
   stock: number;
 }
 
@@ -153,6 +160,7 @@ export async function saveProductAction(
     grind: v.grind,
     priceOneTime: toCents(v.priceOneTime),
     ...(v.priceSubscription > 0 ? { priceSubscription: toCents(v.priceSubscription) } : {}),
+    ...(v.compareAt > 0 ? { compareAtPrice: toCents(v.compareAt) } : {}),
     stock: v.stock,
   });
 
@@ -239,6 +247,11 @@ export async function saveProductAction(
     if (!keep.has("priceSubscription")) {
       const nextSub = v.priceSubscription > 0 ? toCents(v.priceSubscription) : null;
       if (nextSub !== (prev.priceSubscription ?? null)) patch.priceSubscription = nextSub;
+    }
+    // Vacío o 0 = sin rebaja (null la quita en la API).
+    if (!keep.has("compareAt")) {
+      const nextCompare = v.compareAt > 0 ? toCents(v.compareAt) : null;
+      if (nextCompare !== (prev.compareAtPrice ?? null)) patch.compareAtPrice = nextCompare;
     }
     if (!keep.has("stock") && v.stock !== prev.stock) patch.stock = v.stock;
     if (Object.keys(patch).length === 0) continue;

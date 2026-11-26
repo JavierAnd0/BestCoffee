@@ -49,7 +49,7 @@ export default async function AdminDashboard() {
     <div className="space-y-8">
       <header className="flex items-end justify-between">
         <div>
-          <h1 className="font-display text-4xl font-semibold tracking-tight">Dashboard</h1>
+          <h1 className="font-display text-2xl font-semibold tracking-tight">Dashboard</h1>
           <p className="mt-2 text-sm text-muted-foreground">
             Vista general de {tenant.name}. Datos en tiempo real.
           </p>
@@ -69,7 +69,7 @@ export default async function AdminDashboard() {
       <section className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {kpis.map((k) => (
           <div key={k.label} className="rounded-lg border border-border bg-background p-5">
-            <div className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground">
+            <div className="admin-label">
               {k.label}
             </div>
             <div className="mt-2 font-display text-3xl font-semibold tabular-nums tracking-tight">

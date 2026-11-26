@@ -9,7 +9,7 @@ import {
   type MagicLinkState,
 } from "@/lib/actions/operator-auth";
 
-export function AccesoForm({ notice }: { notice?: string }) {
+export function AccesoForm({ notice, defaultEmail }: { notice?: string; defaultEmail?: string }) {
   const [state, dispatch, isPending] = useActionState<MagicLinkState, FormData>(
     requestOperatorMagicLink,
     null,
@@ -78,6 +78,7 @@ export function AccesoForm({ notice }: { notice?: string }) {
                   type="email"
                   name="email"
                   autoComplete="email"
+                  defaultValue={defaultEmail}
                   required
                   placeholder="tu@correo.com"
                   className="w-full rounded-md border border-input bg-card px-3.5 py-2.5 text-sm outline-none placeholder:text-muted-foreground/50 focus-visible:border-foreground/40 focus-visible:ring-2 focus-visible:ring-ring/30 transition-shadow"
