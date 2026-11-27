@@ -75,7 +75,7 @@ export async function requestStoreAction(
     `Ciudad: ${city || "sin dato"}`,
     `WhatsApp o teléfono: ${phone || "sin dato"}`,
     "",
-    `Lo que armó: ${summarize(state).title}`,
+    `Nivel que cubre (interno): ${summarize(state).title}`,
     `Funciones: ${on.length ? on.join(", ") : "ninguna función extra"}`,
     ...(message ? ["", message] : []),
   ].join("\n");
@@ -84,7 +84,7 @@ export async function requestStoreAction(
     const result = await sendContactNotificationEmail({
       name,
       email,
-      subject: `Solicitud de tienda: ${cafe}`,
+      subject: `Contacto desde bestkofi: ${cafe}`,
       message: body,
       store: { name: "Bestkofi" },
       recipient: to,

@@ -32,19 +32,28 @@ function demoStoreUrl(): string | null {
 }
 
 export const metadata: Metadata = {
-  title: "Bestkofi · La tienda en línea de tu tostadora",
+  title: "Bestkofi · Sitios web a la medida para marcas de café",
   description:
-    "Tienda en línea para cafeterías y tostadoras de Colombia: catálogo, pedidos, suscripciones y blog con tu marca. Enciende solo lo que necesitas.",
+    "Diseñamos el sitio de tu tostadora o cafetería con tu marca: vitrina, tienda en línea, suscripciones y blog. Tú eliges lo que necesitas; nosotros nos encargamos de todo lo demás.",
 };
 
+/** Número de WhatsApp en formato internacional (solo dígitos, 8 a 15) o null. */
+function validWhatsapp(raw: string | undefined): string | null {
+  const digits = (raw ?? "").replace(/\D/g, "");
+  return digits.length >= 8 && digits.length <= 15 ? digits : null;
+}
+
 export default function PlatformLandingPage() {
-  // "Solicitar mi tienda": aún no hay alta automática (las tiendas las crea el
-  // superadmin), así que abre un correo a PLATFORM_CONTACT_EMAIL con lo que el
-  // visitante armó. Sin esa variable no se muestra.
+  // Contacto de la plataforma. Aún no hay alta automática (las tiendas las crea
+  // el superadmin): el formulario llega por correo a PLATFORM_CONTACT_EMAIL y
+  // WhatsApp abre un chat con PLATFORM_WHATSAPP. Un canal sin variable no se
+  // muestra. La página es estática: un cambio en estas variables pide un nuevo
+  // despliegue.
   const contactEmail = validContact(process.env.PLATFORM_CONTACT_EMAIL);
+  const whatsapp = validWhatsapp(process.env.PLATFORM_WHATSAPP);
   return (
     <div className={`${funnelDisplay.variable} ${funnelSans.variable}`}>
-      <PlatformLanding demoUrl={demoStoreUrl()} contactEmail={contactEmail} />
+      <PlatformLanding demoUrl={demoStoreUrl()} contactEmail={contactEmail} whatsapp={whatsapp} />
     </div>
   );
 }
