@@ -128,6 +128,8 @@ export async function registerAction(
   }
 
   const { email, password, firstName, lastName } = parsed.data;
+  // El backend (RegisterCustomerDto) solo acepta `name` y rechaza propiedades extra.
+  const name = [firstName, lastName].filter(Boolean).join(" ").trim().slice(0, 100) || undefined;
 
   const tenantSlug = await resolveActiveTenantSlug();
 
@@ -140,7 +142,7 @@ export async function registerAction(
         "Content-Type": "application/json",
         "X-Tenant-Slug": tenantSlug,
       },
-      body: JSON.stringify({ email, password, firstName, lastName }),
+      body: JSON.stringify({ email, password, name }),
       cache: "no-store",
     });
   } catch {
