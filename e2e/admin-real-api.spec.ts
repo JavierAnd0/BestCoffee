@@ -209,10 +209,11 @@ test.describe("Panel admin contra la API real", () => {
     await page.getByRole("spinbutton", { name: /^Precio \(COP\)/ }).fill("47300");
     await page.getByRole("spinbutton", { name: /^Precio suscr\. \(COP\)/ }).fill("42000");
     await page.getByRole("spinbutton", { name: /^Stock por molienda/ }).fill("7");
-    await page
-      .getByRole("radiogroup", { name: "Visibilidad en la tienda" })
-      .getByRole("radio", { name: /^Publicado/ })
-      .check();
+    // El radio es sr-only: se hace clic en su tarjeta (el <label>), como lo haría una persona.
+    const visibilidad = page.getByRole("radiogroup", { name: "Visibilidad en la tienda" });
+    const publicado = page.getByRole("radio", { name: /^Publicado/ });
+    await visibilidad.locator("label").filter({ has: publicado }).click();
+    await expect(visibilidad.getByRole("radio", { name: /^Publicado/ })).toBeChecked();
     await page.getByRole("button", { name: "Guardar producto" }).click();
     await expect(page).toHaveURL(/\/admin\/productos$/, { timeout: 20_000 });
     visited.add("/admin/productos");
