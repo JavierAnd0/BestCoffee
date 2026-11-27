@@ -509,6 +509,7 @@ export function ProductForm({ product }: { product?: Product }) {
       <Section title="Visibilidad en la tienda">
         <ChoiceCards
           name="status"
+          label="Visibilidad en la tienda"
           value={status}
           onChange={setStatus}
           options={STATUS_OPTIONS}
@@ -523,6 +524,7 @@ export function ProductForm({ product }: { product?: Product }) {
       <Section title="Cómo se vende">
         <ChoiceCards
           name="subscriptionAvailability"
+          label="Cómo se vende"
           value={subAvail}
           onChange={setSubAvail}
           options={SUB_OPTIONS}
@@ -600,17 +602,19 @@ interface ChoiceOption<T extends string> {
 /** Opciones excluyentes en tarjetas: cada una dice qué implica, no solo su nombre. */
 function ChoiceCards<T extends string>({
   name,
+  label,
   value,
   onChange,
   options,
 }: {
   name: string;
+  label: string;
   value: T;
   onChange: (v: T) => void;
   options: ChoiceOption<T>[];
 }) {
   return (
-    <div role="radiogroup" className="grid gap-3 sm:grid-cols-3">
+    <div role="radiogroup" aria-label={label} className="grid gap-3 sm:grid-cols-3">
       {options.map((o) => {
         const active = o.value === value;
         const Icon = o.icon;
