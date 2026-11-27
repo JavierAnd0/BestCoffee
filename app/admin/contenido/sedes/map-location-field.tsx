@@ -6,7 +6,7 @@ import { resolveMapsLinkAction } from "@/lib/actions/maps";
 import { isShortMapsLink, parseMapsCoordinates } from "@/lib/maps-link";
 import { TextField } from "../_components/fields";
 
-const label = "block text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground mb-1.5";
+const label = "block admin-label mb-1.5";
 
 /**
  * Ubicación de la sede: se pega el enlace de Google Maps y las coordenadas se

@@ -59,12 +59,12 @@ export default async function CollectionsPage() {
                   )}
                 </div>
                 <h2 className="mt-3 font-display text-xl font-semibold tracking-tight">{c.name}</h2>
-                <p className="mt-0.5 font-mono text-[11px] text-muted-foreground">/colecciones/{c.slug}</p>
+                <p className="mt-0.5 font-mono text-xs text-muted-foreground">/colecciones/{c.slug}</p>
                 {c.description && (
                   <p className="mt-2 text-sm text-muted-foreground line-clamp-2">{c.description}</p>
                 )}
                 {c.type === "AUTO" && (
-                  <div className="mt-3 text-[11px] uppercase tracking-[0.12em] text-muted-foreground">
+                  <div className="mt-3 admin-label">
                     Reglas
                     <div className="font-mono text-foreground/90 mt-1 normal-case tracking-normal">
                       {rules.length ? rules.join(" · ") : "Sin reglas: incluye todo el catálogo activo"}

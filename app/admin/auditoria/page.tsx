@@ -108,7 +108,7 @@ export default async function AdminAuditPage({
       <form method="GET" className="flex flex-wrap items-end gap-3">
         {filters.entity && <input type="hidden" name="entidad" value={filters.entity} />}
         <label className="block">
-          <span className="block text-[11px] text-muted-foreground mb-1">ID del registro afectado</span>
+          <span className="block text-xs text-muted-foreground mb-1">ID del registro afectado</span>
           <span className="relative block">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
             <input
@@ -120,7 +120,7 @@ export default async function AdminAuditPage({
           </span>
         </label>
         <label className="block">
-          <span className="block text-[11px] text-muted-foreground mb-1">Acción</span>
+          <span className="block text-xs text-muted-foreground mb-1">Acción</span>
           <select name="accion" defaultValue={filters.action ?? ""} className={FIELD}>
             <option value="">Todas</option>
             {AUDIT_ACTIONS.map((a) => (
@@ -131,11 +131,11 @@ export default async function AdminAuditPage({
           </select>
         </label>
         <label className="block">
-          <span className="block text-[11px] text-muted-foreground mb-1">Desde</span>
+          <span className="block text-xs text-muted-foreground mb-1">Desde</span>
           <input type="date" name="desde" defaultValue={filters.from} className={FIELD} />
         </label>
         <label className="block">
-          <span className="block text-[11px] text-muted-foreground mb-1">Hasta</span>
+          <span className="block text-xs text-muted-foreground mb-1">Hasta</span>
           <input type="date" name="hasta" defaultValue={filters.to} className={FIELD} />
         </label>
         <button
@@ -161,7 +161,7 @@ export default async function AdminAuditPage({
         <div className="rounded-lg border border-border bg-background overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-left text-xs uppercase tracking-[0.08em] text-muted-foreground bg-muted/30 border-b border-border">
+              <tr className="admin-th bg-muted/30 border-b border-border">
                 <th className="px-4 py-3 font-medium">Cuándo</th>
                 <th className="px-4 py-3 font-medium">Usuario</th>
                 <th className="px-4 py-3 font-medium">Acción</th>

@@ -9,6 +9,8 @@ export interface TeamMember {
   name: string | null;
   role: MemberRole;
   createdAt: string | null;
+  /** Último inicio de sesión. Null: aún no ha entrado al panel. */
+  lastLoginAt?: string | null;
 }
 
 export type TeamResult =
@@ -23,6 +25,7 @@ const MOCK_TEAM: TeamMember[] = [
     name: "María R.",
     role: "TENANT_OWNER",
     createdAt: "2026-01-12T00:00:00.000Z",
+    lastLoginAt: new Date().toISOString(),
   },
   {
     userId: "mock_orders",
@@ -30,6 +33,7 @@ const MOCK_TEAM: TeamMember[] = [
     name: "Andrés P.",
     role: "TENANT_ORDERS",
     createdAt: "2026-03-02T00:00:00.000Z",
+    lastLoginAt: null,
   },
 ];
 

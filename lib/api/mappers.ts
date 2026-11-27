@@ -19,6 +19,8 @@ export interface ApiVariant {
   grind: string;
   priceOneTime: number;
   priceSubscription: number | null;
+  /** Precio antes de la rebaja; ausente en respuestas de antes de la migración. */
+  compareAtPrice?: number | null;
   stock: number;
 }
 
@@ -111,6 +113,9 @@ export function mapProduct(p: ApiProduct): Product {
       sizeGrams: v.sizeGrams,
       grind: (v.grind as Product["variants"][number]["grind"]) ?? "WHOLE_BEAN",
       priceOneTimeCents: v.priceOneTime,
+      // Solo cuenta como rebaja si de verdad es mayor que el precio que se cobra.
+      compareAtCents:
+        v.compareAtPrice != null && v.compareAtPrice > v.priceOneTime ? v.compareAtPrice : null,
       priceSubscriptionCents: v.priceSubscription,
       stock: v.stock,
     })),

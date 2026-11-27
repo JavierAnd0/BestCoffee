@@ -1,9 +1,12 @@
 "use client";
 
+import { useState } from "react";
+import { ImageUploadField } from "@/components/admin/image-upload-field";
+import { DateTimeField } from "@/components/admin/date-time-field";
 import { saveContentBlockAction } from "@/lib/actions/admin-content";
 import { useContentForm } from "../_components/use-content-form";
 import type { ContentBlock, ContentKind } from "@/lib/data/admin-content";
-import { FieldLabel, FormError, FormSection, TextField, inputClass, toLocalInput } from "../_components/fields";
+import { FieldLabel, FormError, FormSection, TextField, inputClass } from "../_components/fields";
 import { FormActions } from "../_components/submit-button";
 import { BLOCK_KINDS } from "../_components/block-kinds";
 
@@ -41,6 +44,9 @@ export function BlockForm({
   const data = block?.data;
   const cta = ctaOf(data);
   const bundle = Array.isArray(data?.productSlugs) ? (data.productSlugs as string[]) : [];
+  // Controlados para que "Hasta" no deje elegir días antes de "Desde".
+  const [startsAt, setStartsAt] = useState(block?.startsAt ?? "");
+  const [endsAt, setEndsAt] = useState(block?.endsAt ?? "");
 
   return (
     <form onSubmit={onSubmit} className={inline ? "space-y-6" : "space-y-6 max-w-3xl"}>
@@ -57,15 +63,21 @@ export function BlockForm({
           <>
             <TextField label="Titular" name="title" required maxLength={120} defaultValue={str(data, "title")} />
             <TextField label="Subtítulo (opcional)" name="subtitle" maxLength={240} defaultValue={str(data, "subtitle")} />
-            <TextField
-              label="Imagen principal (URL)"
+            <ImageUploadField
+              label="Imagen principal"
               name="imageDesktop"
+              folder="home"
               required
-              maxLength={500}
               defaultValue={str(data, "imageDesktop")}
-              placeholder="https://"
+              hint="Horizontal, de al menos 1920 px de ancho."
             />
-            <TextField label="Imagen para móvil (URL, opcional)" name="imageMobile" maxLength={500} defaultValue={str(data, "imageMobile")} placeholder="https://" />
+            <ImageUploadField
+              label="Imagen para móvil (opcional)"
+              name="imageMobile"
+              folder="home"
+              defaultValue={str(data, "imageMobile")}
+              hint="Vertical. Si no la subes, en el celular se usa la principal."
+            />
           </>
         )}
         {(kind === "ANNOUNCEMENT" || kind === "HERO") && (
@@ -91,7 +103,7 @@ export function BlockForm({
           <>
             <TextField label="Título" name="title" required maxLength={120} defaultValue={str(data, "title")} />
             <fieldset>
-              <legend className="block text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground mb-1.5">
+              <legend className="block admin-label mb-1.5">
                 Productos del paquete
               </legend>
               {products.length === 0 ? (
@@ -117,12 +129,22 @@ export function BlockForm({
           Activo
         </label>
         <div className={inline ? "grid grid-cols-2 gap-4" : "grid sm:grid-cols-3 gap-4"}>
-          <FieldLabel label="Desde (opcional)">
-            <input type="datetime-local" name="startsAt" defaultValue={toLocalInput(block?.startsAt)} className={inputClass} />
-          </FieldLabel>
-          <FieldLabel label="Hasta (opcional)">
-            <input type="datetime-local" name="endsAt" defaultValue={toLocalInput(block?.endsAt)} className={inputClass} />
-          </FieldLabel>
+          <DateTimeField
+            label="Desde (opcional)"
+            name="startsAt"
+            value={startsAt}
+            onChange={setStartsAt}
+            placeholder="Desde ya"
+          />
+          <DateTimeField
+            label="Hasta (opcional)"
+            name="endsAt"
+            value={endsAt}
+            onChange={setEndsAt}
+            min={startsAt}
+            defaultTime="23:55"
+            placeholder="Sin fin"
+          />
           <TextField label="Orden" name="position" type="number" min={0} defaultValue={block?.position ?? 0} hint="El número más bajo va primero. Si hay dos portadas visibles, se muestra la de número más bajo." />
         </div>
       </FormSection>

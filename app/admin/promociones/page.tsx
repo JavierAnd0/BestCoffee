@@ -22,10 +22,10 @@ export default async function AdminPromosPage() {
         actions={<PromoCreateDialog />}
       />
 
-      <div className="rounded-lg border border-border bg-background overflow-hidden">
+      <div className="rounded-lg border border-border bg-background overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="text-left text-xs uppercase tracking-[0.08em] text-muted-foreground bg-muted/30 border-b border-border">
+            <tr className="admin-th bg-muted/30 border-b border-border">
               <th className="px-4 py-3 font-medium">Código</th>
               <th className="px-4 py-3 font-medium">Tipo</th>
               <th className="px-4 py-3 font-medium">Valor</th>

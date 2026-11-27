@@ -13,7 +13,8 @@ import type { AdminBlogPost, BlogPostStatus } from "@/lib/data/admin-content";
 import { remoteImage } from "@/lib/remote-image";
 import { ImageUploadField, uploadContentImage } from "@/components/admin/image-upload-field";
 import { ArticleBody } from "@/components/storefront/article-body";
-import { FieldLabel, inputClass, toLocalInput } from "../_components/fields";
+import { FieldLabel } from "../_components/fields";
+import { DateTimeField } from "@/components/admin/date-time-field";
 import { RichText } from "./rich-text";
 
 const SLUG = /^[a-z0-9]+(-[a-z0-9]+)*$/;
@@ -79,7 +80,7 @@ export function BlogForm({ post, siteHost }: { post?: AdminBlogPost; siteHost: s
   const [slug, setSlug] = useState(post?.slug ?? "");
   const [coverUrl, setCoverUrl] = useState(post?.coverUrl ?? "");
   const [coverUploading, setCoverUploading] = useState(false);
-  const [publishedAt, setPublishedAt] = useState(toLocalInput(post?.publishedAt));
+  const [publishedAt, setPublishedAt] = useState(post?.publishedAt ?? "");
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [preview, setPreview] = useState(false);
   const [dirty, setDirty] = useState(false);
@@ -277,7 +278,7 @@ export function BlogForm({ post, siteHost }: { post?: AdminBlogPost; siteHost: s
   return (
     <div className="-mt-2">
       {/* ── Barra superior ── */}
-      <div className="sticky top-0 z-30 -mx-8 flex h-14 items-center gap-3 border-b border-border bg-background px-8">
+      <div className="sticky top-14 z-30 -mx-4 sm:-mx-6 lg:top-0 lg:-mx-8 flex h-14 items-center gap-3 border-b border-border bg-background px-4 sm:px-6 lg:px-8">
         <Link
           href="/admin/contenido/blog"
           onClick={() => (leaving.current = !dirty)}
@@ -375,7 +376,7 @@ export function BlogForm({ post, siteHost }: { post?: AdminBlogPost; siteHost: s
       {preview && (
         <article className="mx-auto max-w-[44rem] pb-32 pt-12">
           <p className="mb-6 text-center text-xs text-muted-foreground">Vista previa · así se verá en el blog de tu tienda</p>
-          <h1 className="text-center font-display text-5xl font-semibold leading-[1.05] tracking-tight">
+          <h1 className="text-center font-editorial text-5xl font-semibold leading-[1.05] tracking-tight">
             {title || "Título del artículo"}
           </h1>
           <p className="mt-5 text-center text-xs text-muted-foreground">{minutes} min de lectura</p>
@@ -385,7 +386,7 @@ export function BlogForm({ post, siteHost }: { post?: AdminBlogPost; siteHost: s
             </div>
           )}
           <div className="space-y-6 py-12">
-            {excerpt && <p className="font-display text-xl leading-relaxed text-foreground">{excerpt}</p>}
+            {excerpt && <p className="font-editorial text-xl leading-relaxed text-foreground">{excerpt}</p>}
             <ArticleBody markdown={body} />
           </div>
         </article>
@@ -431,7 +432,7 @@ export function BlogForm({ post, siteHost }: { post?: AdminBlogPost; siteHost: s
           placeholder="Título del artículo"
           aria-label="Título"
           maxLength={160}
-          className="font-display text-4xl font-semibold leading-[1.08] tracking-tight placeholder:text-muted-foreground/45 sm:text-5xl"
+          className="font-editorial text-4xl font-semibold leading-[1.08] tracking-tight placeholder:text-muted-foreground/45 sm:text-5xl"
         />
         <AutoTextarea
           value={excerpt}
@@ -439,7 +440,7 @@ export function BlogForm({ post, siteHost }: { post?: AdminBlogPost; siteHost: s
           placeholder="Una o dos frases que inviten a leer. Se ven en el listado del blog y en Google."
           aria-label="Entradilla"
           maxLength={400}
-          className="mt-4 font-display text-xl leading-snug text-muted-foreground placeholder:text-muted-foreground/45 sm:text-2xl"
+          className="mt-4 font-editorial text-xl leading-snug text-muted-foreground placeholder:text-muted-foreground/45 sm:text-2xl"
         />
 
         <div className="mt-8">
@@ -508,20 +509,17 @@ export function BlogForm({ post, siteHost }: { post?: AdminBlogPost; siteHost: s
             </div>
           </FieldLabel>
 
-          <FieldLabel
+          <DateTimeField
             label="Fecha de publicación"
+            value={publishedAt}
+            onChange={touch(setPublishedAt)}
+            defaultTime="08:00"
+            placeholder="Al darle Publicar"
             hint="Vacío: se publica al darle Publicar. Con una fecha futura, el artículo queda programado y aparece solo ese día."
-          >
-            <input
-              type="datetime-local"
-              value={publishedAt}
-              onChange={(e) => touch(setPublishedAt)(e.target.value)}
-              className={inputClass}
-            />
-          </FieldLabel>
+          />
 
           <div>
-            <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Así se verá en Google</p>
+            <p className="mb-2 admin-label">Así se verá en Google</p>
             <div className="rounded-md border border-border p-4">
               <p className="truncate text-xs text-muted-foreground">
                 {siteHost} › blog › {effectiveSlug}

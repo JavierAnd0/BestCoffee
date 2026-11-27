@@ -7,6 +7,7 @@ import { motion } from "motion/react";
 import { Plus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { formatCop } from "@/lib/format";
+import { WasPrice, salePct } from "./sale-price";
 import type { Product } from "@/lib/types";
 import { useCart, buildCartItem } from "@/components/storefront/cart-context";
 import { Tooltip } from "@/components/ui/tooltip";
@@ -55,6 +56,7 @@ export function ProductCard({
     product.variants[0],
   );
   const badge = product.badges[0];
+  const onSale = salePct(cheapest) != null;
 
   return (
     <motion.article
@@ -107,15 +109,22 @@ export function ProductCard({
           />
         )}
 
-        {/* Badge */}
-        {badge && (
-          <span className="absolute top-3 left-3 z-10">
-            <Badge
-              variant="secondary"
-              className="bg-black/55 text-white/90 border-white/8 text-[10px] rounded-sm"
-            >
-              {BADGE_LABEL[badge] ?? badge}
-            </Badge>
+        {/* Badges */}
+        {(badge || onSale) && (
+          <span className="absolute top-3 left-3 z-10 flex gap-1.5">
+            {onSale && (
+              <Badge className="bg-accent text-accent-foreground border-transparent text-[10px] rounded-sm">
+                Oferta
+              </Badge>
+            )}
+            {badge && (
+              <Badge
+                variant="secondary"
+                className="bg-black/55 text-white/90 border-white/8 text-[10px] rounded-sm"
+              >
+                {BADGE_LABEL[badge] ?? badge}
+              </Badge>
+            )}
           </span>
         )}
 
@@ -159,11 +168,12 @@ export function ProductCard({
             </span>
           ))}
         </div>
-        <div className="mt-3 flex items-baseline gap-2">
+        <div className="mt-3 flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
           <span className="font-display font-light text-[1.1rem] tabular-nums">
             {formatCop(cheapest.priceOneTimeCents)}
           </span>
-          {cheapest.priceSubscriptionCents && (
+          <WasPrice variant={cheapest} className="text-[11px] font-light" />
+          {!onSale && cheapest.priceSubscriptionCents && (
             <span className="text-[11px] text-muted-foreground font-light">
               {formatCop(cheapest.priceSubscriptionCents)}/suscr.
             </span>

@@ -12,6 +12,17 @@ const sans = localFont({
   fallback: ["system-ui", "sans-serif"],
 });
 
+// El mismo archivo de DM Sans con todo su rango de peso: el panel de
+// administración (y solo él) lo usa para tener seminegritas reales. La tienda
+// sigue con el rango 300–500 de siempre.
+const ui = localFont({
+  variable: "--font-ui",
+  display: "swap",
+  src: [{ path: "./fonts/dm-sans-latin-wght-normal.woff2", weight: "300 700", style: "normal" }],
+  fallback: ["system-ui", "sans-serif"],
+  preload: false,
+});
+
 const display = localFont({
   variable: "--font-display",
   display: "swap",
@@ -38,7 +49,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     <html
       lang="es"
       data-scroll-behavior="smooth"
-      className={`${sans.variable} ${display.variable} h-full antialiased`}
+      className={`${sans.variable} ${display.variable} ${ui.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-background text-foreground font-sans">
         <TooltipProvider>{children}</TooltipProvider>

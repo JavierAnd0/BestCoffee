@@ -133,7 +133,7 @@ export default async function ProductsListPage({
       <div className="rounded-lg border border-border bg-background overflow-x-auto">
         <table className="w-full min-w-[760px] text-sm">
           <thead>
-            <tr className="text-left text-xs uppercase tracking-[0.08em] text-muted-foreground bg-muted/30 border-b border-border">
+            <tr className="admin-th bg-muted/30 border-b border-border">
               <th className="px-4 py-3 font-medium">Producto</th>
               <th className="px-4 py-3 font-medium">Tueste</th>
               <th className="px-4 py-3 font-medium">Stock</th>
@@ -207,7 +207,7 @@ export default async function ProductsListPage({
                   <td className="px-4 py-3">
                     <div className="flex flex-wrap gap-1">
                       {p.badges.map((b) => (
-                        <Badge key={b} variant="secondary" className="font-normal text-[10px]">
+                        <Badge key={b} variant="secondary" className="font-normal text-xs">
                           {badgeLabel(b)}
                         </Badge>
                       ))}

@@ -4,6 +4,8 @@
 import { env } from "../env";
 import { clientIpHeaders } from "./client-ip";
 
+const SECURITY_PATH = "/platform/superadmin/seguridad";
+
 async function getToken(): Promise<string | null> {
   const { cookies } = await import("next/headers");
   const c = await cookies();
@@ -34,10 +36,21 @@ export async function platformFetch<T>(
       return (await res.json()) as T;
     }
     const body = await res.text().catch(() => "");
+    // Sesión de la cuenta de plataforma sin 2FA: no es un fallo, es un paso
+    // pendiente. El layout ya redirige, pero las páginas cargan en paralelo y
+    // llegarían aquí antes; se manda a Seguridad (que, si el 2FA ya está
+    // activo, pide volver a entrar con el código).
+    if (res.status === 403 && body.includes("verificación en dos pasos")) {
+      const { redirect } = await import("next/navigation");
+      redirect(SECURITY_PATH);
+    }
     const err = new Error(`Platform API ${res.status}: ${body}`);
     console.error(`platformFetch(${path}) failed:`, err.message);
     throw err;
   } catch (err) {
+    // La redirección de Next viaja como excepción: se deja pasar sin registrarla.
+    const { unstable_rethrow } = await import("next/navigation");
+    unstable_rethrow(err);
     // No ocultar fallos reales del panel de superadmin devolviendo [] en
     // silencio — el caller debe ver y manejar el error (ej. mostrar un
     // estado de error en la UI en lugar de una lista vacía engañosa).

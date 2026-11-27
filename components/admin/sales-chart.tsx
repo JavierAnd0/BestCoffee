@@ -39,7 +39,7 @@ export function SalesChart({ data, height = 180 }: Props) {
         })}
         <line x1="0" y1={height - 12} x2="100" y2={height - 12} stroke="currentColor" strokeWidth="0.2" className="text-border" />
       </svg>
-      <div className="mt-2 flex justify-between text-[10px] text-muted-foreground tabular-nums">
+      <div className="mt-2 flex justify-between text-xs text-muted-foreground tabular-nums">
         <span>hace 14 d</span>
         <span>hoy</span>
       </div>

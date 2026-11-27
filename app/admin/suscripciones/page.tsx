@@ -141,7 +141,7 @@ export default async function AdminSubscriptionsPage({
       <div className="rounded-lg border border-border bg-background overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="text-left text-xs uppercase tracking-[0.08em] text-muted-foreground bg-muted/30 border-b border-border">
+            <tr className="admin-th bg-muted/30 border-b border-border">
               <th className="px-4 py-3 font-medium">Cliente</th>
               <th className="px-4 py-3 font-medium">Producto</th>
               <th className="px-4 py-3 font-medium">Frecuencia</th>
@@ -176,7 +176,7 @@ export default async function AdminSubscriptionsPage({
                 <td className="px-4 py-3 text-right font-semibold tabular-nums whitespace-nowrap">
                   {s.unitPriceCents === null ? "—" : formatCop(s.unitPriceCents)}
                   {s.discountPct > 0 && (
-                    <div className="text-[11px] font-normal text-muted-foreground">
+                    <div className="text-xs font-normal text-muted-foreground">
                       –{s.discountPct}% suscripción
                     </div>
                   )}
@@ -210,7 +210,7 @@ export default async function AdminSubscriptionsPage({
 function Kpi({ label, value, hint }: { label: string; value: string; hint: string }) {
   return (
     <div className="rounded-lg border border-border bg-background p-4">
-      <div className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground">
+      <div className="admin-label">
         {label}
       </div>
       <div className="mt-1.5 font-display text-2xl font-semibold tabular-nums">{value}</div>

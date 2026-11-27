@@ -137,7 +137,7 @@ function KindSection({ kind, blocks }: { kind: ContentBlock["kind"]; blocks: Con
                 >
                   {sorted.length > 1 && (
                     <span
-                      className="grid size-6 shrink-0 place-items-center rounded-full border border-border text-[11px] font-medium tabular-nums text-muted-foreground"
+                      className="grid size-6 shrink-0 place-items-center rounded-full border border-border text-xs font-medium tabular-nums text-muted-foreground"
                       title="Posición: el número más bajo va primero"
                     >
                       {i + 1}

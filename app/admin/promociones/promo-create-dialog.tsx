@@ -59,7 +59,7 @@ export function PromoCreateDialog() {
             )}
 
             <label className="block">
-              <span className="block text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground mb-1.5">
+              <span className="block admin-label mb-1.5">
                 Código
               </span>
               <input
@@ -72,7 +72,7 @@ export function PromoCreateDialog() {
 
             <div className="grid grid-cols-2 gap-3">
               <label className="block">
-                <span className="block text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground mb-1.5">
+                <span className="block admin-label mb-1.5">
                   Tipo
                 </span>
                 <select
@@ -87,7 +87,7 @@ export function PromoCreateDialog() {
               </label>
 
               <label className="block">
-                <span className="block text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground mb-1.5">
+                <span className="block admin-label mb-1.5">
                   {type === "PERCENTAGE" ? "Porcentaje" : "Monto (COP)"}
                 </span>
                 <input
@@ -105,7 +105,7 @@ export function PromoCreateDialog() {
 
             <div className="grid grid-cols-2 gap-3">
               <label className="block">
-                <span className="block text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground mb-1.5">
+                <span className="block admin-label mb-1.5">
                   Límite de usos (opcional)
                 </span>
                 <input
@@ -118,7 +118,7 @@ export function PromoCreateDialog() {
               </label>
 
               <label className="block">
-                <span className="block text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground mb-1.5">
+                <span className="block admin-label mb-1.5">
                   Vencimiento (opcional)
                 </span>
                 <input
@@ -130,7 +130,7 @@ export function PromoCreateDialog() {
             </div>
 
             <label className="block">
-              <span className="block text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground mb-1.5">
+              <span className="block admin-label mb-1.5">
                 Compra mínima en COP (opcional)
               </span>
               <input

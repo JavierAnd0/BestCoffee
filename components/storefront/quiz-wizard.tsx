@@ -9,6 +9,7 @@ import { Eyebrow } from "@/components/ui/eyebrow";
 import { Roast } from "@/components/ui/roast";
 import { Badge } from "@/components/ui/badge";
 import { formatCop } from "@/lib/format";
+import { WasPrice } from "./sale-price";
 import { PRODUCTS } from "@/lib/mocks/products";
 import type { Product, ProductType } from "@/lib/types";
 import { Tooltip } from "@/components/ui/tooltip";
@@ -356,6 +357,7 @@ function Result({ product, onReset }: { product: Product; onReset: () => void })
               <span className="font-display text-2xl font-semibold tabular-nums">
                 {formatCop(cheapest.priceOneTimeCents)}
               </span>
+              <WasPrice variant={cheapest} className="flex justify-end text-xs" />
               {cheapest.priceSubscriptionCents != null && (
                 <span className="block text-xs text-muted-foreground text-right">
                   o {formatCop(cheapest.priceSubscriptionCents)} suscripción

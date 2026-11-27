@@ -46,7 +46,7 @@ export function ActionButton({
         {pending && <Loader2 className="size-3.5 animate-spin" />}
         {label}
       </Button>
-      {error && <span role="alert" className="text-[11px] text-red-700">{error}</span>}
+      {error && <span role="alert" className="text-xs text-red-700">{error}</span>}
     </span>
   );
 }

@@ -134,7 +134,7 @@ function KeyField({
 }) {
   return (
     <label className="block">
-      <span className="block text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground mb-1.5">
+      <span className="block admin-label mb-1.5">
         {label}
       </span>
       <input

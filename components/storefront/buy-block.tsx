@@ -5,6 +5,7 @@ import { Check, Truck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Stepper } from "@/components/ui/stepper";
 import { formatCop } from "@/lib/format";
+import { WasPrice, salePct } from "./sale-price";
 import type { Product, ProductVariant } from "@/lib/types";
 import { GRIND_LABEL, sortGrinds } from "@/lib/grind";
 import { useCart, buildCartItem } from "./cart-context";
@@ -101,8 +102,11 @@ export function BuyBlock({
           <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
             Precio
           </div>
-          <div className="mt-1 font-display text-3xl font-semibold tabular-nums">
-            {formatCop(variant?.priceOneTimeCents ?? fromPrice)}
+          <div className="mt-1 flex flex-wrap items-baseline gap-x-3">
+            <span className="font-display text-3xl font-semibold tabular-nums">
+              {formatCop(variant?.priceOneTimeCents ?? fromPrice)}
+            </span>
+            <WasPrice variant={variant} className="text-sm" />
           </div>
           <p className="mt-3 text-sm text-muted-foreground">
             Para realizar tu pedido, contáctanos directamente. La compra en línea
@@ -121,8 +125,11 @@ export function BuyBlock({
           <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
             Precio unitario
           </div>
-          <div className="font-display text-3xl font-semibold tabular-nums text-foreground">
-            {formatCop(variant.priceOneTimeCents)}
+          <div className="flex flex-wrap items-baseline gap-x-3">
+            <span className="font-display text-3xl font-semibold tabular-nums text-foreground">
+              {formatCop(variant.priceOneTimeCents)}
+            </span>
+            <WasPrice variant={variant} className="text-sm" />
           </div>
           <p className="text-xs text-muted-foreground pt-1">
             ✓ Garantía oficial de 1 año · Calibrado para barismo
@@ -180,8 +187,13 @@ export function BuyBlock({
             <ModeCard
               active={mode === "once"}
               onClick={() => setMode("once")}
-              title="Compra única"
-              subtitle={formatCop(variant.priceOneTimeCents)}
+              title={salePct(variant) != null ? "Compra única · Oferta" : "Compra única"}
+              subtitle={
+                <>
+                  {formatCop(variant.priceOneTimeCents)}{" "}
+                  <WasPrice variant={variant} />
+                </>
+              }
             />
           )}
           {canSubscribe && variant.priceSubscriptionCents != null && (
@@ -332,7 +344,7 @@ function ModeCard({
   active: boolean;
   onClick?: () => void;
   title: string;
-  subtitle: string;
+  subtitle: React.ReactNode;
 }) {
   return (
     <button

@@ -64,7 +64,7 @@ export default async function MetricsPage({ searchParams }: { searchParams: Prom
     <div className="space-y-6">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="font-display text-4xl font-semibold tracking-tight">Métricas</h1>
+          <h1 className="font-display text-2xl font-semibold tracking-tight">Métricas</h1>
           <p className="mt-2 text-sm text-muted-foreground">
             Cómo va {tenant.name}: ventas, suscriptores, qué se vende y qué tostar.
           </p>

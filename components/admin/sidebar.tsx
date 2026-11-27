@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
@@ -18,12 +19,14 @@ import {
   KeyRound,
   UserCog,
   ChartColumn,
+  Menu,
   type LucideIcon,
 } from "lucide-react";
 import type { TenantFeatures } from "@/lib/types";
 import { Logo } from "@/components/storefront/logo";
 import { stopImpersonationAction } from "@/lib/actions/operator-auth";
 import { OperatorLogoutButton } from "./operator-logout-button";
+import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 
 type BooleanFeature = Exclude<keyof TenantFeatures, "maxProducts">;
 type StaffRole = "TENANT_EDITOR" | "TENANT_ORDERS";
@@ -86,6 +89,7 @@ export function AdminSidebar({
   };
 }) {
   const pathname = usePathname();
+  const [open, setOpen] = useState(false);
   const initials =
     operator.name
       .split(" ")
@@ -95,30 +99,34 @@ export function AdminSidebar({
       .join("")
       .toUpperCase() || "OP";
 
-  return (
-    <aside className="w-60 flex-shrink-0 border-r border-border bg-background flex flex-col h-screen sticky top-0">
+  const items = NAV.filter(
+    (n) =>
+      (!n.feature || !features || features[n.feature]) &&
+      (!n.ownerOnly || isOwner) &&
+      (isOwner || !staffRole || !n.roles || n.roles.includes(staffRole)),
+  );
+  const current = items.find((n) => (n.exact ? pathname === n.href : pathname.startsWith(n.href)));
+  const onNavigate = () => setOpen(false);
+
+  const content = (
+    <>
       <div className="p-5 border-b border-border">
         <Logo size={18} href="/admin" />
-        <div className="mt-1 text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
-          Admin
-        </div>
+        <div className="mt-1 text-xs text-muted-foreground">Panel de administración</div>
       </div>
 
       <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-0.5">
-        {NAV.filter(
-          (n) =>
-            (!n.feature || !features || features[n.feature]) &&
-            (!n.ownerOnly || isOwner) &&
-            (isOwner || !staffRole || !n.roles || n.roles.includes(staffRole)),
-        ).map((n) => {
+        {items.map((n) => {
           const active = n.exact ? pathname === n.href : pathname.startsWith(n.href);
           const Icon = n.icon;
           return (
             <Link
               key={n.href}
               href={n.href}
+              onClick={onNavigate}
+              aria-current={active ? "page" : undefined}
               className={
-                "flex items-center gap-2.5 rounded-md px-3 py-2 text-sm transition-colors " +
+                "flex items-center gap-2.5 rounded-md px-3 py-2.5 lg:py-2 text-sm transition-colors " +
                 (active
                   ? "bg-muted text-foreground font-medium"
                   : "text-foreground/70 hover:bg-muted hover:text-foreground")
@@ -148,13 +156,48 @@ export function AdminSidebar({
           </span>
           <div className="flex-1 min-w-0 text-sm">
             <div className="font-medium truncate">{operator.name}</div>
-            <div className="text-[11px] text-muted-foreground truncate">
+            <div className="text-xs text-muted-foreground truncate">
               {operator.role}
             </div>
           </div>
           <OperatorLogoutButton />
         </div>
       </div>
-    </aside>
+        </>
+  );
+
+  return (
+    <>
+      {/* Celular y tablet: barra superior fija y menú que se desliza. */}
+      <header className="lg:hidden sticky top-0 z-40 flex h-14 items-center gap-2 border-b border-border bg-background/95 px-2 backdrop-blur-sm">
+        <Sheet open={open} onOpenChange={setOpen}>
+          <SheetTrigger
+            aria-label="Abrir menú"
+            className="grid size-11 place-items-center rounded-md text-foreground hover:bg-muted"
+          >
+            <Menu className="size-5" />
+          </SheetTrigger>
+          <SheetContent
+            side="left"
+            showCloseButton={false}
+            className="w-72 max-w-[85vw] gap-0 p-0 data-[side=left]:w-72"
+          >
+            <SheetTitle className="sr-only">Menú del panel</SheetTitle>
+            {content}
+          </SheetContent>
+        </Sheet>
+        <div className="min-w-0 flex-1">
+          <div className="truncate text-sm font-semibold">{current?.label ?? "Panel"}</div>
+        </div>
+        <div className="pr-2">
+          <Logo size={15} href="/admin" />
+        </div>
+      </header>
+
+      {/* Escritorio: barra lateral fija. */}
+      <aside className="hidden lg:flex w-60 flex-shrink-0 border-r border-border bg-background flex-col h-screen sticky top-0">
+        {content}
+      </aside>
+    </>
   );
 }

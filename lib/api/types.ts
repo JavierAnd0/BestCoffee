@@ -1887,6 +1887,8 @@ export interface components {
             priceOneTime: number;
             /** @description Precio suscripción (centavos COP) */
             priceSubscription?: number;
+            /** @description Precio anterior a la rebaja (centavos COP), mayor que `priceOneTime`. Se muestra tachado; `null` quita la rebaja. */
+            compareAtPrice?: number | null;
             /** @default 0 */
             stock: number;
         };
@@ -1952,6 +1954,8 @@ export interface components {
             priceOneTime?: number;
             /** @description Precio suscripción (centavos COP) */
             priceSubscription?: number;
+            /** @description Precio anterior a la rebaja (centavos COP), mayor que `priceOneTime`. Se muestra tachado; `null` quita la rebaja. */
+            compareAtPrice?: number | null;
             /** @default 0 */
             stock: number;
         };

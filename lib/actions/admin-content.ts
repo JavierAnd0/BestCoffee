@@ -119,7 +119,7 @@ function blockData(kind: ContentKind, fd: FormData): Record<string, unknown> | s
       const title = text(fd, "title");
       const imageDesktop = text(fd, "imageDesktop");
       if (!title) return "Escribe el titular.";
-      if (!imageDesktop) return "Indica la imagen principal (URL).";
+      if (!imageDesktop) return "Agrega la imagen principal.";
       const c = cta(fd);
       if (c && (!c.label || !c.href)) return "El botón necesita texto y enlace.";
       const subtitle = text(fd, "subtitle");

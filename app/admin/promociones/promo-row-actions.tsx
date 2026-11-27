@@ -58,7 +58,7 @@ export function PromoRowActions({
         </Button>
       </div>
       {error && (
-        <span role="alert" className="text-[11px] text-destructive max-w-56 text-right">
+        <span role="alert" className="text-xs text-destructive max-w-56 text-right">
           {error}
         </span>
       )}
