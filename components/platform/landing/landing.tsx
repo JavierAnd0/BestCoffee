@@ -1,13 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
   BookOpen,
   Coffee,
-  Mail,
-  MapPin,
   MessageCircle,
   Package,
   Repeat,
@@ -38,9 +36,10 @@ import styles from "./landing.module.css";
  * nombran aquí: el nivel solo viaja, como dato interno, en el correo de
  * contacto.
  *
- * Rendimiento en celular: sin manejadores de scroll ni parallax en JS (en iOS
- * se atrasan frente al scroll nativo y se sienten trabados), sin filtros sobre
- * fotos grandes y solo dos maquetas de tienda en toda la página.
+ * Rendimiento en celular: el parallax del hero es una animación de CSS ligada
+ * al scroll (animation-timeline), que corre en el compositor y no se atrasa
+ * frente al scroll nativo. Sin filtros sobre fotos grandes y solo dos maquetas
+ * de tienda en toda la página.
  */
 
 /** Las funciones dichas como beneficio para quien tiene la cafetería. */
@@ -69,19 +68,13 @@ const STARTS: { id: string; label: string }[] = [
 ];
 const PRESET = Object.fromEntries(DEMO_PRESETS.map((p) => [p.id, p.state])) as Record<string, DemoState>;
 
-const VALUES = [
-  {
-    title: "Con tu marca en cada detalle",
-    body: "Tu logo, tus colores, tus fotos y tu forma de contar tu historia, en cada página y en los correos que reciben tus clientes.",
-  },
-  {
-    title: "Pensado para café",
-    body: "Orígenes, notas de cata, tueste, molienda y presentaciones. Solo hacemos sitios de café, así que hablamos el idioma de tus clientes.",
-  },
-  {
-    title: "Nosotros nos encargamos",
-    body: "Publicación, seguridad, cobros, correos y actualizaciones. Tú no tocas nada técnico: si necesitas un cambio, nos escribes.",
-  },
+/** Quién pone qué: el reparto es el mensaje de la sección. */
+const YOURS = ["Tu café y la historia detrás de cada origen.", "Tus fotos, tu logo y tus colores.", "Lo que quieres ofrecer y a quién."];
+const OURS = [
+  "El diseño, a la medida de tu marca.",
+  "La publicación, con tu dominio.",
+  "Los cobros, los correos y la seguridad.",
+  "Los cambios: nos escribes y quedan hechos.",
 ];
 
 const PROCESS = [
@@ -144,6 +137,39 @@ export function PlatformLanding({
 }) {
   const [state, setState] = useState<DemoState>(PRESET.catalog ?? ALL_OFF);
   const [note, setNote] = useState("");
+  const photoRef = useRef<HTMLDivElement>(null);
+  const innerRef = useRef<HTMLDivElement>(null);
+  const winRef = useRef<HTMLDivElement>(null);
+
+  // Hero: al bajar, la foto se acerca, el texto se queda atrás y la ventana
+  // sube. Lo hace el CSS con animation-timeline (ver landing.module.css). Esto
+  // es solo el respaldo para navegadores de escritorio que no lo soportan: en
+  // celular sin soporte el hero queda quieto, nunca con JS en cada scroll.
+  useEffect(() => {
+    if (CSS.supports("animation-timeline: scroll()")) return;
+    if (!window.matchMedia("(pointer: fine) and (min-width: 1000px) and (prefers-reduced-motion: no-preference)").matches)
+      return;
+    let frame = 0;
+    const update = () => {
+      frame = 0;
+      const y = Math.min(window.scrollY, window.innerHeight * 1.2);
+      const t = y / 900;
+      if (photoRef.current) photoRef.current.style.transform = `translateY(${t * 140}px) scale(${1 + t * 0.08})`;
+      if (innerRef.current) {
+        innerRef.current.style.transform = `translateY(${t * 260}px)`;
+        innerRef.current.style.opacity = String(1 - Math.min(t, 1) * 0.6);
+      }
+      if (winRef.current) winRef.current.style.transform = `translateY(${-t * 220}px)`;
+    };
+    const onScroll = () => {
+      if (!frame) frame = requestAnimationFrame(update);
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      cancelAnimationFrame(frame);
+    };
+  }, []);
   const hasContact = Boolean(contactEmail || whatsapp);
   const contactHref = hasContact ? "#contacto" : (demoUrl ?? "#arma");
   const activeStart = matchPreset(state);
@@ -187,14 +213,15 @@ export function PlatformLanding({
 
       <header className={styles.hero}>
         <div className={styles.heroPhoto}>
-          <Image src="/img/molienda-barista.jpg" alt="" fill priority sizes="100vw" />
+          <div className={styles.heroPhotoMove} ref={photoRef}>
+            <Image src="/img/molienda-barista.jpg" alt="" fill priority sizes="100vw" />
+          </div>
         </div>
-        <div className={styles.heroInner}>
-          <p className={styles.kick}>Sitios web para marcas de café</p>
+        <div className={styles.heroInner} ref={innerRef}>
           <h1 className={styles.heroTitle}>Un sitio a la medida de tu café.</h1>
           <p className={styles.heroSub}>
-            Diseñamos el sitio de tu tostadora o cafetería con tu marca y con lo que tu negocio necesita. Tú te
-            encargas del café; nosotros, de todo lo demás.
+            Diseñamos sitios web para tostadoras y cafeterías: con tu marca, con lo que tu negocio necesita y sin
+            que tengas que tocar nada técnico.
           </p>
           <div className={styles.heroCtas}>
             <a className={styles.btnLight} href="#arma">
@@ -205,7 +232,7 @@ export function PlatformLanding({
             </a>
           </div>
         </div>
-        <div className={styles.heroWin}>
+        <div className={styles.heroWin} ref={winRef}>
           <SampleStore state={ALL_ON} photo photoSrc="/img/tostado-battlecreek.webp" priority />
         </div>
       </header>
@@ -213,29 +240,51 @@ export function PlatformLanding({
       <main className={styles.sheet}>
         <section className={styles.sec} id="que-hacemos" aria-labelledby="que-title">
           <div className={styles.wrap}>
-            <h2 id="que-title" className={`${styles.h2} ${styles.reveal}`}>
-              Hacemos sitios que se sienten como tu marca.
-            </h2>
-            <ol className={styles.values}>
-              {VALUES.map((v, i) => (
-                <li key={v.title} className={`${styles.value} ${styles.reveal}`}>
-                  <span className={styles.valueNum}>{String(i + 1).padStart(2, "0")}</span>
-                  <h3 className={styles.valueTitle}>{v.title}</h3>
-                  <p className={styles.valueBody}>{v.body}</p>
-                </li>
-              ))}
-            </ol>
+            <div className={styles.split}>
+              <div className={styles.splitPhoto}>
+                <Image
+                  src="/img/cierre-cerezas-cafe.webp"
+                  alt="Cerezas de café maduras en la rama"
+                  fill
+                  sizes="(min-width: 1000px) 520px, 100vw"
+                />
+              </div>
+              <div className={styles.splitText}>
+                <h2 id="que-title" className={styles.h2}>
+                  Tú pones el café. Nosotros, todo lo demás.
+                </h2>
+                <p className={styles.lead}>
+                  Solo hacemos sitios de café, así que conocemos lo que buscan tus clientes: origen, notas de cata,
+                  tueste y molienda.
+                </p>
+                <div className={styles.share}>
+                  <div>
+                    <h3 className={styles.shareTitle}>Tú</h3>
+                    <ul className={styles.shareList}>
+                      {YOURS.map((t) => (
+                        <li key={t}>{t}</li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div>
+                    <h3 className={styles.shareTitle}>Nosotros</h3>
+                    <ul className={styles.shareList}>
+                      {OURS.map((t) => (
+                        <li key={t}>{t}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
 
             <div className={styles.process}>
-              <h3 className={`${styles.processTitle} ${styles.reveal}`}>Así trabajamos</h3>
-              <ol className={styles.processList}>
-                {PROCESS.map((p, i) => (
-                  <li key={p.title} className={`${styles.processStep} ${styles.reveal}`}>
-                    <span className={styles.processNum}>{i + 1}</span>
-                    <div>
-                      <p className={styles.processStepTitle}>{p.title}</p>
-                      <p className={styles.processStepBody}>{p.body}</p>
-                    </div>
+              <h3 className={styles.processTitle}>Así trabajamos</h3>
+              <ol className={styles.timeline}>
+                {PROCESS.map((p) => (
+                  <li key={p.title} className={styles.timelineStep}>
+                    <p className={styles.timelineTitle}>{p.title}</p>
+                    <p className={styles.timelineBody}>{p.body}</p>
                   </li>
                 ))}
               </ol>
@@ -291,7 +340,7 @@ export function PlatformLanding({
                         onClick={() => flip(f.key)}
                       >
                         <span className={styles.tileTop}>
-                          <Icon className={styles.tileIcon} aria-hidden="true" strokeWidth={1.6} />
+                          <Icon className={styles.tileIcon} aria-hidden="true" strokeWidth={1.5} />
                           <span className={styles.tileCheck} aria-hidden="true" />
                         </span>
                         <span className={styles.tileLabel}>{c.label}</span>
@@ -356,37 +405,20 @@ export function PlatformLanding({
                 <p className={styles.lead}>
                   Cuéntanos de tu marca y te escribimos para armar tu sitio contigo.
                 </p>
-                <ul className={styles.channels}>
+                <div className={styles.direct}>
                   {whatsapp && (
-                    <li>
-                      <a className={styles.channel} href={whatsappHref(whatsapp, state)} target="_blank" rel="noopener">
-                        <MessageCircle aria-hidden="true" strokeWidth={1.6} />
-                        <span>
-                          <b>WhatsApp</b>
-                          Escríbenos y te respondemos por chat
-                        </span>
-                      </a>
-                    </li>
+                    <a className={styles.btnDark} href={whatsappHref(whatsapp, state)} target="_blank" rel="noopener">
+                      <MessageCircle className={styles.btnIcon} aria-hidden="true" strokeWidth={1.75} />
+                      Escríbenos por WhatsApp
+                    </a>
                   )}
                   {contactEmail && (
-                    <li>
-                      <a className={styles.channel} href={`mailto:${contactEmail}`}>
-                        <Mail aria-hidden="true" strokeWidth={1.6} />
-                        <span>
-                          <b>Correo</b>
-                          {contactEmail}
-                        </span>
-                      </a>
-                    </li>
+                    <p className={styles.directLine}>
+                      O al correo <a href={`mailto:${contactEmail}`}>{contactEmail}</a>
+                    </p>
                   )}
-                  <li className={styles.channel}>
-                    <MapPin aria-hidden="true" strokeWidth={1.6} />
-                    <span>
-                      <b>Bogotá, Colombia</b>
-                      Trabajamos con cafés de todo el país
-                    </span>
-                  </li>
-                </ul>
+                  <p className={styles.directPlace}>Desde Bogotá, para cafés de todo el país.</p>
+                </div>
               </div>
               {contactEmail && <ContactForm state={state} labels={LABELS} />}
             </div>
