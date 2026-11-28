@@ -112,9 +112,32 @@ export function SampleStore({
             ))}
           </div>
         ) : (
-          <p className={`${styles.shopEmpty} ${styles.appear}`}>
-            Tu historia, tus fotos y cómo encontrarte. Una página de marca, sin catálogo.
-          </p>
+          // Sin catálogo el sitio sigue siendo una página completa de marca:
+          // historia con foto, dónde encontrarte y cómo escribir.
+          <div className={`${styles.brand} ${styles.appear}`}>
+            <div className={styles.brandStory}>
+              <div className={styles.brandPhoto}>
+                <Image src="/img/taza-granos.jpg" alt="" fill sizes="(min-width: 1000px) 220px, 40vw" />
+              </div>
+              <div>
+                <p className={styles.brandTitle}>Nuestra historia</p>
+                <p className={styles.brandText}>
+                  Desde 2015 tostamos café de pequeños productores del Huila, en lotes cortos y cada semana.
+                </p>
+              </div>
+            </div>
+            <div className={styles.brandFacts}>
+              <span>
+                <b>Visítanos</b>
+                Calle 45 #12-30, Bogotá
+              </span>
+              <span>
+                <b>Horario</b>
+                Lun a sáb · 8 a. m. a 6 p. m.
+              </span>
+            </div>
+            <span className={styles.brandCta}>Escríbenos por WhatsApp</span>
+          </div>
         )}
 
         <Show when={on("blog")} className={styles.shopBlog}>

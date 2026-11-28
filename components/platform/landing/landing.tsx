@@ -219,6 +219,10 @@ export function PlatformLanding({
         </div>
         <div className={styles.heroInner} ref={innerRef}>
           <h1 className={styles.heroTitle}>Un sitio a la medida de tu café.</h1>
+          {/* La marca en grande, como firma; el menú ya la nombra para lectores de pantalla. */}
+          <p className={styles.word} aria-hidden="true">
+            bestkofi
+          </p>
           <p className={styles.heroSub}>
             Diseñamos sitios web para tostadoras y cafeterías: con tu marca, con lo que tu negocio necesita y sin
             que tengas que tocar nada técnico.
@@ -430,8 +434,11 @@ export function PlatformLanding({
         <div className={styles.wrap}>
           <div className={styles.footTop}>
             <div>
-              <p className={styles.footMark}>bestkofi</p>
-              <p className={styles.footText}>Sitios web a la medida para marcas de café de Colombia.</p>
+              <p className={styles.footLine}>Un sitio a la medida de tu café.</p>
+              <p className={styles.footText}>
+                Sitios web con tu marca para cafeterías y tostadoras de Colombia: vitrina, tienda en línea,
+                suscripciones y blog.
+              </p>
             </div>
             <nav className={styles.footCols} aria-label="Pie de página">
               <div>
@@ -439,6 +446,11 @@ export function PlatformLanding({
                 <a href="#que-hacemos">Qué hacemos</a>
                 <a href="#arma">Arma tu sitio</a>
                 {demoUrl && <a href={demoUrl}>Ver un ejemplo</a>}
+              </div>
+              <div>
+                <p className={styles.footHead}>Tu sitio</p>
+                <Link href="/acceso">Ingresar al panel</Link>
+                {hasContact && <a href="#contacto">Solicitar mi sitio</a>}
               </div>
               <div>
                 <p className={styles.footHead}>Contacto</p>
@@ -450,12 +462,11 @@ export function PlatformLanding({
                 {contactEmail && <a href={`mailto:${contactEmail}`}>{contactEmail}</a>}
                 <span>Bogotá, Colombia</span>
               </div>
-              <div>
-                <p className={styles.footHead}>Clientes</p>
-                <Link href="/acceso">Ingresar al panel</Link>
-              </div>
             </nav>
           </div>
+          <p className={styles.footWord} aria-hidden="true">
+            bestkofi
+          </p>
           <div className={styles.footBottom}>
             <span>© 2026 Bestkofi</span>
             <span>Hecho en Bogotá</span>
